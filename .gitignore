@@ -109,3 +109,5 @@ secrets.json
 
 # migrations are similar, so
 migrations/*
+
+build/*
