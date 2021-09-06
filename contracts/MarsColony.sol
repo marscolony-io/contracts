@@ -28,6 +28,8 @@ contract MarsColony is ERC721 {
 
   function buy(uint256 _tokenId) public payable {
     require(msg.value == MarsColony.PRICE, 'Token cost is 0.01 ether');
+    require(_tokenId !== 0, 'Token id must be over zero');
+    require(_tokenId <= 21000, 'Maximum token id is 21000');
     _safeMint(msg.sender, _tokenId);
   }
 
