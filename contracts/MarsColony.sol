@@ -20,8 +20,10 @@ contract MarsColony is ERC721 {
     return _allMintedTokens;
   }
 
-  constructor () ERC721("MarsColony", "MC") {
+  constructor () ERC721("MarsColony", "MC") { }
 
+  function _baseURI() internal view virtual override returns (string memory) {
+    return 'https://meta.marscolony.io/';
   }
 
   function buy(uint256 _tokenId) public payable {
