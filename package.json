@@ -1,0 +1,11 @@
+{
+  "name": "contracts",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/marscolony-io/contracts",
+  "author": "crystalbit",
+  "license": "MIT",
+  "dependencies": {
+    "truffle-privatekey-provider": "^1.5.0"
+  }
+}
