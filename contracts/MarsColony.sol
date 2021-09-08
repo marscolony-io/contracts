@@ -5,11 +5,12 @@ import "./ERC721.sol";
 
 contract MarsColony is ERC721 {
   mapping (address => uint256[]) private _tokens;
+  mapping (uint256 => string) private _store;
   mapping (uint256 => uint256) private _tokenPositionsPlusOne;
   uint256[] private _allMintedTokens;
 
   address payable constant DAO = payable(0x97438E7A978A91dC281B834B62bb5737f629Aca9);
-  uint constant PRICE = 0.001 ether;
+  uint constant PRICE = 0.0677 ether;
 
   function tokensOf(address owner) public view virtual returns (uint256[] memory) {
     require(owner != address(0), "ERC721: tokens query for the zero address");
@@ -27,25 +28,25 @@ contract MarsColony is ERC721 {
   }
 
   function buy(uint256 _tokenId) public payable {
-    require(msg.value == MarsColony.PRICE, 'Token cost is 0.01 ether');
-    require(_tokenId !== 0, 'Token id must be over zero');
+    require(msg.value == MarsColony.PRICE, 'Wrong token cost');
+    require(_tokenId != 0, 'Token id must be over zero');
     require(_tokenId <= 21000, 'Maximum token id is 21000');
     _safeMint(msg.sender, _tokenId);
   }
 
-  // function buy5x5(uint256 _centerTokenId) public payable {
-  //   require(msg.value == 25 * MarsColony.PRICE, '25 tokens cost is 0.25 ether');
-  //   for (uint8 dr = 2-2; dr <= 2+2; dr++) {
-  //     for (uint8 dphi = 2-2; dphi <= 2+2; dphi++) {
-  //       _safeMint(msg.sender, _centerTokenId + dr * 1000 + dphi - 2002);
-  //     }
-  //   }
-  // }
+  function storeValue(uint256 tokenId, string memory data) public {
+    require(ERC721.ownerOf(tokenId) == msg.sender);
+    _store[tokenId] = data;
+  }
+
+  function getValue(uint256 tokenId) public view returns (string memory) {
+    return _store[tokenId];
+  }
 
   // anyone can call, but withdraw only to DAO
   function withdraw() public {
-    (bool success, ) = DAO.call{ value: address(this).balance }("");
-    require(success, "Transfer failed.");
+    (bool success, ) = DAO.call{ value: address(this).balance }('');
+    require(success, 'Transfer failed.');
   }
 
   function _transfer(address from, address to, uint256 tokenId) internal virtual override {
