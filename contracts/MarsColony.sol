@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 import "./ERC721.sol";
+import "./Storage.sol";
 
 
-contract MarsColony is ERC721 {
+contract MarsColony is ERC721, Storage {
   mapping (address => uint256[]) private _tokens;
-  mapping (uint256 => string) private _store;
   mapping (uint256 => uint256) private _tokenPositionsPlusOne;
   uint256[] private _allMintedTokens;
 
@@ -23,27 +23,23 @@ contract MarsColony is ERC721 {
 
   constructor () ERC721("MarsColony", "MC") { }
 
+  function storeValue(uint256 tokenId, string memory data) public {
+    require(ERC721.ownerOf(tokenId) == msg.sender);
+    Storage._storeValue(tokenId, data);
+  }
+
   function _baseURI() internal view virtual override returns (string memory) {
     return 'https://meta.marscolony.io/';
   }
 
-  function buy(uint256 _tokenId) public payable {
+  function claim(uint256 _tokenId) public payable {
     require(msg.value == MarsColony.PRICE, 'Wrong token cost');
     require(_tokenId != 0, 'Token id must be over zero');
     require(_tokenId <= 21000, 'Maximum token id is 21000');
     _safeMint(msg.sender, _tokenId);
   }
 
-  function storeValue(uint256 tokenId, string memory data) public {
-    require(ERC721.ownerOf(tokenId) == msg.sender);
-    _store[tokenId] = data;
-  }
-
-  function getValue(uint256 tokenId) public view returns (string memory) {
-    return _store[tokenId];
-  }
-
-  // anyone can call, but withdraw only to DAO
+  // anyone can call, but the withdraw is only to DAO
   function withdraw() public {
     (bool success, ) = DAO.call{ value: address(this).balance }('');
     require(success, 'Transfer failed.');

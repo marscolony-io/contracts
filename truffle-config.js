@@ -1,5 +1,6 @@
-const { projectId, key } = require('./secrets.json');
+const { projectId, key, mnemonic } = require('./secrets.json');
 const PrivateKeyProvider = require('truffle-privatekey-provider');
+const HDWalletProvider = require('@truffle/hdwallet-provider');
 
 module.exports = {
   // Uncommenting the defaults below 
@@ -30,6 +31,20 @@ module.exports = {
     timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
     skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
    },
+   bsct: {
+    provider: () => new HDWalletProvider(mnemonic, `https://data-seed-prebsc-1-s1.binance.org:8545`),
+    network_id: 97,
+    confirmations: 0,
+    timeoutBlocks: 200,
+    skipDryRun: true
+  },
+  bsc: {
+    provider: () => new HDWalletProvider(mnemonic, `https://bsc-dataseed1.binance.org`),
+    network_id: 56,
+    confirmations: 1,
+    timeoutBlocks: 200,
+    skipDryRun: true
+  },
   },
   compilers: {
     solc: {
