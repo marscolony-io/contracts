@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import "./ERC721.sol";
 import "./Storage.sol";
@@ -9,7 +9,11 @@ contract MarsColony is ERC721, Storage {
   mapping (uint256 => uint256) private _tokenPositionsPlusOne;
   uint256[] private _allMintedTokens;
 
-  address payable constant DAO = payable(0x97438E7A978A91dC281B834B62bb5737f629Aca9);
+  // gnosis: (carefully set for current network!)
+  address constant DAO = 0x7c1CEF21C3c46331b7352B08cd90e30cacAee750;
+  // contract/wallet, which is able to set gameValue
+  address public GameDispatcher = 0x0000000000000000000000000000000000000000;
+
   uint constant PRICE = 0.0677 ether;
 
   function tokensOf(address owner) public view virtual returns (uint256[] memory) {
@@ -23,9 +27,18 @@ contract MarsColony is ERC721, Storage {
 
   constructor () ERC721("MarsColony", "MC") { }
 
-  function storeValue(uint256 tokenId, string memory data) public {
+  function storeUserValue(uint256 tokenId, string memory data) public {
     require(ERC721.ownerOf(tokenId) == msg.sender);
-    Storage._storeValue(tokenId, data);
+    Storage._storeUserValue(tokenId, data);
+  }
+
+  function storeGameValue(uint256 tokenId, string memory data) public {
+    require(GameDispatcher == msg.sender);
+    Storage._storeGameValue(tokenId, data);
+  }
+
+  function setGameDispatcher(address _GameDispatcher) public {
+    GameDispatcher = _GameDispatcher;
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -41,7 +54,7 @@ contract MarsColony is ERC721, Storage {
 
   // anyone can call, but the withdraw is only to DAO
   function withdraw() public {
-    (bool success, ) = DAO.call{ value: address(this).balance }('');
+    (bool success, ) = payable(DAO).call{ value: address(this).balance }('');
     require(success, 'Transfer failed.');
   }
 
