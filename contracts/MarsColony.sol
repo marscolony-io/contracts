@@ -10,7 +10,7 @@ contract MarsColony is ERC721, Storage {
   uint256[] private _allMintedTokens;
 
   // gnosis: (carefully set for current network!)
-  address constant DAO = 0x7c1CEF21C3c46331b7352B08cd90e30cacAee750;
+  address DAO;
   // contract/wallet, which is able to set gameValue
   address public GameDispatcher = 0x0000000000000000000000000000000000000000;
 
@@ -25,7 +25,9 @@ contract MarsColony is ERC721, Storage {
     return _allMintedTokens;
   }
 
-  constructor () ERC721("MarsColony", "MC") { }
+  constructor (address _DAO) ERC721("MarsColony", "MC") {
+    DAO = _DAO;
+  }
 
   function storeUserValue(uint256 tokenId, string memory data) public {
     require(ERC721.ownerOf(tokenId) == msg.sender);
@@ -33,7 +35,7 @@ contract MarsColony is ERC721, Storage {
   }
 
   function storeGameValue(uint256 tokenId, string memory data) public {
-    require(GameDispatcher == msg.sender);
+    require(GameDispatcher == msg.sender, 'Only dispather can store game values');
     Storage._storeGameValue(tokenId, data);
   }
 
