@@ -14,6 +14,8 @@ contract MarsColony is ERC721, Storage {
   // contract/wallet, which is able to set gameValue
   address public GameDispatcher = 0x0000000000000000000000000000000000000000;
 
+  event ChangeDispatcher(address indexed dispatcher);
+
   uint constant PRICE = 0.0677 ether;
 
   function tokensOf(address owner) public view virtual returns (uint256[] memory) {
@@ -39,8 +41,14 @@ contract MarsColony is ERC721, Storage {
     Storage._storeGameValue(tokenId, data);
   }
 
+  function toggleGameState(uint256 tokenId, uint16 toggle) public {
+    require(GameDispatcher == msg.sender, 'Only dispather can toggle game state');
+    Storage._toggleGameState(tokenId, toggle);
+  }
+
   function setGameDispatcher(address _GameDispatcher) public {
     GameDispatcher = _GameDispatcher;
+    emit ChangeDispatcher(_GameDispatcher);
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
