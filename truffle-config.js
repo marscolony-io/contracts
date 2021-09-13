@@ -45,12 +45,18 @@ module.exports = {
       confirmations: 1,
       timeoutBlocks: 200,
       skipDryRun: true,
-      gasPrice: 5 * 10 ** 9,
+      // gasPrice: 6 * 10 ** 9,
     },
   },
   compilers: {
     solc: {
       version: '0.8.5',
+      // settings: { // See the solidity docs for advice about optimization and evmVersion
+      //   optimizer: {
+      //     enabled: true,
+      //     runs: 200
+      //   }
+      // }
     },
   },
   //
