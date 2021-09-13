@@ -16,7 +16,7 @@ contract MarsColony is ERC721, Storage {
 
   event ChangeDispatcher(address indexed dispatcher);
 
-  uint constant PRICE = 0.0677 ether;
+  uint constant PRICE = 0.677 ether;
 
   function tokensOf(address owner) public view virtual returns (uint256[] memory) {
     require(owner != address(0), "ERC721: tokens query for the zero address");

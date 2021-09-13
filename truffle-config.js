@@ -10,40 +10,42 @@ module.exports = {
   // for more details on how to specify configuration options!
   //
   networks: {
-   development: {
-     host: "127.0.0.1",
-     port: 7545,
-     network_id: "*"
-   },
-   ropsten: {
-    provider: new PrivateKeyProvider(key, `https://ropsten.infura.io/v3/${projectId}`),
-    network_id: 3,       // Ropsten's id
-    gas: 5500000,        // Ropsten has a lower block limit than mainnet
-    confirmations: 0,    // # of confs to wait between deployments. (default: 0)
-    timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
-    skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
-   },
-   rinkeby: {
-    provider: new PrivateKeyProvider(key, `https://rinkeby.infura.io/v3/${projectId}`),
-    network_id: 4,       // Rinkeby's id
-    gas: 4500000,        // Ropsten has a lower block limit than mainnet
-    confirmations: 0,    // # of confs to wait between deployments. (default: 0)
-    timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
-    skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
-   },
-   bsct: {
-    provider: () => new HDWalletProvider(mnemonic, `https://data-seed-prebsc-1-s1.binance.org:8545`),
-    network_id: 97,
-    confirmations: 0,
-    timeoutBlocks: 200,
-    skipDryRun: true
+    development: {
+      host: "127.0.0.1",
+      port: 7545,
+      network_id: "*"
+    },
+    ropsten: {
+      provider: new PrivateKeyProvider(key, `https://ropsten.infura.io/v3/${projectId}`),
+      network_id: 3,       // Ropsten's id
+      gas: 5500000,        // Ropsten has a lower block limit than mainnet
+      confirmations: 0,    // # of confs to wait between deployments. (default: 0)
+      timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
+      skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+    },
+    rinkeby: {
+      provider: new PrivateKeyProvider(key, `https://rinkeby.infura.io/v3/${projectId}`),
+      network_id: 4,       // Rinkeby's id
+      gas: 4500000,        // Ropsten has a lower block limit than mainnet
+      confirmations: 0,    // # of confs to wait between deployments. (default: 0)
+      timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
+      skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+    },
+    bsct: { // binance smart chain test
+      provider: () => new HDWalletProvider(mnemonic, `https://data-seed-prebsc-1-s1.binance.org:8545`),
+      network_id: 97,
+      confirmations: 0,
+      timeoutBlocks: 200,
+      skipDryRun: true,
+      gasPrice: 11 * 10 ** 9,
     },
     bsc: {
       provider: () => new HDWalletProvider(mnemonic, `https://bsc-dataseed1.binance.org`),
       network_id: 56,
       confirmations: 1,
       timeoutBlocks: 200,
-      skipDryRun: true
+      skipDryRun: true,
+      gasPrice: 5 * 10 ** 9,
     },
   },
   compilers: {
