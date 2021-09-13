@@ -15,7 +15,7 @@ contract('MarsColony', (accounts) => {
 
   it('Should claim Land Plot #100 as user1', async () => {
     const tx = await marsColony.claim(TOKEN, {
-      value: 0.0677 * 10 ** 18,
+      value: 0.677 * 10 ** 18,
       from: user1,
     });
     const owner100 = await marsColony.ownerOf.call(TOKEN);

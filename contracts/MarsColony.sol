@@ -10,7 +10,7 @@ contract MarsColony is ERC721, Storage {
   uint256[] private _allMintedTokens;
 
   // gnosis: (carefully set for current network!)
-  address DAO;
+  address public DAO;
   // contract/wallet, which is able to set gameValue
   address public GameDispatcher = 0x0000000000000000000000000000000000000000;
 

@@ -15,7 +15,7 @@ contract('MarsColony', (accounts) => {
   before(async () => {
     marsColony = await MarsColony.new(owner, { from: owner });
     await marsColony.claim(TOKEN, {
-      value: 0.0677 * 10 ** 18,
+      value: 0.677 * 10 ** 18,
       from: user1,
     });
   });
@@ -32,7 +32,7 @@ contract('MarsColony', (accounts) => {
 
   it('Should claim Land Plot #101 as user2', async () => {
     await marsColony.claim(TOKEN2, {
-      value: 0.0677 * 10 ** 18,
+      value: 0.677 * 10 ** 18,
       from: user2,
     });
     const owner101 = await marsColony.ownerOf.call(TOKEN2);
