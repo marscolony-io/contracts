@@ -4,7 +4,7 @@ const truffleAssert = require('truffle-assertions');
 
 const MarsColony = artifacts.require('MarsColony');
 
-contract('MarsColony', (accounts) => {
+contract('MarsColony user data', (accounts) => {
   const [owner, user1, user2] = accounts;
   let dispatcher = 0;
 
@@ -13,8 +13,8 @@ contract('MarsColony', (accounts) => {
   const TOKEN2 = 101;
 
   before(async () => {
-    marsColony = await MarsColony.new(owner, { from: owner });
-    await marsColony.claim(TOKEN, {
+    marsColony = await MarsColony.new(owner, 10, [owner, owner, owner], { from: owner });
+    await marsColony.claimOne(TOKEN, {
       value: 0.677 * 10 ** 18,
       from: user1,
     });
@@ -31,7 +31,7 @@ contract('MarsColony', (accounts) => {
   });
 
   it('Should claim Land Plot #101 as user2', async () => {
-    await marsColony.claim(TOKEN2, {
+    await marsColony.claimOne(TOKEN2, {
       value: 0.677 * 10 ** 18,
       from: user2,
     });

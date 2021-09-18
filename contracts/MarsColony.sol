@@ -1,85 +1,83 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-import "./ERC721.sol";
-import "./Storage.sol";
+pragma solidity >=0.8.0 <0.9.0;
+import './ERC721Enumerable2.sol';
+import "./MarsStorage.sol";
 
 
-contract MarsColony is ERC721, Storage {
-  mapping (address => uint256[]) private _tokens;
-  mapping (uint256 => uint256) private _tokenPositionsPlusOne;
-  uint256[] private _allMintedTokens;
+contract MarsColony is ERC721Enumerable, MarsStorage {
+  modifier canMint(uint256 tokenId) {
+    require(tokenId != 0, 'Token id must be over zero');
+    require(tokenId <= 21000, 'Maximum token id is 21000');
+    _;
+  }
 
-  // gnosis: (carefully set for current network!)
-  address public DAO;
-  // contract/wallet, which is able to set gameValue
-  address public GameDispatcher = 0x0000000000000000000000000000000000000000;
+  constructor (address _DAO, int8 _maxAirdrops, address[3] memory _airdroppers) ERC721('MarsColony', 'MC') MarsStorage(_DAO) {
+    airdropsLeft = _maxAirdrops;
+    airdroppers = _airdroppers;
+  }
 
-  event ChangeDispatcher(address indexed dispatcher);
+  // AIRDROP SECTION
+  // next addresses are the only who can airdrop
+  event Airdrop (address indexed initiator, address indexed receiver, uint256 indexed tokenId);
+
+  address[3] public airdroppers;
+  int8 public airdropsLeft;
+
+  modifier canAirdrop {
+    require(
+      msg.sender == airdroppers[0] ||
+      msg.sender == airdroppers[1] ||
+      msg.sender == airdroppers[2],
+      "You can't airdrop"
+    );
+    require(airdropsLeft > 0, 'No more airdrops left');
+    _; // airdropsLeft will be decreased here on successful airdrop
+  }
+
+  function airdrop (address receiver, uint256 tokenId) external canMint(tokenId) canAirdrop {
+    airdropsLeft = airdropsLeft - 1;
+    _safeMint(receiver, tokenId);
+    emit Airdrop(msg.sender, receiver, tokenId);
+  }
+  // END AIRDROP SECTION
 
   uint constant PRICE = 0.677 ether;
-
-  function tokensOf(address owner) public view virtual returns (uint256[] memory) {
-    require(owner != address(0), "ERC721: tokens query for the zero address");
-    return _tokens[owner];
-  }
-
-  function allMintedTokens() public view virtual returns (uint256[] memory) {
-    return _allMintedTokens;
-  }
-
-  constructor (address _DAO) ERC721("MarsColony", "MC") {
-    DAO = _DAO;
-  }
-
-  function storeUserValue(uint256 tokenId, string memory data) public {
-    require(ERC721.ownerOf(tokenId) == msg.sender);
-    Storage._storeUserValue(tokenId, data);
-  }
-
-  function storeGameValue(uint256 tokenId, string memory data) public {
-    require(GameDispatcher == msg.sender, 'Only dispather can store game values');
-    Storage._storeGameValue(tokenId, data);
-  }
-
-  function toggleGameState(uint256 tokenId, uint16 toggle) public {
-    require(GameDispatcher == msg.sender, 'Only dispather can toggle game state');
-    Storage._toggleGameState(tokenId, toggle);
-  }
-
-  function setGameDispatcher(address _GameDispatcher) public {
-    GameDispatcher = _GameDispatcher;
-    emit ChangeDispatcher(_GameDispatcher);
-  }
 
   function _baseURI() internal view virtual override returns (string memory) {
     return 'https://meta.marscolony.io/';
   }
 
-  function claim(uint256 _tokenId) public payable {
-    require(msg.value == MarsColony.PRICE, 'Wrong token cost');
-    require(_tokenId != 0, 'Token id must be over zero');
-    require(_tokenId <= 21000, 'Maximum token id is 21000');
-    _safeMint(msg.sender, _tokenId);
+  function _claim(uint256 tokenId) internal canMint(tokenId) {
+    _safeMint(msg.sender, tokenId);
   }
 
-  // anyone can call, but the withdraw is only to DAO
-  function withdraw() public {
-    (bool success, ) = payable(DAO).call{ value: address(this).balance }('');
-    require(success, 'Transfer failed.');
+  function claimOne(uint256 tokenId) external payable {
+    require (msg.value == MarsColony.PRICE, 'Wrong claiming fee');
+    _claim(tokenId);
   }
 
-  function _transfer(address from, address to, uint256 tokenId) internal virtual override {
-    super._transfer(from, to, tokenId);
-    delete _tokens[from][_tokenPositionsPlusOne[tokenId] - 1];
-    _tokens[to].push(tokenId);
-    _tokenPositionsPlusOne[tokenId] = _tokens[to].length;
+  function claim(uint256[] calldata tokenIds) external payable {
+    // can run out of gas before 100 tokens, but such revert is ok
+    require (tokenIds.length <= 100, "You can't claim more than 100 tokens");
+    require (tokenIds.length != 0, "You can't claim 0 tokens");
+    require (msg.value == MarsColony.PRICE * tokenIds.length, 'Wrong claiming fee');
+    for (uint8 i = 0; i < tokenIds.length; i++) {
+      _claim(tokenIds[i]);
+    }
   }
 
-  function _mint(address to, uint256 tokenId) internal virtual override {
-    super._mint(to, tokenId);
-    _allMintedTokens.push(tokenId);
-    _tokens[msg.sender].push(tokenId);
-    _tokenPositionsPlusOne[tokenId] = _tokens[msg.sender].length;
-    // ^^^ here we store position of token in an array _tokens[msg.sender] to delete it later with less gas
+  function storeUserValue(uint256 tokenId, string memory data) external {
+    require(ownerOf(tokenId) == msg.sender, "You aren't the token owner");
+    _userStore[tokenId] = data;
+    emit UserData(msg.sender, tokenId, data);
+  }
+
+  function allMintedTokens() view external returns (uint256[] memory) {
+    uint supply = totalSupply();
+    uint256[] memory tokens = new uint256[](supply);
+    for (uint8 i = 0; i < supply; i++) {
+      tokens[i] = tokenByIndex(i);
+    }
+    return tokens;
   }
 }

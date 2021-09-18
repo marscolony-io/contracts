@@ -2,13 +2,13 @@ const { assert } = require("chai");
 
 const MarsColony = artifacts.require('MarsColony');
 
-contract('MarsColony', (accounts) => {
-  const [owner] = accounts;
+contract('public fields', (accounts) => {
+  const [owner, user1] = accounts;
 
   let marsColony;
 
   before(async () => {
-    marsColony = await MarsColony.new(owner, { from: owner });
+    marsColony = await MarsColony.new(owner, 10, [owner, owner, owner], { from: owner });
   });
 
   it('DAO is public', async () => {

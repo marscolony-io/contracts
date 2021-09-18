@@ -10,6 +10,9 @@ module.exports = {
   // for more details on how to specify configuration options!
   //
   networks: {
+    develop: {
+      defaultEtherBalance: 500000000,
+    },
     development: {
       host: "127.0.0.1",
       port: 7545,
@@ -32,7 +35,7 @@ module.exports = {
       skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
     },
     bsct: { // binance smart chain test
-      provider: () => new HDWalletProvider(mnemonic, `https://data-seed-prebsc-1-s1.binance.org:8545`),
+      provider: () => new HDWalletProvider(mnemonic.bsct, `https://data-seed-prebsc-1-s1.binance.org:8545`),
       network_id: 97,
       confirmations: 0,
       timeoutBlocks: 200,
@@ -40,7 +43,7 @@ module.exports = {
       gasPrice: 11 * 10 ** 9,
     },
     bsc: {
-      provider: () => new HDWalletProvider(mnemonic, `https://bsc-dataseed1.binance.org`),
+      provider: () => new HDWalletProvider(mnemonic.bsc, `https://bsc-dataseed1.binance.org`),
       network_id: 56,
       confirmations: 1,
       timeoutBlocks: 200,
@@ -51,13 +54,6 @@ module.exports = {
   compilers: {
     solc: {
       version: '0.8.5',
-      // settings: { // See the solidity docs for advice about optimization and evmVersion
-      //   optimizer: {
-      //     enabled: true,
-      //     runs: 200
-      //   }
-      // }
     },
   },
-  //
 };

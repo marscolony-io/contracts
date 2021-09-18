@@ -1,29 +1,41 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-import "./ERC721.sol";
+pragma solidity >=0.8.0 <0.9.0;
+import './MarsDAO.sol';
 
-contract Storage {
-  mapping (uint256 => string) private _userStore;
+/**
+ * A contract to store game and user data in NFT tokens for a future gamification
+ */
+contract MarsStorage is MarsDAO {
+  mapping (uint256 => string) internal _userStore;
   mapping (uint256 => string) private _gameStore;
   mapping (uint256 => uint16) private _gameState; // 16 bits of toggles
+
+  // contract/wallet, which is able to set gameValue
+  address public GameDispatcher = 0x0000000000000000000000000000000000000000;
+
+  constructor (address _DAO) MarsDAO(_DAO) { }
 
   event UserData(address indexed from, uint256 indexed tokenId, string data);
   event GameData(address indexed dispatcher, uint256 indexed tokenId, string data);
   event GameState(address indexed dispatcher, uint256 indexed tokenId, uint16 indexed result);
 
-  function _storeUserValue(uint256 tokenId, string memory data) internal {
-    _userStore[tokenId] = data;
-    emit UserData(msg.sender, tokenId, data);
-  }
+  event ChangeDispatcher(address indexed dispatcher);
 
-  function _storeGameValue(uint256 tokenId, string memory data) internal {
+  function storeGameValue(uint256 tokenId, string memory data) external {
+    require(GameDispatcher == msg.sender, 'Only dispather can store game values');
     _gameStore[tokenId] = data;
     emit GameData(msg.sender, tokenId, data);
   }
 
-  function _toggleGameState(uint256 tokenId, uint16 toggle) internal {
+  function toggleGameState(uint256 tokenId, uint16 toggle) external {
+    require(GameDispatcher == msg.sender, 'Only dispather can toggle game state');
     _gameState[tokenId] = _gameState[tokenId] ^ toggle;
     emit GameState(msg.sender, tokenId, _gameState[tokenId]);
+  }
+
+  function setGameDispatcher(address _GameDispatcher) external {
+    GameDispatcher = _GameDispatcher;
+    emit ChangeDispatcher(_GameDispatcher);
   }
 
   function getUserValue(uint256 tokenId) public view returns (string memory) {
