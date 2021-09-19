@@ -41,6 +41,7 @@ module.exports = {
       timeoutBlocks: 200,
       skipDryRun: true,
       gasPrice: 11 * 10 ** 9,
+      networkCheckTimeout: 10000,
     },
     bsc: {
       provider: () => new HDWalletProvider(mnemonic.bsc, `https://bsc-dataseed1.binance.org`),

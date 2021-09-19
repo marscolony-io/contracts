@@ -11,7 +11,7 @@ contract MarsStorage is MarsDAO {
   mapping (uint256 => uint16) private _gameState; // 16 bits of toggles
 
   // contract/wallet, which is able to set gameValue
-  address public GameDispatcher = 0x0000000000000000000000000000000000000000;
+  address public GameDispatcher = address(0);
 
   constructor (address _DAO) MarsDAO(_DAO) { }
 

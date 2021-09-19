@@ -1,3 +1,9 @@
+/**
+ * Seeing this? Hi! :)
+ * https://github.com/marscolony-io/contracts
+ * Pls star the repo :)
+ */
+
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 import './ERC721Enumerable2.sol';
@@ -56,11 +62,15 @@ contract MarsColony is ERC721Enumerable, MarsStorage {
     _claim(tokenId);
   }
 
+  function getFee(uint256 tokenCount) public pure returns (uint256) {
+    return MarsColony.PRICE * tokenCount;
+  }
+
   function claim(uint256[] calldata tokenIds) external payable {
     // can run out of gas before 100 tokens, but such revert is ok
     require (tokenIds.length <= 100, "You can't claim more than 100 tokens");
     require (tokenIds.length != 0, "You can't claim 0 tokens");
-    require (msg.value == MarsColony.PRICE * tokenIds.length, 'Wrong claiming fee');
+    require (msg.value == getFee(tokenIds.length), 'Wrong claiming fee');
     for (uint8 i = 0; i < tokenIds.length; i++) {
       _claim(tokenIds[i]);
     }

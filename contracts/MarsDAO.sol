@@ -18,4 +18,11 @@ contract MarsDAO {
     (bool success, ) = payable(DAO).call{ value: address(this).balance }('');
     require(success, 'Transfer failed');
   }
+
+  // anyone can call, but the withdraw is only to the DAO address
+  function withdrawValue(uint256 value) external {
+    require (address(this).balance != 0, 'Nothing to withdraw');
+    (bool success, ) = payable(DAO).call{ value: value }('');
+    require(success, 'Transfer failed');
+  }
 }
