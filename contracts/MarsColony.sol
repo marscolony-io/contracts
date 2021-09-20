@@ -12,6 +12,19 @@ import '@openzeppelin/contracts/security/Pausable.sol';
 
 
 contract MarsColony is ERC721Enumerable, MarsStorage, Pausable {
+  uint constant PRICE = 0.677 ether;
+  uint constant PRESALE_PRICE = PRICE / 2;
+  bool public isPresale = true;
+
+  function getPrice() public view returns (uint256) {
+    return isPresale ? PRESALE_PRICE : PRICE;
+  }
+
+  function endPresale() external onlyDAO {
+    require(isPresale, 'Presale already finished');
+    isPresale = false;
+  }
+
   string private nftBaseURI = 'https://meta.marscolony.io/';
 
   // hodl
@@ -73,14 +86,12 @@ contract MarsColony is ERC721Enumerable, MarsStorage, Pausable {
     _; // airdropsLeft will be decreased here on successful airdrop
   }
 
-  function airdrop (address receiver, uint256 tokenId) external canMint(tokenId) whenNotPaused canAirdrop {
+  function airdrop(address receiver, uint256 tokenId) external canMint(tokenId) whenNotPaused canAirdrop {
     airdropsLeft = airdropsLeft - 1;
     _safeMint(receiver, tokenId);
     emit Airdrop(msg.sender, receiver, tokenId);
   }
   // END AIRDROP SECTION
-
-  uint constant PRICE = 0.677 ether;
 
   function _baseURI() internal view virtual override returns (string memory) {
     return nftBaseURI;
@@ -95,12 +106,12 @@ contract MarsColony is ERC721Enumerable, MarsStorage, Pausable {
   }
 
   function claimOne(uint256 tokenId) external payable whenNotPaused {
-    require (msg.value == MarsColony.PRICE, 'Wrong claiming fee');
+    require (msg.value == getPrice(), 'Wrong claiming fee');
     _claim(tokenId);
   }
 
-  function getFee(uint256 tokenCount) public pure returns (uint256) {
-    return MarsColony.PRICE * tokenCount;
+  function getFee(uint256 tokenCount) public view returns (uint256) {
+    return getPrice() * tokenCount;
   }
 
   function claim(uint256[] calldata tokenIds) external payable whenNotPaused {

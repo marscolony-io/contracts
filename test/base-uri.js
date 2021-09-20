@@ -10,7 +10,8 @@ contract('baseURI test', (accounts) => {
 
   before(async () => {
     marsColony = await MarsColony.new(dao, 10, [owner, owner, owner], { from: owner });
-    await marsColony.claimOne(1, { value: 0.677 * 10 ** 18 });
+    const fee = await marsColony.getFee(1);
+    await marsColony.claimOne(1, { value: fee });
   });
 
   it('Check initial baseURI', async () => {

@@ -40,8 +40,9 @@ contract('Pausable test', (accounts) => {
     await marsColony.airdrop(user1, 100, {
       from: owner,
     });
+    const fee = await marsColony.getFee(1);
     await marsColony.claimOne(101, {
-      value: 0.677 * 10 ** 18,
+      value: fee,
       from: user1,
     });
   });

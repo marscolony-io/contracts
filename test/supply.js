@@ -24,12 +24,14 @@ contract('supply', (accounts) => {
     for (let i = 1; i <= TOTAL; i = i + 1) {
       tokens.push(i);
       if (tokens.length >= 50) {
-        await marsColony.claim(tokens, { value: tokens.length * 0.677 * 10 ** 18, from: user1 });
+        const fee = await marsColony.getFee(tokens.length);
+        await marsColony.claim(tokens, { value: fee, from: user1 });
         tokens.splice(0, tokens.length);
       }
     }
     if (tokens.length > 0) {
-      await marsColony.claim(tokens, { value: tokens.length * 0.677 * 10 ** 18, from: user1 });
+      const fee = await marsColony.getFee(tokens.length);
+      await marsColony.claim(tokens, { value: fee, from: user1 });
     }
   });
 

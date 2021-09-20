@@ -14,8 +14,9 @@ contract('claim test', (accounts) => {
   });
 
   it('Claim one: #100', async () => {
+    const fee = await marsColony.getFee(1);
     const tx = await marsColony.claimOne(TOKEN, {
-      value: 0.677 * 10 ** 18,
+      value: fee,
       from: user1,
     });
     const owner100 = await marsColony.ownerOf.call(TOKEN);
@@ -35,24 +36,27 @@ contract('claim test', (accounts) => {
   });
 
   it('[Maximum token id is 21000] Claim #21003', async () => {
+    const fee = await marsColony.getFee(1);
     const tx = marsColony.claimOne(21003, {
       from: owner,
-      value: 0.677 * 10 ** 18,
+      value: fee,
     });
     await truffleAssert.reverts(tx, 'Maximum token id is 21000');
   });
 
   it('[Token id must be over zero] Claim #0', async () => {
+    const fee = await marsColony.getFee(1);
     const tx = marsColony.claimOne(0, {
       from: owner,
-      value: 0.677 * 10 ** 18,
+      value: fee,
     });
     await truffleAssert.reverts(tx, 'Token id must be over zero');
   });
 
   it('Claim several: [#102, #104]', async () => {
+    const fee = await marsColony.getFee(2);
     const tx = await marsColony.claim([102, 104], {
-      value: 2 * 0.677 * 10 ** 18,
+      value: fee,
       from: user1,
     });
     assert(await marsColony.ownerOf.call(102) === user1);
@@ -86,7 +90,7 @@ contract('claim test', (accounts) => {
   it('[Wrong claiming fee] Claim', async () => {
     const tx = marsColony.claimOne(222, {
       from: owner,
-      value: 0.666 * 10 ** 18,
+      value: 0.666 * 10 ** 18, // wrong
     });
     await truffleAssert.reverts(tx, 'Wrong claiming fee');
   });
@@ -94,7 +98,7 @@ contract('claim test', (accounts) => {
   it('[Wrong claiming fee] Claim several', async () => {
     const tx = marsColony.claim([222, 333], {
       from: owner,
-      value: 2 * 0.666 * 10 ** 18 + 1,
+      value: 2 * 0.666 * 10 ** 18 + 1, // wrong
     });
     await truffleAssert.reverts(tx, 'Wrong claiming fee');
   });
