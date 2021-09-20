@@ -7,10 +7,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 import './ERC721Enumerable2.sol';
-import "./MarsStorage.sol";
+import './MarsStorage.sol';
+import '@openzeppelin/contracts/security/Pausable.sol';
 
 
-contract MarsColony is ERC721Enumerable, MarsStorage {
+contract MarsColony is ERC721Enumerable, MarsStorage, Pausable {
   string private nftBaseURI = 'https://meta.marscolony.io/';
 
   // hodl
@@ -72,7 +73,7 @@ contract MarsColony is ERC721Enumerable, MarsStorage {
     _; // airdropsLeft will be decreased here on successful airdrop
   }
 
-  function airdrop (address receiver, uint256 tokenId) external canMint(tokenId) canAirdrop {
+  function airdrop (address receiver, uint256 tokenId) external canMint(tokenId) whenNotPaused canAirdrop {
     airdropsLeft = airdropsLeft - 1;
     _safeMint(receiver, tokenId);
     emit Airdrop(msg.sender, receiver, tokenId);
@@ -85,7 +86,7 @@ contract MarsColony is ERC721Enumerable, MarsStorage {
     return nftBaseURI;
   }
 
-  function setBaseURI(string memory newURI) external onlyDAO() {
+  function setBaseURI(string memory newURI) external onlyDAO {
     nftBaseURI = newURI;
   }
 
@@ -93,7 +94,7 @@ contract MarsColony is ERC721Enumerable, MarsStorage {
     _safeMint(msg.sender, tokenId);
   }
 
-  function claimOne(uint256 tokenId) external payable {
+  function claimOne(uint256 tokenId) external payable whenNotPaused {
     require (msg.value == MarsColony.PRICE, 'Wrong claiming fee');
     _claim(tokenId);
   }
@@ -102,7 +103,7 @@ contract MarsColony is ERC721Enumerable, MarsStorage {
     return MarsColony.PRICE * tokenCount;
   }
 
-  function claim(uint256[] calldata tokenIds) external payable {
+  function claim(uint256[] calldata tokenIds) external payable whenNotPaused {
     // can run out of gas before 100 tokens, but such revert is ok
     require (tokenIds.length <= 100, "You can't claim more than 100 tokens");
     require (tokenIds.length != 0, "You can't claim 0 tokens");
@@ -112,7 +113,7 @@ contract MarsColony is ERC721Enumerable, MarsStorage {
     }
   }
 
-  function storeUserValue(uint256 tokenId, string memory data) external {
+  function storeUserValue(uint256 tokenId, string memory data) external whenNotPaused {
     require(ownerOf(tokenId) == msg.sender, "You aren't the token owner");
     _userStore[tokenId] = data;
     emit UserData(msg.sender, tokenId, data);
@@ -125,5 +126,14 @@ contract MarsColony is ERC721Enumerable, MarsStorage {
       tokens[i] = tokenByIndex(i);
     }
     return tokens;
+  }
+
+  // pause/unpause only to stop/start claiming/airdrops
+  function pause() external onlyDAO {
+    _pause();
+  }
+
+  function unpause() external onlyDAO {
+    _unpause();
   }
 }
