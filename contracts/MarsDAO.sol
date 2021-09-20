@@ -12,6 +12,11 @@ contract MarsDAO {
     DAO = _DAO;
   }
 
+  modifier onlyDAO() {
+    require(msg.sender == DAO, 'Can be executed only by DAO');
+    _;
+  }
+
   // anyone can call, but the withdraw is only to the DAO address
   function withdraw() external {
     require (address(this).balance != 0, 'Nothing to withdraw');

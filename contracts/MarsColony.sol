@@ -11,6 +11,38 @@ import "./MarsStorage.sol";
 
 
 contract MarsColony is ERC721Enumerable, MarsStorage {
+  string private nftBaseURI = 'https://meta.marscolony.io/';
+
+  // hodl
+  mapping(uint256 => uint256) public lastTransferTimestamp;
+  mapping(address => uint256) private pastCumulativeHODL;
+
+  function _beforeTokenTransfer(
+    address from,
+    address to,
+    uint256 tokenId
+  ) internal virtual override {
+    super._beforeTokenTransfer(from, to, tokenId);
+
+    uint256 timeHodld = block.timestamp - lastTransferTimestamp[tokenId];
+    if (from != address(0)) {
+      pastCumulativeHODL[from] += timeHodld;
+    }
+    lastTransferTimestamp[tokenId] = block.timestamp;
+  }
+
+  function cumulativeHODL(address user) public view returns (uint256) {
+    uint256 _cumulativeHODL = pastCumulativeHODL[user];
+    uint256 bal = balanceOf(user);
+    for (uint256 i = 0; i < bal; i++) {
+      uint256 tokenId = tokenOfOwnerByIndex(user, i);
+      uint256 timeHodld = block.timestamp - lastTransferTimestamp[tokenId];
+      _cumulativeHODL += timeHodld;
+    }
+    return _cumulativeHODL;
+  }
+  // end hodl
+
   modifier canMint(uint256 tokenId) {
     require(tokenId != 0, 'Token id must be over zero');
     require(tokenId <= 21000, 'Maximum token id is 21000');
@@ -50,7 +82,11 @@ contract MarsColony is ERC721Enumerable, MarsStorage {
   uint constant PRICE = 0.677 ether;
 
   function _baseURI() internal view virtual override returns (string memory) {
-    return 'https://meta.marscolony.io/';
+    return nftBaseURI;
+  }
+
+  function setBaseURI(string memory newURI) external onlyDAO() {
+    nftBaseURI = newURI;
   }
 
   function _claim(uint256 tokenId) internal canMint(tokenId) {
