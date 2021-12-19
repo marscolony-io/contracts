@@ -1,4 +1,4 @@
-const { projectId, key, mnemonic } = require('./secrets.json');
+const { projectId, key, mnemonic, keys } = require('./secrets.json');
 const PrivateKeyProvider = require('truffle-privatekey-provider');
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 
@@ -50,6 +50,16 @@ module.exports = {
       timeoutBlocks: 200,
       skipDryRun: true,
       // gasPrice: 6 * 10 ** 9,
+    },
+    hartest: {
+      provider: () => {
+        return new HDWalletProvider({
+          mnemonic: mnemonic.hart,
+          providerOrUrl: 'https://api.s0.b.hmny.io', // https://api.s0.t.hmny.io for mainnet
+          derivationPath: `m/44'/1023'/0'/0/`
+        });
+      },
+      network_id: 1666700000, // 1666600000 for mainnet
     },
   },
   compilers: {

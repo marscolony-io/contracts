@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-// This contract differs from ERC721Enumerable only in visibility of _allTokens
+// This contract differs from original openzeppelin ERC721Enumerable only in visibility of _allTokens
 
 pragma solidity ^0.8.0;
 
@@ -20,11 +20,7 @@ abstract contract ERC721Enumerable is ERC721, IERC721Enumerable {
     mapping(uint256 => uint256) private _ownedTokensIndex;
 
     // Array with all token ids, used for enumeration
-    uint256[] private _allTokens;
-
-    function allTokens() external view returns (uint256[] memory) {
-      return _allTokens;
-    }
+    uint256[] internal _allTokens;
 
     // Mapping from token id to position in the allTokens array
     mapping(uint256 => uint256) private _allTokensIndex;

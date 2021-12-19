@@ -8,4 +8,5 @@ there are settings for ethereum, ropsten, bsc, bsc test networks. Also copy secr
 will add deployed addresses here
 
 # testing
-run `truffle develop` and then `test`
+run `truffle develop` and then `test`  
+Or in vscode in an opened test press Cms-Shift-B and select network
