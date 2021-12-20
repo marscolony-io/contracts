@@ -5,8 +5,6 @@ import '@openzeppelin/contracts/security/Pausable.sol';
 import './MC.sol';
 import './CLNY.sol';
 
-// TODO airdrops
-
 contract GameManager is Pausable, DAOOwnership {
   uint public price = 250 ether;
 
