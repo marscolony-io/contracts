@@ -1,7 +1,5 @@
 /**
- * Seeing this? Hi! :)
- * https://github.com/marscolony-io/contracts
- * Pls star the repo :)
+ * ERC721 MC token - land plots
  */
 
 // SPDX-License-Identifier: MIT

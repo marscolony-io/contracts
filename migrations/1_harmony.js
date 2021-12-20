@@ -16,4 +16,6 @@ module.exports = async (deployer, network, addresses) => {
     _CLNY.setGameManager(GameManager.address),
     _MC.setGameManager(GameManager.address),
   ]);
+
+  // TODO move DAO to particular addresses for real networks
 };
