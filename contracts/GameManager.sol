@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import '@openzeppelin/contracts/security/Pausable.sol';
-import './MC.sol';
-import './CLNY.sol';
+import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
+import './NFTMintableInterface.sol';
+import './PauseInterface.sol';
+import './ERC20MintBurnInterface.sol';
+import './DAOOwnershipInitializable.sol';
 
-contract GameManager is Pausable, DAOOwnership {
-  uint public price = 250 ether;
 
-  uint256 maxTokenId = 21000;
+contract GameManager is PausableUpgradeable, DAOOwnershipInitializable {
+  uint256 public price;
+
+  uint256 public maxTokenId;
 
   address public CLNYAddress;
   address public MCAddress;
@@ -25,17 +28,21 @@ contract GameManager is Pausable, DAOOwnership {
   event Airdrop (address indexed receiver, uint256 indexed tokenId);
 
   modifier onlyTokenOwner(uint256 tokenId) {
-    require(MC(MCAddress).ownerOf(tokenId) == msg.sender, "You aren't the token owner");
+    require(NFTMintableInterface(MCAddress).ownerOf(tokenId) == msg.sender, "You aren't the token owner");
     _;
   }
 
-  constructor(
+  function initialize(
     address _DAO,
     address _CLNYAddress,
     address _MCAddress
-  ) DAOOwnership(_DAO) {
+  ) public initializer {
+    __Pausable_init();
+    DAO = _DAO;
     CLNYAddress = _CLNYAddress;
     MCAddress = _MCAddress;
+    maxTokenId = 21000;
+    price = 250 ether;
   }
 
   function getFee(uint256 tokenCount) public view returns (uint256) {
@@ -63,7 +70,8 @@ contract GameManager is Pausable, DAOOwnership {
   function claimOne(uint256 tokenId) external payable whenNotPaused {
     require (msg.value == price, 'Wrong claiming fee');
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
-    MC(MCAddress).mint(msg.sender, tokenId);
+    NFTMintableInterface(MCAddress).mint(msg.sender, tokenId);
+    lastCLNYCheckout[tokenId] = block.timestamp;
   }
 
   function claim(uint256[] calldata tokenIds) external payable whenNotPaused {
@@ -71,25 +79,26 @@ contract GameManager is Pausable, DAOOwnership {
     require (msg.value == getFee(tokenIds.length), 'Wrong claiming fee');
     for (uint8 i = 0; i < tokenIds.length; i++) {
       require (tokenIds[i] > 0 && tokenIds[i] <= maxTokenId, 'Token id out of bounds');
-      MC(MCAddress).mint(msg.sender, tokenIds[i]);
+      NFTMintableInterface(MCAddress).mint(msg.sender, tokenIds[i]);
+      lastCLNYCheckout[tokenIds[i]] = block.timestamp;
     }
   }
 
   function pause() external onlyDAO {
     _pause();
-    CLNY(CLNYAddress).pause();
-    MC(MCAddress).pause();
+    PauseInterface(CLNYAddress).pause();
+    PauseInterface(MCAddress).pause();
   }
 
   function unpause() external onlyDAO {
     _unpause();
-    CLNY(CLNYAddress).unpause();
-    MC(MCAddress).unpause();
+    PauseInterface(CLNYAddress).unpause();
+    PauseInterface(MCAddress).unpause();
   }
 
   function airdrop(address receiver, uint256 tokenId) external whenNotPaused onlyDAO {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
-    MC(MCAddress).mint(receiver, tokenId);
+    NFTMintableInterface(MCAddress).mint(receiver, tokenId);
     emit Airdrop(receiver, tokenId);
   }
 
@@ -115,7 +124,7 @@ contract GameManager is Pausable, DAOOwnership {
       amount = 480 * 10 ** 18;
     }
     require (amount > 0, 'Wrong level');
-    CLNY(CLNYAddress).burn(msg.sender, amount);
+    ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, amount);
   }
 
   function getLastCheckout(uint256 tokenId) public view onlyTokenOwner(tokenId) returns (uint256) {
@@ -198,10 +207,17 @@ contract GameManager is Pausable, DAOOwnership {
     return powerProductions[tokenId];
   }
 
-  function claimEarned(uint256 tokenId) external whenNotPaused {
-    CLNY(CLNYAddress).mint(MC(MCAddress).ownerOf(tokenId), getEarned(tokenId));
-    fixedEarnings[tokenId] = 0;
-    lastCLNYCheckout[tokenId] = block.timestamp;
+  function claimEarned(uint256[] calldata tokenIds) external whenNotPaused {
+    require (tokenIds.length != 0, 'Empty array');
+    for (uint8 i = 0; i < tokenIds.length; i++) {
+      require (msg.sender == NFTMintableInterface(MCAddress).ownerOf(tokenIds[i]));
+      ERC20MintBurnInterface(CLNYAddress).mint(
+        msg.sender,
+        getEarned(tokenIds[i])
+      );
+      fixedEarnings[tokenIds[i]] = 0;
+      lastCLNYCheckout[tokenIds[i]] = block.timestamp;
+    }
   }
 
   function withdraw() external onlyDAO {
@@ -217,7 +233,7 @@ contract GameManager is Pausable, DAOOwnership {
   }
 
   // only tests
-  function faucetClaim100() external {
-    CLNY(CLNYAddress).mint(msg.sender,  100 * 10 ** 18);
-  }
+  // function faucetClaim100() external {
+  //   ERC20MintBurnInterface(CLNYAddress).mint(msg.sender,  100 * 10 ** 18);
+  // }
 }

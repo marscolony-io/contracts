@@ -6,33 +6,37 @@ const CLNY = artifacts.require('CLNY');
 const GM = artifacts.require('GameManager');
 
 contract('Claiming', (accounts) => {
-  const [owner, user1] = accounts;
+  const [owner, user1, , , , proxyOwner] = accounts;
 
   const TOKEN = 100;
   let mc;
   let clny;
   let gm;
+  let gp;
 
   before(async () => {
     clny = await CLNY.deployed();
     mc = await MC.deployed();
     gm = await GM.deployed();
-    await gm.setPrice(web3.utils.toWei('0.1'));
+    console.log('GM: ', gm.address);
+    // console.log(gp.abi, gp.address);
+    const tx = await gm.setPrice(web3.utils.toWei('0.1'));
+    // console.log(tx);
   });
 
   it('Claim one: #100', async () => {
     const fee = await gm.getFee(1);
-    const tx = await gm.claimOne(TOKEN, {
+    const tx = await gm.claimOne(100, {
       value: fee,
       from: user1,
     });
-    const owner100 = await mc.ownerOf.call(TOKEN);
-    assert(owner100 === user1);
+    // const owner100 = await mc.ownerOf.call(100);
+    // assert(owner100 === user1);
     const mcTx = await truffleAssert.createTransactionResult(mc, tx.tx);
     truffleAssert.eventEmitted(mcTx, 'Transfer', (ev) => {
       return ev.from === '0x0000000000000000000000000000000000000000'
         && ev.to === user1
-        && ev.tokenId.toString() === TOKEN.toString();
+        && ev.tokenId.toString() === '100';
     });
   });
 

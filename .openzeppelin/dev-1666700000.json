@@ -1,0 +1,229 @@
+{
+  "contracts": {
+    "GameManager": {
+      "address": "0x53eF61E72e180466d09356eBf6e506000415f6Fc",
+      "constructorCode": "608060405234801561001057600080fd5b506141ae806100206000396000f3fe",
+      "bodyBytecodeHash": "6fecc710b3aae30e0a659e93b84b5836d9fa048c0bb66d02ab097af73107b295",
+      "localBytecodeHash": "7e9c974edc914a6f094329c68b46d197279e278c6ec142f0a748933eaab9eb90",
+      "deployedBytecodeHash": "7e9c974edc914a6f094329c68b46d197279e278c6ec142f0a748933eaab9eb90",
+      "types": {
+        "t_bool": {
+          "id": "t_bool",
+          "kind": "elementary",
+          "label": "bool"
+        },
+        "t_uint256": {
+          "id": "t_uint256",
+          "kind": "elementary",
+          "label": "uint256"
+        },
+        "t_array:50<t_uint256>": {
+          "id": "t_array:50<t_uint256>",
+          "valueType": "t_uint256",
+          "length": "50",
+          "kind": "array",
+          "label": "uint256[50]"
+        },
+        "t_array:49<t_uint256>": {
+          "id": "t_array:49<t_uint256>",
+          "valueType": "t_uint256",
+          "length": "49",
+          "kind": "array",
+          "label": "uint256[49]"
+        },
+        "t_address": {
+          "id": "t_address",
+          "kind": "elementary",
+          "label": "address"
+        },
+        "t_mapping<t_uint256>": {
+          "id": "t_mapping<t_uint256>",
+          "valueType": "t_uint256",
+          "label": "mapping(key => uint256)",
+          "kind": "mapping"
+        },
+        "t_uint8": {
+          "id": "t_uint8",
+          "kind": "elementary",
+          "label": "uint8"
+        },
+        "t_mapping<t_uint8>": {
+          "id": "t_mapping<t_uint8>",
+          "valueType": "t_uint8",
+          "label": "mapping(key => uint8)",
+          "kind": "mapping"
+        }
+      },
+      "storage": [
+        {
+          "contract": "Initializable",
+          "path": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol",
+          "label": "_initialized",
+          "astId": 6,
+          "type": "t_bool",
+          "src": "1776:25:0"
+        },
+        {
+          "contract": "Initializable",
+          "path": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol",
+          "label": "_initializing",
+          "astId": 9,
+          "type": "t_bool",
+          "src": "1904:26:0"
+        },
+        {
+          "contract": "ContextUpgradeable",
+          "path": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol",
+          "label": "__gap",
+          "astId": 474,
+          "type": "t_array:50<t_uint256>",
+          "src": "1092:25:3"
+        },
+        {
+          "contract": "PausableUpgradeable",
+          "path": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol",
+          "label": "_paused",
+          "astId": 94,
+          "type": "t_bool",
+          "src": "949:20:1"
+        },
+        {
+          "contract": "PausableUpgradeable",
+          "path": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol",
+          "label": "__gap",
+          "astId": 185,
+          "type": "t_array:49<t_uint256>",
+          "src": "2511:25:1"
+        },
+        {
+          "contract": "DAOOwnershipInitializable",
+          "path": "project:/contracts/DAOOwnershipInitializable.sol",
+          "label": "DAO",
+          "astId": 2902,
+          "type": "t_address",
+          "src": "104:18:20"
+        },
+        {
+          "contract": "GameManager",
+          "path": "project:/contracts/GameManager.sol",
+          "label": "price",
+          "astId": 3336,
+          "type": "t_uint256",
+          "src": "370:20:24"
+        },
+        {
+          "contract": "GameManager",
+          "path": "project:/contracts/GameManager.sol",
+          "label": "maxTokenId",
+          "astId": 3338,
+          "type": "t_uint256",
+          "src": "395:25:24"
+        },
+        {
+          "contract": "GameManager",
+          "path": "project:/contracts/GameManager.sol",
+          "label": "CLNYAddress",
+          "astId": 3340,
+          "type": "t_address",
+          "src": "425:26:24"
+        },
+        {
+          "contract": "GameManager",
+          "path": "project:/contracts/GameManager.sol",
+          "label": "MCAddress",
+          "astId": 3342,
+          "type": "t_address",
+          "src": "455:24:24"
+        },
+        {
+          "contract": "GameManager",
+          "path": "project:/contracts/GameManager.sol",
+          "label": "lastCLNYCheckout",
+          "astId": 3346,
+          "type": "t_mapping<t_uint256>",
+          "src": "484:53:24"
+        },
+        {
+          "contract": "GameManager",
+          "path": "project:/contracts/GameManager.sol",
+          "label": "baseStations",
+          "astId": 3350,
+          "type": "t_mapping<t_uint8>",
+          "src": "542:47:24"
+        },
+        {
+          "contract": "GameManager",
+          "path": "project:/contracts/GameManager.sol",
+          "label": "transports",
+          "astId": 3354,
+          "type": "t_mapping<t_uint8>",
+          "src": "603:45:24"
+        },
+        {
+          "contract": "GameManager",
+          "path": "project:/contracts/GameManager.sol",
+          "label": "robotAssemblies",
+          "astId": 3358,
+          "type": "t_mapping<t_uint8>",
+          "src": "677:50:24"
+        },
+        {
+          "contract": "GameManager",
+          "path": "project:/contracts/GameManager.sol",
+          "label": "powerProductions",
+          "astId": 3362,
+          "type": "t_mapping<t_uint8>",
+          "src": "756:51:24"
+        },
+        {
+          "contract": "GameManager",
+          "path": "project:/contracts/GameManager.sol",
+          "label": "fixedEarnings",
+          "astId": 3366,
+          "type": "t_mapping<t_uint256>",
+          "src": "837:50:24"
+        }
+      ],
+      "warnings": {
+        "hasConstructor": false,
+        "hasSelfDestruct": false,
+        "hasDelegateCall": false,
+        "hasInitialValuesInDeclarations": false,
+        "uninitializedBaseContracts": [],
+        "storageUncheckedVars": [],
+        "storageDiff": []
+      }
+    }
+  },
+  "solidityLibs": {},
+  "proxies": {
+    "MarsColony/CLNY": [
+      {
+        "address": "0xEB384bF523c523e765246BfAe36F46a5D7ddf032",
+        "kind": "NonProxy",
+        "bytecodeHash": "eb56614651c81965c0ac9729390fd9662fd10ee394b6aba7d521acb2601e0a87"
+      }
+    ],
+    "MarsColony/MC": [
+      {
+        "address": "0x8117AE92cC815D4a7CC4503FDB54500f038b28BD",
+        "kind": "NonProxy",
+        "bytecodeHash": "00f1282e5224d3c36ecc885c2fc46a07c7a1cc6688b264418c4390f24c10ca8b"
+      }
+    ],
+    "MarsColony/GameManager": [
+      {
+        "address": "0x03CB73d86365907d7C1C0a09de42B9A846cdde3e",
+        "version": "1.0.0",
+        "implementation": "0x53eF61E72e180466d09356eBf6e506000415f6Fc",
+        "admin": "0x689c8f3aD031b0112ACe06Acd67c397e113d51B5",
+        "kind": "Upgradeable"
+      }
+    ]
+  },
+  "manifestVersion": "2.2",
+  "version": "1.0.0",
+  "proxyAdmin": {
+    "address": "0x689c8f3aD031b0112ACe06Acd67c397e113d51B5"
+  }
+}
