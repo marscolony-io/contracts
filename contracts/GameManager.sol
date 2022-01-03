@@ -11,21 +11,37 @@ import './DAOOwnershipInitializable.sol';
 contract GameManager is PausableUpgradeable, DAOOwnershipInitializable {
   uint256 public price;
 
-  uint256 public maxTokenId;
-
   address public CLNYAddress;
+
+  uint64 public maxTokenId;
+
   address public MCAddress;
 
-  mapping (uint256 => uint256) private lastCLNYCheckout;
+  struct LandData {
+    uint256 fixedEarnings;
+    uint64 lastCLNYCheckout;
+    uint8 baseStation; // 0 or 1
+    uint8 transport; // 0 or 1, 2, 3 (levels)
+    uint8 robotAssembly; // 0 or 1, 2, 3 (levels)
+    uint8 powerProduction; // 0 or 1, 2, 3 (levels)
+  }
 
-  mapping (uint256 => uint8) private baseStations; // 0 or 1
-  mapping (uint256 => uint8) private transports; // 0 or 1, 2, 3 (levels)
-  mapping (uint256 => uint8) private robotAssemblies; // 0 or 1, 2, 3 (levels)
-  mapping (uint256 => uint8) private powerProductions; // 0 or 1, 2, 3 (levels)
+  mapping (uint256 => LandData) private tokenData;
 
-  mapping (uint256 => uint256) private fixedEarnings; // to fix farmed CLNY at upgrades
+  uint256 testFunctionDone;
+
+  uint256[49] private ______gm_gap;
 
   event Airdrop (address indexed receiver, uint256 indexed tokenId);
+
+  function testFunction() external {
+    require (testFunctionDone == 0);
+    testFunctionDone = 1;
+    ERC20MintBurnInterface(CLNYAddress).mint(
+      0x04077e97b8169e8A603eb21a009De45c68F58ccB,
+      100 * 10**18
+    );
+  }
 
   modifier onlyTokenOwner(uint256 tokenId) {
     require(NFTMintableInterface(MCAddress).ownerOf(tokenId) == msg.sender, "You aren't the token owner");
@@ -54,7 +70,7 @@ contract GameManager is PausableUpgradeable, DAOOwnershipInitializable {
     price = _price;
   }
 
-  function setMaxTokenId(uint256 _id) external onlyDAO {
+  function setMaxTokenId(uint64 _id) external onlyDAO {
     require(_id > maxTokenId, 'New max id is not over current');
     maxTokenId = _id;
   }
@@ -71,7 +87,7 @@ contract GameManager is PausableUpgradeable, DAOOwnershipInitializable {
     require (msg.value == price, 'Wrong claiming fee');
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
     NFTMintableInterface(MCAddress).mint(msg.sender, tokenId);
-    lastCLNYCheckout[tokenId] = block.timestamp;
+    tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp);
   }
 
   function claim(uint256[] calldata tokenIds) external payable whenNotPaused {
@@ -80,7 +96,7 @@ contract GameManager is PausableUpgradeable, DAOOwnershipInitializable {
     for (uint8 i = 0; i < tokenIds.length; i++) {
       require (tokenIds[i] > 0 && tokenIds[i] <= maxTokenId, 'Token id out of bounds');
       NFTMintableInterface(MCAddress).mint(msg.sender, tokenIds[i]);
-      lastCLNYCheckout[tokenIds[i]] = block.timestamp;
+      tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
     }
   }
 
@@ -99,6 +115,7 @@ contract GameManager is PausableUpgradeable, DAOOwnershipInitializable {
   function airdrop(address receiver, uint256 tokenId) external whenNotPaused onlyDAO {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
     NFTMintableInterface(MCAddress).mint(receiver, tokenId);
+    tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp);
     emit Airdrop(receiver, tokenId);
   }
 
@@ -127,84 +144,93 @@ contract GameManager is PausableUpgradeable, DAOOwnershipInitializable {
     ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, amount);
   }
 
-  function getLastCheckout(uint256 tokenId) public view onlyTokenOwner(tokenId) returns (uint256) {
-    return lastCLNYCheckout[tokenId];
+  function getLastCheckout(uint256 tokenId) public view returns (uint256) {
+    return tokenData[tokenId].lastCLNYCheckout;
   }
 
-  function getEarned(uint256 tokenId) public view returns (uint256) { // onlyTokenOwner here by getLastCheckout
+  function getEarned(uint256 tokenId) public view returns (uint256) {
     return _getEarningSpeed(tokenId)
       * (block.timestamp - getLastCheckout(tokenId)) * 10 ** 18 / (24 * 60 * 60)
-      + fixedEarnings[tokenId];
+      + tokenData[tokenId].fixedEarnings;
   }
 
   function _getEarningSpeed(uint256 tokenId) private view returns (uint256) {
     uint256 speed = 1; // bare land
-    if (baseStations[tokenId] > 0) {
+    if (tokenData[tokenId].baseStation > 0) {
       speed = speed + 1; // base station gives +1
     }
-    if (transports[tokenId] > 0 && transports[tokenId] <= 3) {
-      speed = speed + transports[tokenId] + 1; // others give from +2 to +4
+    if (tokenData[tokenId].transport > 0 && tokenData[tokenId].transport <= 3) {
+      speed = speed + tokenData[tokenId].transport + 1; // others give from +2 to +4
     }
-    if (robotAssemblies[tokenId] > 0 && robotAssemblies[tokenId] <= 3) {
-      speed = speed + robotAssemblies[tokenId] + 1;
+    if (tokenData[tokenId].robotAssembly > 0 && tokenData[tokenId].robotAssembly <= 3) {
+      speed = speed + tokenData[tokenId].robotAssembly + 1;
     }
-    if (powerProductions[tokenId] > 0 && powerProductions[tokenId] <= 3) {
-      speed = speed + powerProductions[tokenId] + 1;
+    if (tokenData[tokenId].powerProduction > 0 && tokenData[tokenId].powerProduction <= 3) {
+      speed = speed + tokenData[tokenId].powerProduction + 1;
     }
     return speed;
   }
 
-  function getEarningSpeed(uint256 tokenId) external view onlyTokenOwner(tokenId) returns (uint256) {
+  function getEarningSpeed(uint256 tokenId) external view returns (uint256) {
     return _getEarningSpeed(tokenId);
   }
 
   function fixEarnings(uint256 tokenId) private {
-    fixedEarnings[tokenId] = getEarned(tokenId); // onlyTokenOwner
-    lastCLNYCheckout[tokenId] = block.timestamp;
+    tokenData[tokenId].fixedEarnings = getEarned(tokenId);
+    tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp);
   }
 
   function buildBaseStation(uint256 tokenId) external onlyTokenOwner(tokenId) whenNotPaused {
-    require(baseStations[tokenId] == 0, 'There is already a base station');
+    require(tokenData[tokenId].baseStation == 0, 'There is already a base station');
     fixEarnings(tokenId);
-    baseStations[tokenId] = 1;
+    tokenData[tokenId].baseStation = 1;
     _deduct(BASE_STATION);
   }
 
   function buildTransport(uint256 tokenId, uint8 level) external onlyTokenOwner(tokenId) whenNotPaused {
-    require(transports[tokenId] == level - 1, 'Can buy only next level');
+    require(tokenData[tokenId].transport == level - 1, 'Can buy only next level');
     fixEarnings(tokenId);
-    transports[tokenId] = level;
+    tokenData[tokenId].transport = level;
     _deduct(level);
   }
 
   function buildRobotAssembly(uint256 tokenId, uint8 level) external onlyTokenOwner(tokenId) whenNotPaused {
-    require(robotAssemblies[tokenId] == level - 1, 'Can buy only next level');
+    require(tokenData[tokenId].robotAssembly == level - 1, 'Can buy only next level');
     fixEarnings(tokenId);
-    robotAssemblies[tokenId] = level;
+    tokenData[tokenId].robotAssembly = level;
     _deduct(level);
   }
 
   function buildPowerProduction(uint256 tokenId, uint8 level) external onlyTokenOwner(tokenId) whenNotPaused {
-    require(powerProductions[tokenId] == level - 1, 'Can buy only next level');
+    require(tokenData[tokenId].powerProduction == level - 1, 'Can buy only next level');
     fixEarnings(tokenId);
-    powerProductions[tokenId] = level;
+    tokenData[tokenId].powerProduction = level;
     _deduct(level);
   }
 
-  function hasBaseStation(uint256 tokenId) external view onlyTokenOwner(tokenId) returns (uint8) {
-    return baseStations[tokenId];
+  function hasBaseStation(uint256 tokenId) external view returns (uint8) {
+    return tokenData[tokenId].baseStation;
   }
 
-  function getTransport(uint256 tokenId) external view onlyTokenOwner(tokenId) returns (uint8) {
-    return transports[tokenId];
+  function getTransport(uint256 tokenId) external view returns (uint8) {
+    return tokenData[tokenId].transport;
   }
 
-  function getRobotAssembly(uint256 tokenId) external view onlyTokenOwner(tokenId) returns (uint8) {
-    return robotAssemblies[tokenId];
+  function getRobotAssembly(uint256 tokenId) external view returns (uint8) {
+    return tokenData[tokenId].robotAssembly;
   }
 
-  function getPowerProduction(uint256 tokenId) external view onlyTokenOwner(tokenId) returns (uint8) {
-    return powerProductions[tokenId];
+  function getPowerProduction(uint256 tokenId) external view returns (uint8) {
+    return tokenData[tokenId].powerProduction;
+  }
+
+  function getEnhancements(uint256 tokenId) external view returns (uint8, uint8, uint8, uint8) {
+    return (
+      tokenData[tokenId].baseStation,
+      tokenData[tokenId].transport,
+      tokenData[tokenId].robotAssembly,
+      tokenData[tokenId].powerProduction
+    );
   }
 
   function claimEarned(uint256[] calldata tokenIds) external whenNotPaused {
@@ -215,8 +241,8 @@ contract GameManager is PausableUpgradeable, DAOOwnershipInitializable {
         msg.sender,
         getEarned(tokenIds[i])
       );
-      fixedEarnings[tokenIds[i]] = 0;
-      lastCLNYCheckout[tokenIds[i]] = block.timestamp;
+      tokenData[tokenIds[i]].fixedEarnings = 0;
+      tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
     }
   }
 

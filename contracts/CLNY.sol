@@ -18,6 +18,8 @@ contract CLNY is ERC20Upgradeable, GameConnection, PausableUpgradeable {
     ERC20Upgradeable.__ERC20_init('ColonyToken', 'CLNY');
   }
 
+  uint256[50] private ______clny_gap;
+
   // TODO total supply logic and limitations
 
   function burn(address _address, uint256 _amount) external onlyGameManager whenNotPaused {

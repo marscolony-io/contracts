@@ -8,6 +8,8 @@ abstract contract GameConnection {
   address public GameManager;
   address public DAO;
 
+  uint256[50] private ______gc_gap;
+
   function __GameConnection_init(address _DAO) internal {
     DAO = _DAO;
   }

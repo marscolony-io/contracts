@@ -13,6 +13,8 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
   string private nftBaseURI;
   mapping (uint256 => string) private names;
 
+  uint256[50] private ______mc_gap;
+
   function initialize(address _DAO, string memory _nftBaseURI) public initializer {
     ERC721EnumerableUpgradeable.__ERC721Enumerable_init();
     __ERC721_init('MarsColony', 'MC');

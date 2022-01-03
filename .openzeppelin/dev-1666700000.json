@@ -1,11 +1,11 @@
 {
   "contracts": {
     "GameManager": {
-      "address": "0x53eF61E72e180466d09356eBf6e506000415f6Fc",
-      "constructorCode": "608060405234801561001057600080fd5b506141ae806100206000396000f3fe",
-      "bodyBytecodeHash": "6fecc710b3aae30e0a659e93b84b5836d9fa048c0bb66d02ab097af73107b295",
-      "localBytecodeHash": "7e9c974edc914a6f094329c68b46d197279e278c6ec142f0a748933eaab9eb90",
-      "deployedBytecodeHash": "7e9c974edc914a6f094329c68b46d197279e278c6ec142f0a748933eaab9eb90",
+      "address": "0x457ddac4581C1dc4259B87c6D9a4C1ECbeEc9BE3",
+      "constructorCode": "608060405234801561001057600080fd5b50614026806100206000396000f3fe",
+      "bodyBytecodeHash": "00380ac5bd9d452325e4f58cf3089338e5d4763a5c266392ac8312ec0d9e4067",
+      "localBytecodeHash": "430fddc8044a095a1accc4f6dc658c272d41ab74693c8867f02d539828402fd2",
+      "deployedBytecodeHash": "430fddc8044a095a1accc4f6dc658c272d41ab74693c8867f02d539828402fd2",
       "types": {
         "t_bool": {
           "id": "t_bool",
@@ -36,21 +36,63 @@
           "kind": "elementary",
           "label": "address"
         },
-        "t_mapping<t_uint256>": {
-          "id": "t_mapping<t_uint256>",
-          "valueType": "t_uint256",
-          "label": "mapping(key => uint256)",
-          "kind": "mapping"
+        "t_uint64": {
+          "id": "t_uint64",
+          "kind": "elementary",
+          "label": "uint64"
+        },
+        "t_struct<GameManager.LandData>": {
+          "id": "t_struct<GameManager.LandData>",
+          "kind": "struct",
+          "label": "GameManager.LandData",
+          "members": [
+            {
+              "label": "fixedEarnings",
+              "astId": 4966,
+              "type": "t_uint256",
+              "src": "506:21:31"
+            },
+            {
+              "label": "lastCLNYCheckout",
+              "astId": 4968,
+              "type": "t_uint64",
+              "src": "533:23:31"
+            },
+            {
+              "label": "baseStation",
+              "astId": 4970,
+              "type": "t_uint8",
+              "src": "562:17:31"
+            },
+            {
+              "label": "transport",
+              "astId": 4972,
+              "type": "t_uint8",
+              "src": "595:15:31"
+            },
+            {
+              "label": "robotAssembly",
+              "astId": 4974,
+              "type": "t_uint8",
+              "src": "641:19:31"
+            },
+            {
+              "label": "powerProduction",
+              "astId": 4976,
+              "type": "t_uint8",
+              "src": "691:21:31"
+            }
+          ]
         },
         "t_uint8": {
           "id": "t_uint8",
           "kind": "elementary",
           "label": "uint8"
         },
-        "t_mapping<t_uint8>": {
-          "id": "t_mapping<t_uint8>",
-          "valueType": "t_uint8",
-          "label": "mapping(key => uint8)",
+        "t_mapping<t_struct<GameManager.LandData>>": {
+          "id": "t_mapping<t_struct<GameManager.LandData>>",
+          "valueType": "t_struct<GameManager.LandData>",
+          "label": "mapping(key => GameManager.LandData)",
           "kind": "mapping"
         }
       },
@@ -75,9 +117,9 @@
           "contract": "ContextUpgradeable",
           "path": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol",
           "label": "__gap",
-          "astId": 474,
+          "astId": 2203,
           "type": "t_array:50<t_uint256>",
-          "src": "1092:25:3"
+          "src": "1092:25:11"
         },
         {
           "contract": "PausableUpgradeable",
@@ -99,89 +141,65 @@
           "contract": "DAOOwnershipInitializable",
           "path": "project:/contracts/DAOOwnershipInitializable.sol",
           "label": "DAO",
-          "astId": 2902,
+          "astId": 4129,
           "type": "t_address",
-          "src": "104:18:20"
+          "src": "114:18:26"
         },
         {
           "contract": "GameManager",
           "path": "project:/contracts/GameManager.sol",
           "label": "price",
-          "astId": 3336,
+          "astId": 4958,
           "type": "t_uint256",
-          "src": "370:20:24"
-        },
-        {
-          "contract": "GameManager",
-          "path": "project:/contracts/GameManager.sol",
-          "label": "maxTokenId",
-          "astId": 3338,
-          "type": "t_uint256",
-          "src": "395:25:24"
+          "src": "370:20:31"
         },
         {
           "contract": "GameManager",
           "path": "project:/contracts/GameManager.sol",
           "label": "CLNYAddress",
-          "astId": 3340,
+          "astId": 4960,
           "type": "t_address",
-          "src": "425:26:24"
+          "src": "395:26:31"
+        },
+        {
+          "contract": "GameManager",
+          "path": "project:/contracts/GameManager.sol",
+          "label": "maxTokenId",
+          "astId": 4962,
+          "type": "t_uint64",
+          "src": "426:24:31"
         },
         {
           "contract": "GameManager",
           "path": "project:/contracts/GameManager.sol",
           "label": "MCAddress",
-          "astId": 3342,
+          "astId": 4964,
           "type": "t_address",
-          "src": "455:24:24"
+          "src": "455:24:31"
         },
         {
           "contract": "GameManager",
           "path": "project:/contracts/GameManager.sol",
-          "label": "lastCLNYCheckout",
-          "astId": 3346,
-          "type": "t_mapping<t_uint256>",
-          "src": "484:53:24"
+          "label": "tokenData",
+          "astId": 4982,
+          "type": "t_mapping<t_struct<GameManager.LandData>>",
+          "src": "746:47:31"
         },
         {
           "contract": "GameManager",
           "path": "project:/contracts/GameManager.sol",
-          "label": "baseStations",
-          "astId": 3350,
-          "type": "t_mapping<t_uint8>",
-          "src": "542:47:24"
+          "label": "testFunctionDone",
+          "astId": 4984,
+          "type": "t_uint256",
+          "src": "798:24:31"
         },
         {
           "contract": "GameManager",
           "path": "project:/contracts/GameManager.sol",
-          "label": "transports",
-          "astId": 3354,
-          "type": "t_mapping<t_uint8>",
-          "src": "603:45:24"
-        },
-        {
-          "contract": "GameManager",
-          "path": "project:/contracts/GameManager.sol",
-          "label": "robotAssemblies",
-          "astId": 3358,
-          "type": "t_mapping<t_uint8>",
-          "src": "677:50:24"
-        },
-        {
-          "contract": "GameManager",
-          "path": "project:/contracts/GameManager.sol",
-          "label": "powerProductions",
-          "astId": 3362,
-          "type": "t_mapping<t_uint8>",
-          "src": "756:51:24"
-        },
-        {
-          "contract": "GameManager",
-          "path": "project:/contracts/GameManager.sol",
-          "label": "fixedEarnings",
-          "astId": 3366,
-          "type": "t_mapping<t_uint256>",
-          "src": "837:50:24"
+          "label": "______gm_gap",
+          "astId": 4988,
+          "type": "t_array:49<t_uint256>",
+          "src": "827:32:31"
         }
       ],
       "warnings": {
@@ -190,8 +208,141 @@
         "hasDelegateCall": false,
         "hasInitialValuesInDeclarations": false,
         "uninitializedBaseContracts": [],
-        "storageUncheckedVars": [],
-        "storageDiff": []
+        "storageUncheckedVars": [
+          {
+            "contract": "GameManager",
+            "path": "project:/contracts/GameManager.sol",
+            "label": "tokenData",
+            "astId": 4982,
+            "type": "t_mapping<t_struct<GameManager.LandData>>",
+            "src": "746:47:31"
+          }
+        ],
+        "storageDiff": [
+          {
+            "action": "delete",
+            "original": {
+              "index": 7,
+              "contract": "GameManager",
+              "path": "project:/contracts/GameManager.sol",
+              "label": "maxTokenId",
+              "astId": 3338,
+              "type": "t_uint256",
+              "src": "395:25:24"
+            }
+          },
+          {
+            "action": "insert",
+            "updated": {
+              "index": 8,
+              "contract": "GameManager",
+              "path": "project:/contracts/GameManager.sol",
+              "label": "maxTokenId",
+              "astId": 4962,
+              "type": "t_uint64",
+              "src": "426:24:31"
+            }
+          },
+          {
+            "action": "replace",
+            "updated": {
+              "index": 10,
+              "contract": "GameManager",
+              "path": "project:/contracts/GameManager.sol",
+              "label": "tokenData",
+              "astId": 4982,
+              "type": "t_mapping<t_struct<GameManager.LandData>>",
+              "src": "746:47:31"
+            },
+            "original": {
+              "index": 10,
+              "contract": "GameManager",
+              "path": "project:/contracts/GameManager.sol",
+              "label": "lastCLNYCheckout",
+              "astId": 3346,
+              "type": "t_mapping<t_uint256>",
+              "src": "484:53:24"
+            }
+          },
+          {
+            "action": "replace",
+            "updated": {
+              "index": 11,
+              "contract": "GameManager",
+              "path": "project:/contracts/GameManager.sol",
+              "label": "testFunctionDone",
+              "astId": 4984,
+              "type": "t_uint256",
+              "src": "798:24:31"
+            },
+            "original": {
+              "index": 11,
+              "contract": "GameManager",
+              "path": "project:/contracts/GameManager.sol",
+              "label": "baseStations",
+              "astId": 3350,
+              "type": "t_mapping<t_uint8>",
+              "src": "542:47:24"
+            }
+          },
+          {
+            "action": "replace",
+            "updated": {
+              "index": 12,
+              "contract": "GameManager",
+              "path": "project:/contracts/GameManager.sol",
+              "label": "______gm_gap",
+              "astId": 4988,
+              "type": "t_array:49<t_uint256>",
+              "src": "827:32:31"
+            },
+            "original": {
+              "index": 12,
+              "contract": "GameManager",
+              "path": "project:/contracts/GameManager.sol",
+              "label": "transports",
+              "astId": 3354,
+              "type": "t_mapping<t_uint8>",
+              "src": "603:45:24"
+            }
+          },
+          {
+            "action": "pop",
+            "original": {
+              "index": 13,
+              "contract": "GameManager",
+              "path": "project:/contracts/GameManager.sol",
+              "label": "robotAssemblies",
+              "astId": 3358,
+              "type": "t_mapping<t_uint8>",
+              "src": "677:50:24"
+            }
+          },
+          {
+            "action": "pop",
+            "original": {
+              "index": 14,
+              "contract": "GameManager",
+              "path": "project:/contracts/GameManager.sol",
+              "label": "powerProductions",
+              "astId": 3362,
+              "type": "t_mapping<t_uint8>",
+              "src": "756:51:24"
+            }
+          },
+          {
+            "action": "pop",
+            "original": {
+              "index": 15,
+              "contract": "GameManager",
+              "path": "project:/contracts/GameManager.sol",
+              "label": "fixedEarnings",
+              "astId": 3366,
+              "type": "t_mapping<t_uint256>",
+              "src": "837:50:24"
+            }
+          }
+        ]
       }
     }
   },
