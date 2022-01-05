@@ -6,7 +6,7 @@ const CLNY = artifacts.require('CLNY');
 const GM = artifacts.require('GameManager');
 
 contract('Claiming', (accounts) => {
-  const [owner, user1, , , , proxyOwner] = accounts;
+  const [owner, user1] = accounts;
 
   const TOKEN = 100;
   let mc;

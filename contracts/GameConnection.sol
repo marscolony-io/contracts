@@ -27,7 +27,6 @@ abstract contract GameConnection {
     GameManager = _GameManager;
   }
 
-  // TODO test transferDAO
   function transferDAO(address _DAO) external onlyDAO {
     DAO = _DAO;
   }

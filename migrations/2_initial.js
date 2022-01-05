@@ -4,10 +4,16 @@ const MC = artifacts.require('MC');
 const CLNY = artifacts.require('CLNY');
 const GameManager = artifacts.require('GameManager');
 
-module.exports = async (deployer, network, addresses) => {
-  await deployProxy(CLNY, [addresses[0]], { deployer });
-  await deployProxy(MC, [addresses[0], 'https://meta.marscolony.io/'], { deployer });
-  await deployProxy(GameManager, [addresses[0], CLNY.address, MC.address], { deployer });
+module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
+  await deployProxy(CLNY, [DAO], { deployer });
+  await deployProxy(MC, [DAO, 'https://meta.marscolony.io/'], { deployer });
+  await deployProxy(GameManager, [
+    DAO,
+    CLNY.address,
+    MC.address,
+    treasury,
+    liquidity,
+  ], { deployer });
   
   const _MC = await MC.deployed();
   const _CLNY = await CLNY.deployed();

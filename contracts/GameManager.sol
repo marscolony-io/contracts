@@ -15,6 +15,10 @@ contract GameManager is PausableUpgradeable {
 
   address public DAO; // owner
 
+  address public treasury;
+  
+  address public liquidity;
+
   uint256 public price;
 
   address public CLNYAddress;
@@ -57,7 +61,9 @@ contract GameManager is PausableUpgradeable {
   function initialize(
     address _DAO,
     address _CLNYAddress,
-    address _MCAddress
+    address _MCAddress,
+    address _treasury,
+    address _liquidity
   ) public initializer {
     __Pausable_init();
     DAO = _DAO;
@@ -65,6 +71,22 @@ contract GameManager is PausableUpgradeable {
     MCAddress = _MCAddress;
     maxTokenId = 21000;
     price = 250 ether;
+    treasury = _treasury;
+    liquidity = _liquidity;
+  }
+
+  /**
+   * From SafeMath
+   */
+  function sub(
+    uint256 a,
+    uint256 b,
+    string memory errorMessage
+  ) internal pure returns (uint256) {
+    unchecked {
+      require(b <= a, errorMessage);
+      return a - b;
+    }
   }
 
   /**
@@ -72,6 +94,20 @@ contract GameManager is PausableUpgradeable {
    */
   function transferDAO(address _DAO) external onlyDAO {
     DAO = _DAO;
+  }
+
+  /**
+   * Sets treasury address
+   */
+  function setTreasury(address _treasury) external onlyDAO {
+    treasury = _treasury;
+  }
+
+  /**
+   * Sets liquidity address
+   */
+  function setLiquidity(address _liquidity) external onlyDAO {
+    liquidity = _liquidity;
   }
 
   /**
@@ -189,7 +225,7 @@ contract GameManager is PausableUpgradeable {
 
   function getEarned(uint256 tokenId) public view returns (uint256) {
     return getEarningSpeed(tokenId)
-      * (block.timestamp - getLastCheckout(tokenId)) * 10 ** 18 / (24 * 60 * 60)
+      * sub(block.timestamp, getLastCheckout(tokenId), 'Math error') * 10 ** 18 / (24 * 60 * 60)
       + tokenData[tokenId].fixedEarnings;
   }
 
@@ -231,7 +267,7 @@ contract GameManager is PausableUpgradeable {
    * `uint8 level` is very important - it prevents accidental spending ERC20 with double transactions
    */
   function buildTransport(uint256 tokenId, uint8 level) external onlyTokenOwner(tokenId) whenNotPaused {
-    require(tokenData[tokenId].transport == level - 1, 'Can buy only next level');
+    require(tokenData[tokenId].transport == sub(level, 1, 'Math error'), 'Can buy only next level');
     _deduct(level);
     fixEarnings(tokenId);
     tokenData[tokenId].transport = level;
@@ -243,7 +279,7 @@ contract GameManager is PausableUpgradeable {
    * `uint8 level` is very important - it prevents accidental spending ERC20 with double transactions
    */
   function buildRobotAssembly(uint256 tokenId, uint8 level) external onlyTokenOwner(tokenId) whenNotPaused {
-    require(tokenData[tokenId].robotAssembly == level - 1, 'Can buy only next level');
+    require(tokenData[tokenId].robotAssembly == sub(level, 1, 'Math error'), 'Can buy only next level');
     _deduct(level);
     fixEarnings(tokenId);
     tokenData[tokenId].robotAssembly = level;
@@ -255,7 +291,7 @@ contract GameManager is PausableUpgradeable {
    * `uint8 level` is very important - it prevents accidental spending ERC20 with double transactions
    */
   function buildPowerProduction(uint256 tokenId, uint8 level) external onlyTokenOwner(tokenId) whenNotPaused {
-    require(tokenData[tokenId].powerProduction == level - 1, 'Can buy only next level');
+    require(tokenData[tokenId].powerProduction == sub(level, 1, 'Math error'), 'Can buy only next level');
     _deduct(level);
     fixEarnings(tokenId);
     tokenData[tokenId].powerProduction = level;
@@ -282,10 +318,10 @@ contract GameManager is PausableUpgradeable {
     require (tokenIds.length != 0, 'Empty array');
     for (uint8 i = 0; i < tokenIds.length; i++) {
       require (msg.sender == NFTMintableInterface(MCAddress).ownerOf(tokenIds[i]));
-      ERC20MintBurnInterface(CLNYAddress).mint(
-        msg.sender,
-        getEarned(tokenIds[i])
-      );
+      uint256 earned = getEarned(tokenIds[i]);
+      ERC20MintBurnInterface(CLNYAddress).mint(msg.sender, earned);
+      ERC20MintBurnInterface(CLNYAddress).mint(treasury, earned * 31 / 49);
+      ERC20MintBurnInterface(CLNYAddress).mint(liquidity, earned * 31 / 49);
       tokenData[tokenIds[i]].fixedEarnings = 0;
       tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
     }
