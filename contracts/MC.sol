@@ -4,18 +4,22 @@
 
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
-import './ERC721Enumerable.sol';
+import './ERC721EnumerableUpgradeable.sol';
 import './GameConnection.sol';
-import '@openzeppelin/contracts/security/Pausable.sol';
+import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 
 
-contract MC is ERC721Enumerable, GameConnection, Pausable {
-  string private nftBaseURI = '';
+contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable {
+  string private nftBaseURI;
+  mapping (uint256 => string) public names; // token owner can set a name for their NFT
 
-  constructor (
-    address _DAO,
-    string memory _nftBaseURI
-  ) ERC721('MarsColony', 'MC') GameConnection(_DAO) {
+  uint256[50] private ______mc_gap;
+
+  function initialize(address _DAO, string memory _nftBaseURI) public initializer {
+    ERC721EnumerableUpgradeable.__ERC721Enumerable_init();
+    __ERC721_init('MarsColony', 'MC');
+    GameConnection.__GameConnection_init(_DAO);
+    PausableUpgradeable.__Pausable_init();
     nftBaseURI = _nftBaseURI;
   }
 
@@ -56,8 +60,12 @@ contract MC is ERC721Enumerable, GameConnection, Pausable {
     }
   }
 
-  // // only for tests
-  // function dayBack(uint256 tokenId) external onlyTokenOwner(tokenId) {
-  //   lastCLNYCheckout[tokenId] = lastCLNYCheckout[tokenId] - 10 * 60 * 60 * 24;
-  // }
+  function setName(uint256 tokenId, string memory _name) external {
+    require (ownerOf(tokenId) == msg.sender, 'Not your token');
+    names[tokenId] = _name;
+  }
+
+  function getName(uint256 tokenId) external view returns (string memory) {
+    return names[tokenId];
+  }
 }

@@ -6,7 +6,7 @@ const CLNY = artifacts.require('CLNY');
 const GM = artifacts.require('GameManager');
 
 contract('Claiming', (accounts) => {
-  const [owner, user1] = accounts;
+  const [owner, user1, , , , proxyOwner] = accounts;
 
   const TOKEN = 100;
   let mc;
@@ -17,28 +17,27 @@ contract('Claiming', (accounts) => {
     clny = await CLNY.deployed();
     mc = await MC.deployed();
     gm = await GM.deployed();
-    await gm.setPrice(web3.utils.toWei('0.1'));
+    await gm.setPrice(web3.utils.toWei('0.1'), { from: owner });
   });
 
   it('Claim one: #100', async () => {
     const fee = await gm.getFee(1);
-    const tx = await gm.claimOne(TOKEN, {
+    const tx = await gm.claimOne(100, {
       value: fee,
       from: user1,
     });
-    const owner100 = await mc.ownerOf.call(TOKEN);
+    const owner100 = await mc.ownerOf.call(100);
     assert(owner100 === user1);
     const mcTx = await truffleAssert.createTransactionResult(mc, tx.tx);
     truffleAssert.eventEmitted(mcTx, 'Transfer', (ev) => {
       return ev.from === '0x0000000000000000000000000000000000000000'
         && ev.to === user1
-        && ev.tokenId.toString() === TOKEN.toString();
+        && ev.tokenId.toString() === '100';
     });
   });
 
   it('Check metadata of #100', async () => {
     const tokenURI = await mc.tokenURI(TOKEN);
-    assert(typeof tokenURI === 'string');
     assert(tokenURI !== '');
     assert(tokenURI.startsWith('https://'));
   });
