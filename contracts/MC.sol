@@ -11,7 +11,7 @@ import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 
 contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable {
   string private nftBaseURI;
-  mapping (uint256 => string) private names;
+  mapping (uint256 => string) public names; // token owner can set a name for their NFT
 
   uint256[50] private ______mc_gap;
 
@@ -68,9 +68,4 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
   function getName(uint256 tokenId) external view returns (string memory) {
     return names[tokenId];
   }
-
-  // // only for tests
-  // function dayBack(uint256 tokenId) external onlyTokenOwner(tokenId) {
-  //   lastCLNYCheckout[tokenId] = lastCLNYCheckout[tokenId] - 10 * 60 * 60 * 24;
-  // }
 }

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
-
 
 abstract contract GameConnection {
   address public GameManager;
@@ -11,6 +9,7 @@ abstract contract GameConnection {
   uint256[50] private ______gc_gap;
 
   function __GameConnection_init(address _DAO) internal {
+    require (DAO == address(0));
     DAO = _DAO;
   }
 

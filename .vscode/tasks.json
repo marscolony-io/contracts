@@ -14,7 +14,7 @@
       }
     },
     {
-      "label": "truffle test harmony",
+      "label": "truffle test harmony testnet",
       "type": "shell",
       "command": "truffle test ${file} --network hartest",
       "problemMatcher": [],

@@ -12,16 +12,12 @@ contract('Claiming', (accounts) => {
   let mc;
   let clny;
   let gm;
-  let gp;
 
   before(async () => {
     clny = await CLNY.deployed();
     mc = await MC.deployed();
     gm = await GM.deployed();
-    console.log('GM: ', gm.address);
-    // console.log(gp.abi, gp.address);
-    const tx = await gm.setPrice(web3.utils.toWei('0.1'));
-    // console.log(tx);
+    await gm.setPrice(web3.utils.toWei('0.1'), { from: owner });
   });
 
   it('Claim one: #100', async () => {
@@ -30,8 +26,8 @@ contract('Claiming', (accounts) => {
       value: fee,
       from: user1,
     });
-    // const owner100 = await mc.ownerOf.call(100);
-    // assert(owner100 === user1);
+    const owner100 = await mc.ownerOf.call(100);
+    assert(owner100 === user1);
     const mcTx = await truffleAssert.createTransactionResult(mc, tx.tx);
     truffleAssert.eventEmitted(mcTx, 'Transfer', (ev) => {
       return ev.from === '0x0000000000000000000000000000000000000000'
@@ -42,7 +38,6 @@ contract('Claiming', (accounts) => {
 
   it('Check metadata of #100', async () => {
     const tokenURI = await mc.tokenURI(TOKEN);
-    assert(typeof tokenURI === 'string');
     assert(tokenURI !== '');
     assert(tokenURI.startsWith('https://'));
   });

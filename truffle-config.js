@@ -1,18 +1,9 @@
-const { projectId, key, mnemonic, keys } = require('./secrets.json');
+const { projectId, key, mnemonic } = require('./secrets.json');
 const PrivateKeyProvider = require('truffle-privatekey-provider');
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 
 module.exports = {
-  // Uncommenting the defaults below 
-  // provides for an easier quick-start with Ganache.
-  // You can also follow this format for other networks;
-  // see <http://truffleframework.com/docs/advanced/configuration>
-  // for more details on how to specify configuration options!
-  //
   networks: {
-    develop: {
-      defaultEtherBalance: 500000000,
-    },
     development: {
       host: "127.0.0.1",
       port: 7545,
