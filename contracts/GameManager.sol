@@ -321,7 +321,7 @@ contract GameManager is PausableUpgradeable {
       uint256 earned = getEarned(tokenIds[i]);
       ERC20MintBurnInterface(CLNYAddress).mint(msg.sender, earned);
       ERC20MintBurnInterface(CLNYAddress).mint(treasury, earned * 31 / 49);
-      ERC20MintBurnInterface(CLNYAddress).mint(liquidity, earned * 31 / 49);
+      ERC20MintBurnInterface(CLNYAddress).mint(liquidity, earned * 20 / 49);
       tokenData[tokenIds[i]].fixedEarnings = 0;
       tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
     }

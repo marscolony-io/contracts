@@ -5,8 +5,12 @@ const CLNY = artifacts.require('CLNY');
 const GameManager = artifacts.require('GameManager');
 
 module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
+  console.log({ DAO, treasury, liquidity });
   await deployProxy(CLNY, [DAO], { deployer });
-  await deployProxy(MC, [DAO, 'https://meta.marscolony.io/'], { deployer });
+  await deployProxy(MC, [
+    DAO,
+    network === 'hartest' ? 'https://meta-test.marscolony.io/' : 'https://meta.marscolony.io/',
+  ], { deployer });
   await deployProxy(GameManager, [
     DAO,
     CLNY.address,
@@ -19,7 +23,6 @@ module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
   const _CLNY = await CLNY.deployed();
   await GameManager.deployed();
 
-  console.log("INITTTTTT");
   await Promise.all([
     _CLNY.setGameManager(GameManager.address),
     _MC.setGameManager(GameManager.address),
@@ -32,4 +35,5 @@ module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
   });
 
   // TODO move DAO to particular addresses for real networks
+  // or not to forget to do it manually
 };
