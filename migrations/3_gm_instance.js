@@ -5,8 +5,9 @@
  * ```
  */
 
-const GameManager = artifacts.require('GameManager');
+const GM = artifacts.require('GameManager');
+const CLNY = artifacts.require('CLNY');
 
 module.exports = async (deployer, network, addresses) => {
-  // await deployer.deploy(GameManager);
+  // const inst = await deployer.deploy(CLNY, addresses[0]);
 };

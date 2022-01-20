@@ -38,6 +38,18 @@ contract GameManager is PausableUpgradeable {
     uint8 powerProduction; // 0 or 1, 2, 3 (levels)
   }
 
+  /**
+   * Data to output
+   */
+  struct AttributeData {
+    uint256 speed; // CLNY earning speed
+    uint256 earned;
+    uint8 baseStation; // 0 or 1
+    uint8 transport; // 0 or 1, 2, 3 (levels)
+    uint8 robotAssembly; // 0 or 1, 2, 3 (levels)
+    uint8 powerProduction; // 0 or 1, 2, 3 (levels)
+  }
+
   mapping (uint256 => LandData) private tokenData;
 
   uint256[50] private ______gm_gap_2;
@@ -229,7 +241,21 @@ contract GameManager is PausableUpgradeable {
       + tokenData[tokenId].fixedEarnings;
   }
 
+  /**
+   * deprecated
+   */
+  function getEarningData(uint256[] memory tokenIds) public view returns (uint256, uint256) {
+    uint256 result = 0;
+    uint256 speed = 0;
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      result = result + getEarned(tokenIds[i]);
+      speed = speed + getEarningSpeed(tokenIds[i]);
+    }
+    return (result, speed);
+  }
+
   function getEarningSpeed(uint256 tokenId) public view returns (uint256) {
+    require (NFTMintableInterface(MCAddress).ownerOf(tokenId) != address(0)); // reverts itself
     uint256 speed = 1; // bare land
     if (tokenData[tokenId].baseStation > 0) {
       speed = speed + 1; // base station gives +1
@@ -299,7 +325,7 @@ contract GameManager is PausableUpgradeable {
   }
 
   /**
-   * Enhancements getter
+   * deprecated
    */
   function getEnhancements(uint256 tokenId) external view returns (uint8, uint8, uint8, uint8) {
     return (
@@ -308,6 +334,36 @@ contract GameManager is PausableUpgradeable {
       tokenData[tokenId].robotAssembly,
       tokenData[tokenId].powerProduction
     );
+  }
+
+  /**
+   * deprecated
+   */
+  function getAttributes(uint256 tokenId) external view returns (uint8, uint8, uint8, uint8, uint256, uint256) {
+    return (
+      tokenData[tokenId].baseStation,
+      tokenData[tokenId].transport,
+      tokenData[tokenId].robotAssembly,
+      tokenData[tokenId].powerProduction,
+      getEarned(tokenId),
+      getEarningSpeed(tokenId)
+    );
+  }
+
+  function getAttributesMany(uint256[] calldata tokenIds) external view returns (AttributeData[] memory) {
+    AttributeData[] memory result = new AttributeData[](tokenIds.length);
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      uint256 tokenId = tokenIds[i];
+      result[i] = AttributeData(
+        getEarningSpeed(tokenId),
+        getEarned(tokenId),
+        tokenData[tokenId].baseStation,
+        tokenData[tokenId].transport,
+        tokenData[tokenId].robotAssembly,
+        tokenData[tokenId].powerProduction
+      );
+    }
+    return result;
   }
 
   /**
@@ -337,5 +393,10 @@ contract GameManager is PausableUpgradeable {
     require (address(this).balance != 0, 'Nothing to withdraw');
     (bool success, ) = payable(DAO).call{ value: value }('');
     require(success, 'Withdraw failed');
+  }
+
+  // TODO test before execute
+  function burn10kTreasury() external onlyDAO {
+    ERC20MintBurnInterface(CLNYAddress).burn(treasury, 10 * 10 ** 18);
   }
 }

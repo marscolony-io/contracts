@@ -79,6 +79,22 @@ contract('MC', (accounts) => {
     assert.includeMembers(allTokens.map(n => parseInt(n)), [456, 457]);
   });
 
+  it('Check allTokensPaginate view function', async () => {
+    const allTokens = await mc.allTokensPaginate(0, 0);
+    assert.lengthOf(allTokens, 1); // [456]
+    assert.includeMembers(allTokens.map(n => parseInt(n)), [456]);
+    const allTokens1 = await mc.allTokensPaginate(1, 1);
+    assert.lengthOf(allTokens1, 1); // [457]
+    assert.includeMembers(allTokens1.map(n => parseInt(n)), [457]);
+    const allTokens2 = await mc.allTokensPaginate(10, 100);
+    assert.lengthOf(allTokens2, 0);
+    const allTokens3 = await mc.allTokensPaginate(1000, 100);
+    assert.lengthOf(allTokens3, 0);
+    const allTokens4 = await mc.allTokensPaginate(0, 10);
+    assert.lengthOf(allTokens4, 2); // [456, 457]
+    assert.includeMembers(allTokens4.map(n => parseInt(n)), [456, 457]);
+  });
+
   it('Check allMyTokens view function', async () => {
     const allMyTokens = await mc.allMyTokens({ from: user1 });
     assert.lengthOf(allMyTokens, 1); // [457]

@@ -3,5 +3,6 @@ node_modules/
 secrets.json
 
 build/*
-.openzeppelin/.session
 .openzeppelin/*
+
+!.gitkeep

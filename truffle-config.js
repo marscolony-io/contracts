@@ -47,7 +47,7 @@ module.exports = {
         return new HDWalletProvider({
           mnemonic: mnemonic.hart,
           providerOrUrl: 'https://api.s0.b.hmny.io',
-          derivationPath: `m/44'/60'/0'/0/`
+          derivationPath: `m/44'/1023'/0'/0/`
         });
       },
       network_id: 1666700000,
@@ -56,8 +56,10 @@ module.exports = {
       provider: () => {
         return new HDWalletProvider({
           mnemonic: mnemonic.harmain,
-          providerOrUrl: 'https://api.harmony.one',
-          derivationPath: `m/44'/60'/0'/0/`
+          providerOrUrl: 'https://harmony-0-rpc.gateway.pokt.network', // 'https://api.harmony.one',
+          derivationPath: `m/44'/60'/0'/0/`,
+          confirmations: 0,
+          timeoutBlocks: 200,
         });
       },
       network_id: 1666600000,

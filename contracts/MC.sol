@@ -4,7 +4,7 @@
 
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
-import './ERC721EnumerableUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol';
 import './GameConnection.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 
@@ -43,10 +43,6 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
     _unpause();
   }
 
-  function allTokens() external view returns(uint256[] memory) {
-    return _allTokens;
-  }
-
   function allMyTokens() external view returns(uint256[] memory) {
     uint256 tokenCount = balanceOf(msg.sender);
     if (tokenCount == 0) {
@@ -58,6 +54,19 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
       }
       return result;
     }
+  }
+
+  function allTokensPaginate(uint256 _from, uint256 _to) external view returns(uint256[] memory) {
+    uint256 tokenCount = ERC721EnumerableUpgradeable.totalSupply();
+    if (tokenCount <= _from || _from > _to || tokenCount == 0) {
+      return new uint256[](0);
+    }
+    uint256 to = (tokenCount - 1 > _to) ? _to : tokenCount - 1;
+    uint256[] memory result = new uint256[](to - _from + 1);
+    for (uint256 i = _from; i <= to; i++) {
+      result[i - _from] = tokenByIndex(i);
+    }
+    return result;
   }
 
   function setName(uint256 tokenId, string memory _name) external {
