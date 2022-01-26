@@ -395,7 +395,7 @@ contract GameManager is PausableUpgradeable {
     require(success, 'Withdraw failed');
   }
 
-  function burn10kTreasury() external onlyDAO {
-    ERC20MintBurnInterface(CLNYAddress).burn(treasury, 10 * 10 ** 18);
+  function burnTreasury(uint256 amount) external onlyDAO {
+    ERC20MintBurnInterface(CLNYAddress).burn(treasury, amount);
   }
 }
