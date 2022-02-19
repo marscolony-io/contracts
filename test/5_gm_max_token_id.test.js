@@ -18,7 +18,7 @@ contract('maxTokenId', (accounts) => {
   
   it('[Token id out of bounds] Claim #21003', async () => {
     const fee = await gm.getFee(1);
-    const tx = gm.claimOne(21003, {
+    const tx = gm.claim([21003], {
       from: DAO,
       value: fee,
     });
@@ -36,7 +36,7 @@ contract('maxTokenId', (accounts) => {
 
   it('Claim #21999', async () => {
     const fee = await gm.price();
-    const tx = await gm.claimOne(21999, {
+    const tx = await gm.claim([21999], {
       value: fee,
       from: user1,
     });
@@ -52,7 +52,7 @@ contract('maxTokenId', (accounts) => {
 
   it('[Token id out of bounds] Claim #22003', async () => {
     const fee = await gm.getFee(1);
-    const tx = gm.claimOne(22003, {
+    const tx = gm.claim([22003], {
       from: DAO,
       value: fee,
     });

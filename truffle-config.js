@@ -9,6 +9,11 @@ module.exports = {
       port: 7545,
       network_id: "*"
     },
+    develop: {
+      host: "127.0.0.1",
+      port: 9545,
+      network_id: "*"
+    },
     ropsten: {
       provider: new PrivateKeyProvider(key, `https://ropsten.infura.io/v3/${projectId}`),
       network_id: 3,       // Ropsten's id

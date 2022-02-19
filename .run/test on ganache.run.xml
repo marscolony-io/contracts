@@ -1,5 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="test on ganache" type="NodeJSConfigurationType" path-to-node="/usr/local/bin/truffle" node-parameters="test" path-to-js-file="$FilePath$" working-dir="$PROJECT_DIR$/test">
-    <method v="2" />
-  </configuration>
-</component>
