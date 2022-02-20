@@ -53,20 +53,25 @@ contract('Build and set position test', (accounts) => {
       ['power production', 'placePowerProduction', 'powerProductionPlacement'],
     ]) {
       await expectRevert(
-        gm[placingMethod](1, 5, 7, { from: user2 }),
+        gm[placingMethod](1, 5, 7, true, { from: user2 }),
         'You aren\'t the token owner',
       );
       await expectRevert(
-        gm[placingMethod](2, 5, 7, { from: user1 }),
+        gm[placingMethod](2, 5, 7, true, { from: user1 }),
         `There should be a ${enhancement}`,
       );
       const clnyBalance = await clny.balanceOf(user1);
       expect(parseInt(clnyBalance)).to.be.above(0);
-      await gm[placingMethod](1, 5, 7, { from: user1 });
+      await gm[placingMethod](1, 5, 7, true, { from: user1 });
       const clnyBalance2 = await clny.balanceOf(user1);
       // shouldn't deduct any clny for placing of unplaced
       expect(parseInt(clnyBalance2)).to.be.equal(parseInt(clnyBalance));
-      await gm[placingMethod](1, 50, 70, { from: user1 });
+      // expecting free but we can't do it free
+      await expectRevert(
+        gm[placingMethod](1, 50, 70, true, { from: user1 }),
+        'You can place only for CLNY now',
+      );
+      await gm[placingMethod](1, 50, 70, false, { from: user1 });
       const clnyBalance3 = await clny.balanceOf(user1);
       // should deduct 5 clny for next placing
       // !!! frontend should notify user about this

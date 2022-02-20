@@ -292,9 +292,10 @@ contract GameManager is PausableUpgradeable {
     baseStationsPlacement[tokenId].y = y;
   }
 
-  function placeBaseStation(uint256 tokenId, uint32 x, uint32 y) external onlyTokenOwner(tokenId) whenNotPaused {
+  function placeBaseStation(uint256 tokenId, uint32 x, uint32 y, bool free) external onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].baseStation != 0, 'There should be a base station');
     if (baseStationsPlacement[tokenId].x != 0 || baseStationsPlacement[tokenId].y != 0) {
+      require(!free, 'You can place only for CLNY now');
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
       _deduct(PLACEMENT_LEVEL);
@@ -324,9 +325,10 @@ contract GameManager is PausableUpgradeable {
     transportPlacement[tokenId].y = y;
   }
 
-  function placeTransport(uint256 tokenId, uint32 x, uint32 y) external onlyTokenOwner(tokenId) whenNotPaused {
+  function placeTransport(uint256 tokenId, uint32 x, uint32 y, bool free) external onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].transport != 0, 'There should be a transport');
     if (transportPlacement[tokenId].x != 0 || transportPlacement[tokenId].y != 0) {
+      require(!free, 'You can place only for CLNY now');
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
       _deduct(PLACEMENT_LEVEL);
@@ -356,9 +358,10 @@ contract GameManager is PausableUpgradeable {
     robotAssemblyPlacement[tokenId].y = y;
   }
 
-  function placeRobotAssembly(uint256 tokenId, uint32 x, uint32 y) external onlyTokenOwner(tokenId) whenNotPaused {
+  function placeRobotAssembly(uint256 tokenId, uint32 x, uint32 y, bool free) external onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].robotAssembly != 0, 'There should be a robot assembly');
     if (robotAssemblyPlacement[tokenId].x != 0 || robotAssemblyPlacement[tokenId].y != 0) {
+      require(!free, 'You can place only for CLNY now');
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
       _deduct(PLACEMENT_LEVEL);
@@ -388,9 +391,10 @@ contract GameManager is PausableUpgradeable {
     powerProductionPlacement[tokenId].y = y;
   }
 
-  function placePowerProduction(uint256 tokenId, uint32 x, uint32 y) external onlyTokenOwner(tokenId) whenNotPaused {
+  function placePowerProduction(uint256 tokenId, uint32 x, uint32 y, bool free) external onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].powerProduction != 0, 'There should be a power production');
     if (powerProductionPlacement[tokenId].x != 0 || powerProductionPlacement[tokenId].y != 0) {
+      require(!free, 'You can place only for CLNY now');
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
       _deduct(PLACEMENT_LEVEL);
