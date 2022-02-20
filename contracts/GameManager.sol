@@ -319,7 +319,6 @@ contract GameManager is PausableUpgradeable {
    * Builds and places transport
    */
   function buildAndPlaceTransport(uint256 tokenId, uint32 x, uint32 y) external {
-    require(tokenData[tokenId].transport == 0, 'Can place only when first building');
     buildTransport(tokenId, 1);
     transportPlacement[tokenId].x = x;
     transportPlacement[tokenId].y = y;
@@ -352,7 +351,6 @@ contract GameManager is PausableUpgradeable {
    * Builds and places robot assembly
    */
   function buildAndPlaceRobotAssembly(uint256 tokenId, uint32 x, uint32 y) external {
-    require(tokenData[tokenId].robotAssembly == 0, 'Can place only when first building');
     buildRobotAssembly(tokenId, 1);
     robotAssemblyPlacement[tokenId].x = x;
     robotAssemblyPlacement[tokenId].y = y;
@@ -385,7 +383,6 @@ contract GameManager is PausableUpgradeable {
    * Builds and places power production
    */
   function buildAndPlacePowerProduction(uint256 tokenId, uint32 x, uint32 y) external {
-    require(tokenData[tokenId].powerProduction == 0, 'Can place only when first building');
     buildPowerProduction(tokenId, 1);
     powerProductionPlacement[tokenId].x = x;
     powerProductionPlacement[tokenId].y = y;

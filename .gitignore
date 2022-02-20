@@ -4,6 +4,7 @@ secrets.json
 
 build/*
 .openzeppelin/*
+test/.openzeppelin/*
 
 !.gitkeep
 

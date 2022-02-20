@@ -76,4 +76,31 @@ contract('Build and set position test', (accounts) => {
       expect(parseInt(y)).to.be.equal(70);
     }
   });
+
+  it('Place enhancements while building', async () => {
+    for (const [enhancement, placingMethod, placementGetter, cost, error] of [
+      ['base station', 'buildAndPlaceBaseStation', 'baseStationsPlacement', 30e18, 'There is already a base station'],
+      ['transport', 'buildAndPlaceTransport', 'transportPlacement', 120e18, 'Can buy only next level'],
+      ['robot assembly', 'buildAndPlaceRobotAssembly', 'robotAssemblyPlacement', 120e18, 'Can buy only next level'],
+      ['power production', 'buildAndPlacePowerProduction', 'powerProductionPlacement', 120e18, 'Can buy only next level'],
+    ]) {
+      await expectRevert(
+        gm[placingMethod](2, 5, 7, { from: user2 }),
+        'You aren\'t the token owner',
+      );
+      await expectRevert(
+        gm[placingMethod](1, 5, 7, { from: user1 }),
+        error,
+      );
+      const clnyBalance = await clny.balanceOf(user1);
+      expect(parseInt(clnyBalance)).to.be.above(0);
+      await gm[placingMethod](2, 5, 7, { from: user1 });
+      const clnyBalance2 = await clny.balanceOf(user1);
+      // should deduct cost of enhancement
+      expect(clnyBalance - clnyBalance2).to.be.approximately(cost, 5e10);
+      const { x, y } = await gm[placementGetter](2, { from: user1 });
+      expect(parseInt(x)).to.be.equal(5);
+      expect(parseInt(y)).to.be.equal(7);
+    }
+  });
 });
