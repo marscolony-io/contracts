@@ -66,9 +66,13 @@ contract GameManager is PausableUpgradeable {
   uint256[46] private ______gm_gap_2;
 
   event Airdrop (address indexed receiver, uint256 indexed tokenId);
+  // f9917faa5009c58ed8bd6a1c70b79e1fbefc8afe3e7142ba8b854ccb887fb262
   event BuildBaseStation (uint256 tokenId, address indexed owner);
+  // bce74c3d6a81a6ea4b55a703751c4fbad439c2ce8997bc12bb2463cb3f6d987b
   event BuildTransport (uint256 tokenId, address indexed owner, uint8 level);
+  // 6f4c6fa65abfbdb878065cf56239c87467b1308866c1f27dad012e666a589b68
   event BuildRobotAssembly (uint256 tokenId, address indexed owner, uint8 level);
+  // 9914b04dac571a45d7a7b33184088cbd4d62a2ed88e64602a6b8a6a93b3fb0a6
   event BuildPowerProduction (uint256 tokenId, address indexed owner, uint8 level);
 
   modifier onlyDAO {
@@ -192,12 +196,12 @@ contract GameManager is PausableUpgradeable {
   }
 
   uint8 constant BASE_STATION = 0;
-  uint8 constant PLACEMENT_LEVEL = 255;
   /** these constants (for sure just `_deduct` function) can be changed while upgrading */
   uint256 constant BASE_STATION_COST = 30;
   uint256 constant LEVEL_1_COST = 120;
   uint256 constant LEVEL_2_COST = 270;
   uint256 constant LEVEL_3_COST = 480;
+  uint8 constant PLACEMENT_LEVEL = 255;
   uint256 constant PLACEMENT_COST = 5;
 
   /**

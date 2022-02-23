@@ -23,11 +23,11 @@ contract CLNY is ERC20Upgradeable, GameConnection, PausableUpgradeable {
   // TODO total supply logic and limitations
 
   function burn(address _address, uint256 _amount) external onlyGameManager whenNotPaused {
-    _burn(_address,  _amount);
+    _burn(_address, _amount);
   }
 
   function mint(address _address, uint256 _amount) external onlyGameManager whenNotPaused {
-    _mint(_address,  _amount);
+    _mint(_address, _amount);
   }
 
   function pause() external onlyGameManager {
