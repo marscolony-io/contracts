@@ -146,20 +146,6 @@ contract GameManager is PausableUpgradeable {
     maxTokenId = _id;
   }
 
-  /**
-   * Sets ERC20 token address
-   */
-  function setCLNYAddress(address _address) external onlyDAO {
-    CLNYAddress = _address;
-  }
-
-  /**
-   * Sets ERC721 token address
-   */
-  function setMCAddress(address _address) external onlyDAO {
-    MCAddress = _address;
-  }
-
   function mintNFT(address _address, uint256 tokenId) private {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
     NFTMintableInterface(MCAddress).mint(_address, tokenId);
@@ -240,7 +226,7 @@ contract GameManager is PausableUpgradeable {
   }
 
   /**
-   * deprecated
+   * deprecated, use getAttributesMany
    */
   function getEarningData(uint256[] memory tokenIds) public view returns (uint256, uint256) {
     uint256 result = 0;
@@ -277,7 +263,7 @@ contract GameManager is PausableUpgradeable {
 
   /**
    * Builds base station
-   * deprecated
+   * deprecated: new base stations should be placed with buildAndPlaceBaseStation
    */
   function buildBaseStation(uint256 tokenId) public onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].baseStation == 0, 'There is already a base station');
@@ -296,6 +282,10 @@ contract GameManager is PausableUpgradeable {
     baseStationsPlacement[tokenId].y = y;
   }
 
+  /**
+   * Places base station
+   * deprecated: new base stations should be placed with buildAndPlaceBaseStation
+   */
   function placeBaseStation(uint256 tokenId, uint32 x, uint32 y, bool free) external onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].baseStation != 0, 'There should be a base station');
     if (baseStationsPlacement[tokenId].x != 0 || baseStationsPlacement[tokenId].y != 0) {
@@ -329,6 +319,10 @@ contract GameManager is PausableUpgradeable {
     transportPlacement[tokenId].y = y;
   }
 
+  /**
+   * Places transport
+   * deprecated: for migration only
+   */
   function placeTransport(uint256 tokenId, uint32 x, uint32 y, bool free) external onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].transport != 0, 'There should be a transport');
     if (transportPlacement[tokenId].x != 0 || transportPlacement[tokenId].y != 0) {
@@ -362,6 +356,10 @@ contract GameManager is PausableUpgradeable {
     robotAssemblyPlacement[tokenId].y = y;
   }
 
+  /**
+   * Places Robot Assembly
+   * deprecated: for migration only
+   */
   function placeRobotAssembly(uint256 tokenId, uint32 x, uint32 y, bool free) external onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].robotAssembly != 0, 'There should be a robot assembly');
     if (robotAssemblyPlacement[tokenId].x != 0 || robotAssemblyPlacement[tokenId].y != 0) {
@@ -395,6 +393,10 @@ contract GameManager is PausableUpgradeable {
     powerProductionPlacement[tokenId].y = y;
   }
 
+  /**
+   * Places Power Production
+   * deprecated: for migration only
+   */
   function placePowerProduction(uint256 tokenId, uint32 x, uint32 y, bool free) external onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].powerProduction != 0, 'There should be a power production');
     if (powerProductionPlacement[tokenId].x != 0 || powerProductionPlacement[tokenId].y != 0) {
@@ -408,7 +410,7 @@ contract GameManager is PausableUpgradeable {
   }
 
   /**
-   * deprecated
+   * deprecated, use getAttributesMany
    */
   function getEnhancements(uint256 tokenId) external view returns (uint8, uint8, uint8, uint8) {
     return (
@@ -420,7 +422,7 @@ contract GameManager is PausableUpgradeable {
   }
 
   /**
-   * deprecated
+   * deprecated, use getAttributesMany
    */
   function getAttributes(uint256 tokenId) external view returns (uint8, uint8, uint8, uint8, uint256, uint256) {
     return (
@@ -476,9 +478,5 @@ contract GameManager is PausableUpgradeable {
     require (address(this).balance != 0, 'Nothing to withdraw');
     (bool success, ) = payable(DAO).call{ value: value }('');
     require(success, 'Withdraw failed');
-  }
-
-  function burnTreasury(uint256 amount) external onlyDAO {
-    ERC20MintBurnInterface(CLNYAddress).burn(treasury, amount);
   }
 }
