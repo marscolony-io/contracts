@@ -22,7 +22,7 @@ contract('Claiming', (accounts) => {
 
   it('Claim one: #100', async () => {
     const fee = await gm.getFee(1);
-    const tx = await gm.claimOne(100, {
+    const tx = await gm.claim([100], {
       value: fee,
       from: user1,
     });
@@ -44,7 +44,7 @@ contract('Claiming', (accounts) => {
 
   it('[Token id out of bounds] Claim #21003', async () => {
     const fee = await gm.getFee(1);
-    const tx = gm.claimOne(21003, {
+    const tx = gm.claim([21003], {
       from: owner,
       value: fee,
     });
@@ -53,7 +53,7 @@ contract('Claiming', (accounts) => {
 
   it('[Token id out of bounds] Claim #0', async () => {
     const fee = await gm.getFee(1);
-    const tx = gm.claimOne(0, {
+    const tx = gm.claim([0], {
       from: owner,
       value: fee,
     });
@@ -89,7 +89,7 @@ contract('Claiming', (accounts) => {
   });
 
   it('[Wrong claiming fee] Claim', async () => {
-    const tx = gm.claimOne(222, {
+    const tx = gm.claim([222], {
       from: owner,
       value: 0.666 * 10 ** 18, // wrong
     });

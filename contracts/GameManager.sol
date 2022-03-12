@@ -63,7 +63,9 @@ contract GameManager is PausableUpgradeable {
   mapping (uint256 => PlaceOnLand) public robotAssemblyPlacement;
   mapping (uint256 => PlaceOnLand) public powerProductionPlacement;
 
-  uint256[46] private ______gm_gap_2;
+  bool internal claimEarnedLocked;
+
+  uint256[45] private ______gm_gap_2;
 
   event Airdrop (address indexed receiver, uint256 indexed tokenId);
   // f9917faa5009c58ed8bd6a1c70b79e1fbefc8afe3e7142ba8b854ccb887fb262
@@ -74,6 +76,8 @@ contract GameManager is PausableUpgradeable {
   event BuildRobotAssembly (uint256 tokenId, address indexed owner, uint8 level);
   // 9914b04dac571a45d7a7b33184088cbd4d62a2ed88e64602a6b8a6a93b3fb0a6
   event BuildPowerProduction (uint256 tokenId, address indexed owner, uint8 level);
+  event IncreaseMaxTokenId (uint256 tokenId);
+  event SetPrice (uint256 price);
 
   modifier onlyDAO {
     require(msg.sender == DAO, 'Only DAO');
@@ -136,6 +140,7 @@ contract GameManager is PausableUpgradeable {
   function setPrice(uint256 _price) external onlyDAO {
     require(_price >= 0.1 ether && _price <= 10000 ether, 'New price is out of bounds');
     price = _price;
+    emit SetPrice(_price);
   }
 
   /**
@@ -144,12 +149,13 @@ contract GameManager is PausableUpgradeable {
   function setMaxTokenId(uint256 _id) external onlyDAO {
     require(_id > maxTokenId, 'New max id is not over current');
     maxTokenId = _id;
+    emit IncreaseMaxTokenId(_id);
   }
 
   function mintNFT(address _address, uint256 tokenId) private {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
-    NFTMintableInterface(MCAddress).mint(_address, tokenId);
     tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp);
+    NFTMintableInterface(MCAddress).mint(_address, tokenId);
   }
 
   /**
@@ -228,7 +234,7 @@ contract GameManager is PausableUpgradeable {
   /**
    * deprecated, use getAttributesMany
    */
-  function getEarningData(uint256[] memory tokenIds) public view returns (uint256, uint256) {
+  function getEarningData(uint256[] memory tokenIds) external view returns (uint256, uint256) {
     uint256 result = 0;
     uint256 speed = 0;
     for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -267,9 +273,9 @@ contract GameManager is PausableUpgradeable {
    */
   function buildBaseStation(uint256 tokenId) public onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].baseStation == 0, 'There is already a base station');
-    _deduct(BASE_STATION);
     fixEarnings(tokenId);
     tokenData[tokenId].baseStation = 1;
+    _deduct(BASE_STATION);
     emit BuildBaseStation(tokenId, msg.sender);
   }
 
@@ -277,9 +283,9 @@ contract GameManager is PausableUpgradeable {
    * Builds and places base station
    */
   function buildAndPlaceBaseStation(uint256 tokenId, uint32 x, uint32 y) external {
-    buildBaseStation(tokenId);
     baseStationsPlacement[tokenId].x = x;
     baseStationsPlacement[tokenId].y = y;
+    buildBaseStation(tokenId);
   }
 
   /**
@@ -290,12 +296,15 @@ contract GameManager is PausableUpgradeable {
     require(tokenData[tokenId].baseStation != 0, 'There should be a base station');
     if (baseStationsPlacement[tokenId].x != 0 || baseStationsPlacement[tokenId].y != 0) {
       require(!free, 'You can place only for CLNY now');
+      baseStationsPlacement[tokenId].x = x;
+      baseStationsPlacement[tokenId].y = y;
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
       _deduct(PLACEMENT_LEVEL);
+    } else {
+      baseStationsPlacement[tokenId].x = x;
+      baseStationsPlacement[tokenId].y = y;
     }
-    baseStationsPlacement[tokenId].x = x;
-    baseStationsPlacement[tokenId].y = y;
   }
 
   /**
@@ -304,9 +313,9 @@ contract GameManager is PausableUpgradeable {
    */
   function buildTransport(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].transport == level - 1, 'Can buy only next level');
-    _deduct(level);
     fixEarnings(tokenId);
     tokenData[tokenId].transport = level;
+    _deduct(level);
     emit BuildTransport(tokenId, msg.sender, level);
   }
 
@@ -314,9 +323,9 @@ contract GameManager is PausableUpgradeable {
    * Builds and places transport
    */
   function buildAndPlaceTransport(uint256 tokenId, uint32 x, uint32 y) external {
-    buildTransport(tokenId, 1);
     transportPlacement[tokenId].x = x;
     transportPlacement[tokenId].y = y;
+    buildTransport(tokenId, 1);
   }
 
   /**
@@ -327,12 +336,15 @@ contract GameManager is PausableUpgradeable {
     require(tokenData[tokenId].transport != 0, 'There should be a transport');
     if (transportPlacement[tokenId].x != 0 || transportPlacement[tokenId].y != 0) {
       require(!free, 'You can place only for CLNY now');
+      transportPlacement[tokenId].x = x;
+      transportPlacement[tokenId].y = y;
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
       _deduct(PLACEMENT_LEVEL);
+    } else {
+      transportPlacement[tokenId].x = x;
+      transportPlacement[tokenId].y = y;
     }
-    transportPlacement[tokenId].x = x;
-    transportPlacement[tokenId].y = y;
   }
 
   /**
@@ -341,9 +353,9 @@ contract GameManager is PausableUpgradeable {
    */
   function buildRobotAssembly(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].robotAssembly == level - 1, 'Can buy only next level');
-    _deduct(level);
     fixEarnings(tokenId);
     tokenData[tokenId].robotAssembly = level;
+    _deduct(level);
     emit BuildRobotAssembly(tokenId, msg.sender, level);
   }
 
@@ -351,9 +363,9 @@ contract GameManager is PausableUpgradeable {
    * Builds and places robot assembly
    */
   function buildAndPlaceRobotAssembly(uint256 tokenId, uint32 x, uint32 y) external {
-    buildRobotAssembly(tokenId, 1);
     robotAssemblyPlacement[tokenId].x = x;
     robotAssemblyPlacement[tokenId].y = y;
+    buildRobotAssembly(tokenId, 1);
   }
 
   /**
@@ -364,12 +376,15 @@ contract GameManager is PausableUpgradeable {
     require(tokenData[tokenId].robotAssembly != 0, 'There should be a robot assembly');
     if (robotAssemblyPlacement[tokenId].x != 0 || robotAssemblyPlacement[tokenId].y != 0) {
       require(!free, 'You can place only for CLNY now');
+      robotAssemblyPlacement[tokenId].x = x;
+      robotAssemblyPlacement[tokenId].y = y;
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
       _deduct(PLACEMENT_LEVEL);
+    } else {
+      robotAssemblyPlacement[tokenId].x = x;
+      robotAssemblyPlacement[tokenId].y = y;
     }
-    robotAssemblyPlacement[tokenId].x = x;
-    robotAssemblyPlacement[tokenId].y = y;
   }
 
   /**
@@ -378,9 +393,9 @@ contract GameManager is PausableUpgradeable {
    */
   function buildPowerProduction(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].powerProduction == level - 1, 'Can buy only next level');
-    _deduct(level);
     fixEarnings(tokenId);
     tokenData[tokenId].powerProduction = level;
+    _deduct(level);
     emit BuildPowerProduction(tokenId, msg.sender, level);
   }
 
@@ -388,9 +403,9 @@ contract GameManager is PausableUpgradeable {
    * Builds and places power production
    */
   function buildAndPlacePowerProduction(uint256 tokenId, uint32 x, uint32 y) external {
-    buildPowerProduction(tokenId, 1);
     powerProductionPlacement[tokenId].x = x;
     powerProductionPlacement[tokenId].y = y;
+    buildPowerProduction(tokenId, 1);
   }
 
   /**
@@ -401,12 +416,15 @@ contract GameManager is PausableUpgradeable {
     require(tokenData[tokenId].powerProduction != 0, 'There should be a power production');
     if (powerProductionPlacement[tokenId].x != 0 || powerProductionPlacement[tokenId].y != 0) {
       require(!free, 'You can place only for CLNY now');
+      powerProductionPlacement[tokenId].x = x;
+      powerProductionPlacement[tokenId].y = y;
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
       _deduct(PLACEMENT_LEVEL);
+    } else {
+      powerProductionPlacement[tokenId].x = x;
+      powerProductionPlacement[tokenId].y = y;
     }
-    powerProductionPlacement[tokenId].x = x;
-    powerProductionPlacement[tokenId].y = y;
   }
 
   /**
@@ -456,16 +474,19 @@ contract GameManager is PausableUpgradeable {
    * Pls check gas limits to get max possible count (> 100 for Harmony chain)
    */
   function claimEarned(uint256[] calldata tokenIds) external whenNotPaused {
+    require (!claimEarnedLocked, 'reentrancy guard');
+    claimEarnedLocked = true;
     require (tokenIds.length != 0, 'Empty array');
     for (uint8 i = 0; i < tokenIds.length; i++) {
       require (msg.sender == NFTMintableInterface(MCAddress).ownerOf(tokenIds[i]));
       uint256 earned = getEarned(tokenIds[i]);
+      tokenData[tokenIds[i]].fixedEarnings = 0;
+      tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
       ERC20MintBurnInterface(CLNYAddress).mint(msg.sender, earned);
       ERC20MintBurnInterface(CLNYAddress).mint(treasury, earned * 31 / 49);
       ERC20MintBurnInterface(CLNYAddress).mint(liquidity, earned * 20 / 49);
-      tokenData[tokenIds[i]].fixedEarnings = 0;
-      tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
     }
+    claimEarnedLocked = false;
   }
 
   function withdraw() external onlyDAO {

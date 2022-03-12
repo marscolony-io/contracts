@@ -43,7 +43,7 @@ contract('Attributes', (accounts) => {
     const {
       '4': earned2,
     } = await gm.getAttributes(1);
-    assert.isAbove(earned2 * 1e-18, 10);
+    assert.isAtLeast(earned2 * 1e-18, 10);
     assert.isBelow(earned2 * 1e-18, 10.1);
     const { '0': earnedFromData2, '1': speedFromData2 } = await gm.getEarningData([1, 2, 3]);
     assert(speedFromData2 == 3);

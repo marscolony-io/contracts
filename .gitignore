@@ -9,3 +9,6 @@ test/.openzeppelin/*
 !.gitkeep
 
 .idea
+
+coverage.json
+coverage/

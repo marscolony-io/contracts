@@ -1,4 +1,4 @@
-const { assert } = require('chai');
+const { assert, expect } = require('chai');
 const { time, expectRevert } = require('openzeppelin-test-helpers');
 const { BN } = require('bn.js');
 
@@ -107,5 +107,22 @@ contract('Build and set position test', (accounts) => {
       expect(parseInt(x)).to.be.equal(5);
       expect(parseInt(y)).to.be.equal(7);
     }
+  });
+
+  it('Upgrading enhancements', async () => {
+    await gm.buildTransport(1, 2, { from: user1 });
+    await gm.buildRobotAssembly(1, 2, { from: user1 });
+    await gm.buildPowerProduction(1, 2, { from: user1 });
+    await gm.buildTransport(1, 3, { from: user1 });
+    await gm.buildRobotAssembly(1, 3, { from: user1 });
+    await gm.buildPowerProduction(1, 3, { from: user1 });
+  });
+
+  it('Get enhancements (deprecated)', async () => {
+    const enh = await gm.getEnhancements(1, { from: user1 });
+    expect(parseInt(enh['0'])).to.be.equal(1);
+    expect(parseInt(enh['1'])).to.be.equal(3);
+    expect(parseInt(enh['2'])).to.be.equal(3);
+    expect(parseInt(enh['3'])).to.be.equal(3);
   });
 });

@@ -28,6 +28,11 @@ contract('MC', (accounts) => {
     await truffleAssert.reverts(tx, 'Only GameManager');
   });
 
+  it('allMyTokens - zero', async () => {
+    const allMyTokens = await mc.allMyTokens({ from: user1 });
+    assert.lengthOf(allMyTokens, 0);
+  });
+
   it('Mints from GM', async () => {
     await mc.mint(user2, 456, { from: GM });
   });
@@ -71,12 +76,6 @@ contract('MC', (accounts) => {
   it('Not DAO cannot change base URI', async () => {
     const tx = mc.setBaseURI('https://google.com/', { from: user1 });
     await truffleAssert.reverts(tx, 'Only DAO');
-  });
-
-  it('Check allTokens view function', async () => {
-    const allTokens = await mc.allTokens();
-    assert.lengthOf(allTokens, 2); // [456, 457]
-    assert.includeMembers(allTokens.map(n => parseInt(n)), [456, 457]);
   });
 
   it('Check allTokensPaginate view function', async () => {
