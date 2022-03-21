@@ -13,7 +13,9 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
   string private nftBaseURI;
   mapping (uint256 => string) public names; // token owner can set a name for their NFT
 
-  uint256[50] private ______mc_gap;
+  bool lockMint;
+
+  uint256[49] private ______mc_gap;
 
   function initialize(address _DAO, string memory _nftBaseURI) public initializer {
     ERC721EnumerableUpgradeable.__ERC721Enumerable_init();
@@ -32,7 +34,10 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
   }
 
   function mint(address receiver, uint256 tokenId) external onlyGameManager whenNotPaused {
+    require(!lockMint, 'locked');
+    lockMint = true;
     _safeMint(receiver, tokenId);
+    lockMint = false;
   }
 
   function pause() external onlyGameManager {
