@@ -4,6 +4,8 @@ pragma solidity >=0.8.0 <0.9.0;
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import './GameConnection.sol';
 import './interfaces/IMartianColonists.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
 
 contract AvatarManager is GameConnection, PausableUpgradeable {
   uint256 public maxTokenId;
@@ -69,5 +71,10 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
       result[i] = collection.names(tokenIds[i]);
     }
     return result;
+  }
+
+  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
+    IERC20 tokenContract = IERC20(_tokenContract);
+    tokenContract.transfer(_whereTo, _amount);
   }
 }

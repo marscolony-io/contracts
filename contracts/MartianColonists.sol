@@ -3,6 +3,8 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
 
 contract MartianColonists is ERC721Enumerable, Ownable {
   string private nftBaseURI;
@@ -40,5 +42,10 @@ contract MartianColonists is ERC721Enumerable, Ownable {
 
   function setName(uint256 tokenId, string memory _name) external onlyAvatarManager {
     names[tokenId] = _name;
+  }
+
+  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
+    IERC20 tokenContract = IERC20(_tokenContract);
+    tokenContract.transfer(_whereTo, _amount);
   }
 }

@@ -5,6 +5,8 @@ import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import './interfaces/NFTMintableInterface.sol';
 import './interfaces/PauseInterface.sol';
 import './interfaces/ERC20MintBurnInterface.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
 
 
 /**
@@ -539,5 +541,10 @@ contract GameManager is PausableUpgradeable {
     require (address(this).balance != 0, 'Nothing to withdraw');
     (bool success, ) = payable(DAO).call{ value: value }('');
     require(success, 'Withdraw failed');
+  }
+
+  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
+    IERC20 tokenContract = IERC20(_tokenContract);
+    tokenContract.transfer(_whereTo, _amount);
   }
 }
