@@ -6,8 +6,13 @@
  */
 
 const GM = artifacts.require('GameManager');
+const MC = artifacts.require('MC');
 const CLNY = artifacts.require('CLNY');
+const MartianColonists = artifacts.require('MartianColonists');
 
 module.exports = async (deployer, network, addresses) => {
-  // const inst = await deployer.deploy(GM);
+  if (network === 'development') {
+    return; // this file for manual migrations; pass in tests
+  }
+  const inst = await deployer.deploy(GM);
 };

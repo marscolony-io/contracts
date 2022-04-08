@@ -61,18 +61,19 @@ module.exports = {
       provider: () => {
         return new HDWalletProvider({
           mnemonic: mnemonic.harmain,
-          providerOrUrl: 'https://harmony-0-rpc.gateway.pokt.network', // 'https://api.harmony.one',
+          providerOrUrl: 'https://rpc.hermesdefi.io', // 'https://api.fuzz.fi', // 'https://api.harmony.one',
           derivationPath: `m/44'/60'/0'/0/`,
           confirmations: 0,
           timeoutBlocks: 200,
         });
       },
       network_id: 1666600000,
+      gasPrice: 40 * 1e9,
     },
   },
   compilers: {
     solc: {
-      version: '0.8.5',
+      version: '0.8.11',
       settings: {
         optimizer: {
           enabled: true,

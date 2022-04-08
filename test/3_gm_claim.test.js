@@ -22,10 +22,7 @@ contract('Claiming', (accounts) => {
 
   it('Claim one: #100', async () => {
     const fee = await gm.getFee(1);
-    const tx = await gm.claim([100], {
-      value: fee,
-      from: user1,
-    });
+    const tx = await gm.claim([100], { value: fee, from: user1 });
     const owner100 = await mc.ownerOf.call(100);
     assert(owner100 === user1);
     const mcTx = await truffleAssert.createTransactionResult(mc, tx.tx);
