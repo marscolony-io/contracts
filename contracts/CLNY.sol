@@ -9,6 +9,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
 import './GameConnection.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 
 contract CLNY is ERC20Upgradeable, GameConnection, PausableUpgradeable {
@@ -46,5 +47,10 @@ contract CLNY is ERC20Upgradeable, GameConnection, PausableUpgradeable {
 
   function unpause() external onlyGameManager {
     _unpause();
+  }
+
+  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
+    IERC20 tokenContract = IERC20(_tokenContract);
+    tokenContract.transfer(_whereTo, _amount);
   }
 }

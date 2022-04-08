@@ -7,6 +7,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import '@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol';
 import './GameConnection.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 
 contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable {
@@ -81,5 +82,10 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
 
   function getName(uint256 tokenId) external view returns (string memory) {
     return names[tokenId];
+  }
+
+  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
+    IERC20 tokenContract = IERC20(_tokenContract);
+    tokenContract.transfer(_whereTo, _amount);
   }
 }
