@@ -26,9 +26,4 @@ contract('Withdraw', (accounts) => {
     await truffleAssert.reverts(gm.withdrawValue(web3.utils.toWei('1'), { from: user1 }), 'Only DAO');
     await gm.withdrawValue(web3.utils.toWei('1'), { from: DAO });
   });
-
-  it('Withdraw all', async () => {
-    await truffleAssert.reverts(gm.withdraw({ from: user1 }), 'Only DAO');
-    await gm.withdraw({ from: DAO });
-  });
 });

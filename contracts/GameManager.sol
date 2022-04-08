@@ -16,18 +16,14 @@ contract GameManager is PausableUpgradeable {
   address public DAO; // owner
 
   address public treasury;
-  
   address public liquidity;
-
   uint256 public price;
-
   address public CLNYAddress;
-
   uint256 public maxTokenId;
-
   address public MCAddress;
+  address public avatarAddress;
 
-  uint256[50] private ______gm_gap_1;
+  uint256[49] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
@@ -63,7 +59,7 @@ contract GameManager is PausableUpgradeable {
   mapping (uint256 => PlaceOnLand) public robotAssemblyPlacement;
   mapping (uint256 => PlaceOnLand) public powerProductionPlacement;
 
-  bool internal claimEarnedLocked;
+  bool internal locked;
 
   uint256[45] private ______gm_gap_2;
 
@@ -76,7 +72,6 @@ contract GameManager is PausableUpgradeable {
   event BuildRobotAssembly (uint256 tokenId, address indexed owner, uint8 level);
   // 9914b04dac571a45d7a7b33184088cbd4d62a2ed88e64602a6b8a6a93b3fb0a6
   event BuildPowerProduction (uint256 tokenId, address indexed owner, uint8 level);
-  event IncreaseMaxTokenId (uint256 tokenId);
   event SetPrice (uint256 price);
 
   modifier onlyDAO {
@@ -87,6 +82,55 @@ contract GameManager is PausableUpgradeable {
   modifier onlyTokenOwner(uint256 tokenId) {
     require(NFTMintableInterface(MCAddress).ownerOf(tokenId) == msg.sender, "You aren't the token owner");
     _;
+  }
+
+  modifier nonReentrant {
+    require (!locked, 'reentrancy guard');
+    locked = true;
+    _;
+    locked = false;
+  }
+
+  function setAvatarAddress(address _avatarAddress) external onlyDAO {
+    avatarAddress = _avatarAddress;
+  }
+
+  /**
+  * temporary to count burned clny (setBurned)
+  */
+  function getBurnedOnEnhancements() external view returns (uint256) {
+    uint256 result = 0;
+    for (uint256 i = 1; i <= 21000; i++) {
+      LandData memory data = tokenData[i];
+      if (data.baseStation != 0) {
+        result = result + 30;
+      }
+
+      if (data.powerProduction == 1) {
+        result = result + 120;
+      } else if (data.powerProduction == 2) {
+        result = result + 120 + 270;
+      } else if (data.powerProduction == 3) {
+        result = result + 120 + 270 + 480;
+      }
+
+      if (data.transport == 1) {
+        result = result + 120;
+      } else if (data.transport == 2) {
+        result = result + 120 + 270;
+      } else if (data.transport == 3) {
+        result = result + 120 + 270 + 480;
+      }
+
+      if (data.robotAssembly == 1) {
+        result = result + 120;
+      } else if (data.robotAssembly == 2) {
+        result = result + 120 + 270;
+      } else if (data.robotAssembly == 3) {
+        result = result + 120 + 270 + 480;
+      }
+    }
+    return result;
   }
 
   function initialize(
@@ -108,23 +152,10 @@ contract GameManager is PausableUpgradeable {
 
   /**
    * Transfers ownership
+   * 0x7a318866
    */
   function transferDAO(address _DAO) external onlyDAO {
     DAO = _DAO;
-  }
-
-  /**
-   * Sets treasury address
-   */
-  function setTreasury(address _treasury) external onlyDAO {
-    treasury = _treasury;
-  }
-
-  /**
-   * Sets liquidity address
-   */
-  function setLiquidity(address _liquidity) external onlyDAO {
-    liquidity = _liquidity;
   }
 
   /**
@@ -143,13 +174,9 @@ contract GameManager is PausableUpgradeable {
     emit SetPrice(_price);
   }
 
-  /**
-   * `maxTokenId` increase may be needed if we decide to merge tokens or to sell poles (they are not tokenized yet)
-   */
-  function setMaxTokenId(uint256 _id) external onlyDAO {
-    require(_id > maxTokenId, 'New max id is not over current');
-    maxTokenId = _id;
-    emit IncreaseMaxTokenId(_id);
+  function mintAvatar() external nonReentrant {
+    _deduct(MINT_AVATAR_LEVEL, REASON_MINT_AVATAR);
+    NFTMintableInterface(avatarAddress).mint(msg.sender);
   }
 
   function mintNFT(address _address, uint256 tokenId) private {
@@ -170,16 +197,24 @@ contract GameManager is PausableUpgradeable {
     }
   }
 
+  /**
+   * 0x8456cb59
+   */
   function pause() external onlyDAO {
     _pause();
     PauseInterface(CLNYAddress).pause();
     PauseInterface(MCAddress).pause();
+    PauseInterface(avatarAddress).pause();
   }
 
+  /**
+   * 0x3f4ba83a
+   */
   function unpause() external onlyDAO {
     _unpause();
     PauseInterface(CLNYAddress).unpause();
     PauseInterface(MCAddress).unpause();
+    PauseInterface(avatarAddress).unpause();
   }
 
   function airdrop(address receiver, uint256 tokenId) external whenNotPaused onlyDAO {
@@ -190,17 +225,23 @@ contract GameManager is PausableUpgradeable {
   uint8 constant BASE_STATION = 0;
   /** these constants (for sure just `_deduct` function) can be changed while upgrading */
   uint256 constant BASE_STATION_COST = 30;
+  uint256 constant AVATAR_MINT_COST = 30;
   uint256 constant LEVEL_1_COST = 120;
   uint256 constant LEVEL_2_COST = 270;
   uint256 constant LEVEL_3_COST = 480;
+  uint8 constant MINT_AVATAR_LEVEL = 254;
   uint8 constant PLACEMENT_LEVEL = 255;
   uint256 constant PLACEMENT_COST = 5;
+  uint256 constant REASON_UPGRADE = 1;
+  uint256 constant REASON_PLACE = 2;
+  uint256 constant REASON_RENAME_AVATAR = 3;
+  uint256 constant REASON_MINT_AVATAR = 4;
 
   /**
    * Burn CLNY token for building enhancements
    * Assume decimals() is always 18
    */
-  function _deduct(uint8 level) private {
+  function _deduct(uint8 level, uint256 reason) private {
     uint256 amount = 0;
     if (level == BASE_STATION) {
       amount = BASE_STATION_COST * 10 ** 18;
@@ -217,8 +258,14 @@ contract GameManager is PausableUpgradeable {
     if (level == PLACEMENT_LEVEL) {
       amount = PLACEMENT_COST * 10 ** 18;
     }
+    if (level == MINT_AVATAR_LEVEL) {
+      amount = AVATAR_MINT_COST * 10 ** 18;
+      // atrist and team minting royalties
+      ERC20MintBurnInterface(CLNYAddress).mint(0x352c478CD91BA54615Cc1eDFbA4A3E7EC9f60EE1, AVATAR_MINT_COST * 10 ** 18 * 2 / 100);
+      ERC20MintBurnInterface(CLNYAddress).mint(0x2581A6C674D84dAD92A81E8d3072C9561c21B935, AVATAR_MINT_COST * 10 ** 18 * 3 / 100);
+    }
     require (amount > 0, 'Wrong level');
-    ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, amount);
+    ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, amount, reason);
   }
 
   function getLastCheckout(uint256 tokenId) public view returns (uint256) {
@@ -270,17 +317,19 @@ contract GameManager is PausableUpgradeable {
   /**
    * Builds base station
    * deprecated: new base stations should be placed with buildAndPlaceBaseStation
+   * 0xcfc26d99
    */
   function buildBaseStation(uint256 tokenId) public onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].baseStation == 0, 'There is already a base station');
     fixEarnings(tokenId);
     tokenData[tokenId].baseStation = 1;
-    _deduct(BASE_STATION);
+    _deduct(BASE_STATION, REASON_UPGRADE);
     emit BuildBaseStation(tokenId, msg.sender);
   }
 
   /**
    * Builds and places base station
+   * 0x23c32819
    */
   function buildAndPlaceBaseStation(uint256 tokenId, uint32 x, uint32 y) external {
     baseStationsPlacement[tokenId].x = x;
@@ -291,6 +340,7 @@ contract GameManager is PausableUpgradeable {
   /**
    * Places base station
    * deprecated: new base stations should be placed with buildAndPlaceBaseStation
+   * 0x5f549163
    */
   function placeBaseStation(uint256 tokenId, uint32 x, uint32 y, bool free) external onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].baseStation != 0, 'There should be a base station');
@@ -300,7 +350,7 @@ contract GameManager is PausableUpgradeable {
       baseStationsPlacement[tokenId].y = y;
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
-      _deduct(PLACEMENT_LEVEL);
+      _deduct(PLACEMENT_LEVEL, REASON_PLACE);
     } else {
       baseStationsPlacement[tokenId].x = x;
       baseStationsPlacement[tokenId].y = y;
@@ -310,17 +360,19 @@ contract GameManager is PausableUpgradeable {
   /**
    * Builds transport
    * `uint8 level` is very important - it prevents accidental spending ERC20 with double transactions
+   * 0x33e3480f
    */
   function buildTransport(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].transport == level - 1, 'Can buy only next level');
     fixEarnings(tokenId);
     tokenData[tokenId].transport = level;
-    _deduct(level);
+    _deduct(level, REASON_UPGRADE);
     emit BuildTransport(tokenId, msg.sender, level);
   }
 
   /**
    * Builds and places transport
+   * 0x2fc6ced1
    */
   function buildAndPlaceTransport(uint256 tokenId, uint32 x, uint32 y) external {
     transportPlacement[tokenId].x = x;
@@ -331,6 +383,7 @@ contract GameManager is PausableUpgradeable {
   /**
    * Places transport
    * deprecated: for migration only
+   * 0x9b416e1c
    */
   function placeTransport(uint256 tokenId, uint32 x, uint32 y, bool free) external onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].transport != 0, 'There should be a transport');
@@ -340,7 +393,7 @@ contract GameManager is PausableUpgradeable {
       transportPlacement[tokenId].y = y;
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
-      _deduct(PLACEMENT_LEVEL);
+      _deduct(PLACEMENT_LEVEL, REASON_PLACE);
     } else {
       transportPlacement[tokenId].x = x;
       transportPlacement[tokenId].y = y;
@@ -350,17 +403,19 @@ contract GameManager is PausableUpgradeable {
   /**
    * Builds robot assembly
    * `uint8 level` is very important - it prevents accidental spending ERC20 with double transactions
+   * 0x9a3274c4
    */
   function buildRobotAssembly(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].robotAssembly == level - 1, 'Can buy only next level');
     fixEarnings(tokenId);
     tokenData[tokenId].robotAssembly = level;
-    _deduct(level);
+    _deduct(level, REASON_UPGRADE);
     emit BuildRobotAssembly(tokenId, msg.sender, level);
   }
 
   /**
    * Builds and places robot assembly
+   * 0xbd09376f
    */
   function buildAndPlaceRobotAssembly(uint256 tokenId, uint32 x, uint32 y) external {
     robotAssemblyPlacement[tokenId].x = x;
@@ -371,6 +426,7 @@ contract GameManager is PausableUpgradeable {
   /**
    * Places Robot Assembly
    * deprecated: for migration only
+   * 0x15263117
    */
   function placeRobotAssembly(uint256 tokenId, uint32 x, uint32 y, bool free) external onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].robotAssembly != 0, 'There should be a robot assembly');
@@ -380,7 +436,7 @@ contract GameManager is PausableUpgradeable {
       robotAssemblyPlacement[tokenId].y = y;
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
-      _deduct(PLACEMENT_LEVEL);
+      _deduct(PLACEMENT_LEVEL, REASON_PLACE);
     } else {
       robotAssemblyPlacement[tokenId].x = x;
       robotAssemblyPlacement[tokenId].y = y;
@@ -390,17 +446,19 @@ contract GameManager is PausableUpgradeable {
   /**
    * Builds power production
    * `uint8 level` is very important - it prevents accidental spending ERC20 with double transactions
+   * 0xcb6ff6f9
    */
   function buildPowerProduction(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].powerProduction == level - 1, 'Can buy only next level');
     fixEarnings(tokenId);
     tokenData[tokenId].powerProduction = level;
-    _deduct(level);
+    _deduct(level, REASON_UPGRADE);
     emit BuildPowerProduction(tokenId, msg.sender, level);
   }
 
   /**
    * Builds and places power production
+   * 0x88cb482a
    */
   function buildAndPlacePowerProduction(uint256 tokenId, uint32 x, uint32 y) external {
     powerProductionPlacement[tokenId].x = x;
@@ -411,6 +469,7 @@ contract GameManager is PausableUpgradeable {
   /**
    * Places Power Production
    * deprecated: for migration only
+   * 0x9452cff2
    */
   function placePowerProduction(uint256 tokenId, uint32 x, uint32 y, bool free) external onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].powerProduction != 0, 'There should be a power production');
@@ -420,7 +479,7 @@ contract GameManager is PausableUpgradeable {
       powerProductionPlacement[tokenId].y = y;
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
-      _deduct(PLACEMENT_LEVEL);
+      _deduct(PLACEMENT_LEVEL, REASON_PLACE);
     } else {
       powerProductionPlacement[tokenId].x = x;
       powerProductionPlacement[tokenId].y = y;
@@ -436,20 +495,6 @@ contract GameManager is PausableUpgradeable {
       tokenData[tokenId].transport,
       tokenData[tokenId].robotAssembly,
       tokenData[tokenId].powerProduction
-    );
-  }
-
-  /**
-   * deprecated, use getAttributesMany
-   */
-  function getAttributes(uint256 tokenId) external view returns (uint8, uint8, uint8, uint8, uint256, uint256) {
-    return (
-      tokenData[tokenId].baseStation,
-      tokenData[tokenId].transport,
-      tokenData[tokenId].robotAssembly,
-      tokenData[tokenId].powerProduction,
-      getEarned(tokenId),
-      getEarningSpeed(tokenId)
     );
   }
 
@@ -472,10 +517,9 @@ contract GameManager is PausableUpgradeable {
   /**
    * Claims CLNY from several tokens
    * Pls check gas limits to get max possible count (> 100 for Harmony chain)
+   * 0x42aa65f4
    */
-  function claimEarned(uint256[] calldata tokenIds) external whenNotPaused {
-    require (!claimEarnedLocked, 'reentrancy guard');
-    claimEarnedLocked = true;
+  function claimEarned(uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
     require (tokenIds.length != 0, 'Empty array');
     for (uint8 i = 0; i < tokenIds.length; i++) {
       require (msg.sender == NFTMintableInterface(MCAddress).ownerOf(tokenIds[i]));
@@ -486,15 +530,11 @@ contract GameManager is PausableUpgradeable {
       ERC20MintBurnInterface(CLNYAddress).mint(treasury, earned * 31 / 49);
       ERC20MintBurnInterface(CLNYAddress).mint(liquidity, earned * 20 / 49);
     }
-    claimEarnedLocked = false;
   }
 
-  function withdraw() external onlyDAO {
-    require (address(this).balance != 0, 'Nothing to withdraw');
-    (bool success, ) = payable(DAO).call{ value: address(this).balance }('');
-    require(success, 'Withdraw failed');
-  }
-
+  /**
+   * 0x91cdd9f0
+   */
   function withdrawValue(uint256 value) external onlyDAO {
     require (address(this).balance != 0, 'Nothing to withdraw');
     (bool success, ) = payable(DAO).call{ value: value }('');
