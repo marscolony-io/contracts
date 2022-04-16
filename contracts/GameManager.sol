@@ -24,8 +24,9 @@ contract GameManager is PausableUpgradeable {
   uint256 public maxTokenId;
   address public MCAddress;
   address public avatarAddress;
+  address public missionManager;
 
-  uint256[49] private ______gm_gap_1;
+  uint256[48] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
@@ -91,6 +92,10 @@ contract GameManager is PausableUpgradeable {
     locked = true;
     _;
     locked = false;
+  }
+
+  function setMissionManager(address _address) external onlyDAO {
+    missionManager = _address;
   }
 
   function setAvatarAddress(address _avatarAddress) external onlyDAO {
