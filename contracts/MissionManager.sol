@@ -41,6 +41,7 @@ contract MissionManager is GameConnection, PausableUpgradeable {
   }
 
   function finishMission(uint256 avatar, uint256 land) external {
+    // TODO maybe the method should go to GameManager because only GM can manage CLNY mint/burn (or partially)
     require (collection.ownerOf(avatar) == msg.sender, 'wrong avatar owner');
     address landOwner = MC.ownerOf(land);
     require (
