@@ -12,3 +12,5 @@ test/.openzeppelin/*
 
 coverage.json
 coverage/
+
+landlords.txt

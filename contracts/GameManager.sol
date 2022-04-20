@@ -6,7 +6,7 @@ import './interfaces/NFTMintableInterface.sol';
 import './interfaces/PauseInterface.sol';
 import './interfaces/ERC20MintBurnInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
+import './interfaces/IPoll.sol';
 
 
 /**
@@ -24,8 +24,9 @@ contract GameManager is PausableUpgradeable {
   uint256 public maxTokenId;
   address public MCAddress;
   address public avatarAddress;
+  address public pollAddress;
 
-  uint256[49] private ______gm_gap_1;
+  uint256[48] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
@@ -95,6 +96,26 @@ contract GameManager is PausableUpgradeable {
 
   function setAvatarAddress(address _avatarAddress) external onlyDAO {
     avatarAddress = _avatarAddress;
+  }
+
+  function setPollAddress(address _address) external onlyDAO {
+    pollAddress = _address;
+  }
+
+  function getPollData() external view returns (string memory, string[] memory, uint256[] memory, bool) {
+    if (pollAddress == address(0)) {
+      return ('', new string[](0), new uint256[](0), false);
+    }
+    (string memory description, string[] memory items) = IPoll(pollAddress).getVoteTopic();
+    uint256[] memory results = new uint256[](items.length);
+    for (uint8 i = 0; i < items.length; i++) {
+      results[i] = IPoll(pollAddress).totalVotesFor(i);
+    }
+    return (description, items, results, IPoll(pollAddress).canVote(msg.sender));
+  }
+
+  function vote(uint8 decision) external {
+    IPoll(pollAddress).vote(msg.sender, decision);
   }
 
   /**
