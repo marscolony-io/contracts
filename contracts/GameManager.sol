@@ -102,16 +102,16 @@ contract GameManager is PausableUpgradeable {
     pollAddress = _address;
   }
 
-  function getPollData() external view returns (string memory, string[] memory, uint256[] memory, bool) {
+  function getPollData() external view returns (string memory, string memory, string[] memory, uint256[] memory, bool) {
     if (pollAddress == address(0)) {
-      return ('', new string[](0), new uint256[](0), false);
+      return ('', '', new string[](0), new uint256[](0), false);
     }
-    (string memory description, string[] memory items) = IPoll(pollAddress).getVoteTopic();
+    (string memory description, string memory caption, string[] memory items) = IPoll(pollAddress).getVoteTopic();
     uint256[] memory results = new uint256[](items.length);
     for (uint8 i = 0; i < items.length; i++) {
       results[i] = IPoll(pollAddress).totalVotesFor(i);
     }
-    return (description, items, results, IPoll(pollAddress).canVote(msg.sender));
+    return (description, caption, items, results, IPoll(pollAddress).canVote(msg.sender));
   }
 
   function vote(uint8 decision) external {

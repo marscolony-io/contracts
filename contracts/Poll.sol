@@ -14,31 +14,45 @@ contract Poll is IPoll, Ownable, GameConnection {
   bool public started = false;
   uint256 public voteCount = 0;
 
+  string public caption;
   string public description;
   string[] public items;
 
-  mapping (address => uint8) public votedFor;
+  mapping (address => uint8) private votedFor;
   mapping (uint8 => uint256) public override totalVotesFor;
 
-  constructor (address _DAO, string memory _description, string[] memory _items) {
+  constructor (address _DAO, string memory _caption, string memory _description, string[] memory _items) {
     description = _description;
+    caption = _caption;
     items = _items;
     GameConnection.__GameConnection_init(_DAO);
   }
 
-  function getVoteTopic() external view override returns (string memory, string[] memory) {
-    return (description, items);
+  function usersVote(address _address) public view returns (bool, uint8) {
+    if (voters.contains(_address)) {
+      return (true, votedFor[_address]);
+    } else {
+      return (false, 0);
+    }
+  }
+
+  function myVote() external view returns (bool, uint8) {
+    return usersVote(msg.sender);
+  }
+
+  function getVoteTopic() external view override returns (string memory, string memory, string[] memory) {
+    return (description, caption, items);
   }
 
   event Vote (address indexed voter, uint8 decision);
 
   function canVote(address _address) external view override returns (bool) {
-    return voters.contains(_address) && votedFor[_address] == 0;
+    return voters.contains(_address);
   }
   
   function vote(address _address, uint8 decision) external override onlyGameManager {
     require (started, 'not started');
-    require (decision != 0, 'wrong decision');
+    require (decision != 255, 'wrong decision'); // as we add 1 to decision in votedFor
     require (votedFor[_address] == 0, 'already voted');
     require (voters.contains(_address), 'you cannot vote');
     voters.remove(_address);
