@@ -26,7 +26,12 @@ contract MissionManager is GameConnection, PausableUpgradeable {
   mapping (uint256 => LandMissionState) public landMissionState;
   // TODO avatarMissionState?
 
-  uint256[50] private ______gap;
+  struct LandMissionData { 
+    uint256 availableMissionCount;
+    address owner;
+  }
+
+  uint256[49] private ______gap;
 
   function initialize(address _DAO, address _collection, address _avatarManager, address _MC) external initializer {
     GameConnection.__GameConnection_init(_DAO);
@@ -52,6 +57,28 @@ contract MissionManager is GameConnection, PausableUpgradeable {
     // TODO check signature
     // TODO finish mission logic
     landMissionState[land].missionNonce = landMissionState[land].missionNonce + 1;
+  }
+
+  function _getAvailableMissions(uint256 landId) private view returns (LandMissionData memory) {
+    address landOwner = MC.ownerOf(landId);
+    uint256 missionsCount = accountMissionState[landOwner].isAccountPrivate ? 0 : 1;
+
+    return LandMissionData(
+      missionsCount,
+      landOwner
+    );
+  }
+
+  function getAvailableMissions(uint256[] memory landId) external view returns (LandMissionData[] memory) {
+    if (landId.length == 0) {
+      return new LandMissionData[](0);
+    } else {
+      LandMissionData[] memory result = new LandMissionData[](landId.length);
+      for (uint256 i = 0; i < landId.length; i++) {
+        result[i] = _getAvailableMissions(landId[i]);
+      }
+      return result;
+    }
   }
 
   function pause() external onlyGameManager {
