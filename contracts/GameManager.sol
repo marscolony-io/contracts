@@ -81,6 +81,7 @@ contract GameManager is PausableUpgradeable {
   // 9914b04dac571a45d7a7b33184088cbd4d62a2ed88e64602a6b8a6a93b3fb0a6
   event BuildPowerProduction (uint256 tokenId, address indexed owner, uint8 level);
   event SetPrice (uint256 price);
+  event MissionReward (uint256 indexed landId, uint256 indexed avatarId, uint256 indexed rewardType, uint256 rewardAmount);
 
   modifier onlyDAO {
     require(msg.sender == DAO, 'Only DAO');
@@ -157,12 +158,16 @@ contract GameManager is PausableUpgradeable {
     require (!usedSignatures[signatureHashed], 'signature has been used');
     // 0..15 - random
     // 16..20 - avatar id
-    // 21..28 - xp reward like 00000020
-    // 29..36 and several 8-byte blocks - reserved
+    // 21..25 - land id
+    // 26..33 - xp reward like 00000020
+    // 34..41 and several 8-byte blocks - reserved
     uint256 _avatar = stringToUint(string(message[16:5]));
+    uint256 _land = stringToUint(string(message[16:5]));
     uint256 _xp = stringToUint(string(message[21:8]));
-    // TODO (2) check that `_avatar` and `_xp` are converted right way
+    // TODO (2) check that `_land`, `_avatar` and `_xp` are converted right way
     // TODO (3) add XP and increase level to the avatar
+
+    emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp; one event for every reward type
 
     usedSignatures[signatureHashed] = true;
   }
