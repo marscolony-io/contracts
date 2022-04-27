@@ -5,6 +5,7 @@ import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import './GameConnection.sol';
 import './interfaces/IMartianColonists.sol';
 import './interfaces/IAvatarManager.sol';
+import './interfaces/IGameManager.sol';
 import './interfaces/NFTMintableInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
@@ -29,6 +30,7 @@ contract MissionManager is GameConnection, PausableUpgradeable {
   struct LandMissionData { 
     uint256 availableMissionCount;
     address owner;
+    bool isPrivate;
   }
 
   uint256[49] private ______gap;
@@ -59,13 +61,35 @@ contract MissionManager is GameConnection, PausableUpgradeable {
     landMissionState[land].missionNonce = landMissionState[land].missionNonce + 1;
   }
 
+  function _calculateLandMissionsLimits(uint256 landId) private view returns (uint256 availableMissionCount) {
+      uint256[] memory landIds = new uint256[](1);
+      landIds[0] = landId;
+      IGameManager  gameManager = IGameManager(GameManager);
+      IGameManager.AttributeData memory landAttributes = gameManager.getAttributesMany(landIds)[0];
+
+      if (landAttributes.baseStation == 0) {
+        return 0;
+      }
+
+      if (landAttributes.powerProduction > 0) {
+        return 1 + landAttributes.powerProduction;
+      }
+
+      if (landAttributes.baseStation == 1) {
+        return 1;
+      }
+
+  }
+
   function _getAvailableMissions(uint256 landId) private view returns (LandMissionData memory) {
     address landOwner = MC.ownerOf(landId);
-    uint256 missionsCount = accountMissionState[landOwner].isAccountPrivate ? 0 : 1;
+    bool isPrivate = accountMissionState[landOwner].isAccountPrivate;
+    uint256 availableMissionCount = _calculateLandMissionsLimits(landId);
 
     return LandMissionData(
-      missionsCount,
-      landOwner
+      availableMissionCount,
+      landOwner,
+      isPrivate 
     );
   }
 
