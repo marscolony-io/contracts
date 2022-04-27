@@ -45,20 +45,6 @@ contract MissionManager is GameConnection, PausableUpgradeable {
     accountMissionState[msg.sender].isAccountPrivate = _isPrivate;
   }
 
-  function finishMission(uint256 avatar, uint256 land) external {
-    // TODO maybe the method should go to GameManager because only GM can manage CLNY mint/burn (or partially)
-    require (collection.ownerOf(avatar) == msg.sender, 'wrong avatar owner');
-    address landOwner = MC.ownerOf(land);
-    require (
-      !accountMissionState[landOwner].isAccountPrivate // public -> don't check next line
-      || collection.ownerOf(avatar) == landOwner, // if account is private, owners should be same
-      'mission on private account'
-    ); // TODO maybe move to a modifier if we implement `startMission`
-    // TODO check signature
-    // TODO finish mission logic
-    landMissionState[land].missionNonce = landMissionState[land].missionNonce + 1;
-  }
-
   function _getAvailableMissions(uint256 landId) private view returns (LandMissionData memory) {
     address landOwner = MC.ownerOf(landId);
     uint256 missionsCount = accountMissionState[landOwner].isAccountPrivate ? 0 : 1;
