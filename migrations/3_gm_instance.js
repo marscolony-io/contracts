@@ -15,5 +15,5 @@ module.exports = async (deployer, network, addresses) => {
   if (network === 'development') {
     return; // this file for manual migrations; pass in tests
   }
-  const inst = await deployer.deploy(GM);
+  const inst = await deployer.deploy(CLNY, addresses[0]);
 };

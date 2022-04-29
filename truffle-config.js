@@ -70,6 +70,20 @@ module.exports = {
       network_id: 1666600000,
       gasPrice: 40 * 1e9,
     },
+    polygon: {
+      provider: () => {
+        return new HDWalletProvider({
+          mnemonic: mnemonic.polygon,
+          providerOrUrl: 'https://polygon-rpc.com',
+          derivationPath: `m/44'/60'/0'/0/`,
+          confirmations: 0,
+          timeoutBlocks: 200,
+          networkCheckTimeout: 200000,
+        });
+      },
+      network_id: 137,
+      gasPrice: 40 * 1e9,
+    },
   },
   compilers: {
     solc: {

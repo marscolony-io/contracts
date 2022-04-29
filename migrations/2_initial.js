@@ -6,7 +6,7 @@ const GameManager = artifacts.require('GameManager');
 
 module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
   console.log({ DAO, treasury, liquidity });
-  await deployProxy(CLNY, [DAO], { deployer });
+  await deployer.deploy(CLNY, DAO);
   await deployProxy(MC, [
     DAO,
     network === 'hartest' ? 'https://meta-test.marscolony.io/' : 'https://meta.marscolony.io/',

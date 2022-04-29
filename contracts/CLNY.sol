@@ -6,17 +6,15 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 
-import '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import './GameConnection.sol';
-import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
+import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 
-contract CLNY is ERC20Upgradeable, GameConnection, PausableUpgradeable {
-  function initialize(address _DAO) public initializer {
+contract CLNY is ERC20, GameConnection, Pausable {
+  constructor (address _DAO) ERC20('ColonyToken', 'CLNY') {
     GameConnection.__GameConnection_init(_DAO);
-    PausableUpgradeable.__Pausable_init();
-    ERC20Upgradeable.__ERC20_init('ColonyToken', 'CLNY');
   }
 
   mapping (uint256 => uint256) public burnedStats;
@@ -39,6 +37,12 @@ contract CLNY is ERC20Upgradeable, GameConnection, PausableUpgradeable {
 
   function mint(address _address, uint256 _amount) external onlyGameManager whenNotPaused {
     _mint(_address, _amount);
+  }
+
+  /** for generating royalties after burning larger amount like in avatars */
+  function mint(address _address, uint256 _amount, uint256 reason) external onlyGameManager whenNotPaused {
+    _mint(_address, _amount);
+    burnedStats[reason] -= _amount;
   }
 
   function pause() external onlyGameManager {
