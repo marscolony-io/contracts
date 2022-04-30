@@ -7,6 +7,7 @@ import './interfaces/PauseInterface.sol';
 import './interfaces/ERC20MintBurnInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IPoll.sol';
+import './interfaces/IMartianColonists.sol';
 
 
 /**
@@ -26,8 +27,11 @@ contract GameManager is PausableUpgradeable {
   address public avatarAddress;
   address public pollAddress;
   address public missionManager;
+  IMartianColonists public martianColonists;
+  address public backendSigner;
+  mapping (bytes32 => bool) private usedSignatures;
 
-  uint256[47] private ______gm_gap_1;
+  uint256[44] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
@@ -77,6 +81,7 @@ contract GameManager is PausableUpgradeable {
   // 9914b04dac571a45d7a7b33184088cbd4d62a2ed88e64602a6b8a6a93b3fb0a6
   event BuildPowerProduction (uint256 tokenId, address indexed owner, uint8 level);
   event SetPrice (uint256 price);
+  event MissionReward (uint256 indexed landId, uint256 indexed avatarId, uint256 indexed rewardType, uint256 rewardAmount);
 
   modifier onlyDAO {
     require(msg.sender == DAO, 'Only DAO');
@@ -97,6 +102,14 @@ contract GameManager is PausableUpgradeable {
 
   function setMissionManager(address _address) external onlyDAO {
     missionManager = _address;
+  }
+
+  function setBackendSigner(address _address) external onlyDAO {
+    backendSigner = _address;
+  }
+
+  function setMartianColonists(address _address) external onlyDAO {
+    martianColonists = IMartianColonists(_address);
   }
 
   function setAvatarAddress(address _avatarAddress) external onlyDAO {
@@ -121,6 +134,42 @@ contract GameManager is PausableUpgradeable {
 
   function vote(uint8 decision) external {
     IPoll(pollAddress).vote(msg.sender, decision);
+  }
+
+  function stringToUint(string memory s) private pure returns (uint256) {
+    bytes memory b = bytes(s);
+    uint result = 0;
+    for (uint i = 0; i < b.length; i++) {
+      if (uint8(b[i]) >= 48 && uint8(b[i]) <= 57) {
+        result = result * 10 + (uint8(b[i]) - 48);
+      }
+    }
+    return result;
+  }
+
+  function finishMission(
+    string calldata message,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) external {
+    // TODO (1) check signature and that `message` is signed by `backendSigner`
+    bytes32 signatureHashed = keccak256(abi.encodePacked(v, r, s));
+    require (!usedSignatures[signatureHashed], 'signature has been used');
+    // 0..15 - random
+    // 16..20 - avatar id
+    // 21..25 - land id
+    // 26..33 - xp reward like 00000020
+    // 34..41 and several 8-byte blocks - reserved
+    uint256 _avatar = stringToUint(string(message[16:5]));
+    uint256 _land = stringToUint(string(message[16:5]));
+    uint256 _xp = stringToUint(string(message[21:8]));
+    // TODO (2) check that `_land`, `_avatar` and `_xp` are converted right way
+    // TODO (3) add XP and increase level to the avatar
+
+    emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp; one event for every reward type
+
+    usedSignatures[signatureHashed] = true;
   }
 
   /**
