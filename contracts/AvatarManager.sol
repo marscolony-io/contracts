@@ -11,14 +11,31 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
   uint256 public maxTokenId;
 
   IMartianColonists public collection;
+  mapping (uint256 => uint256) private xp;
 
-  uint256[50] private ______mc_gap;
+  uint256[49] private ______mc_gap;
 
   function initialize(address _DAO, address _collection) external initializer {
     GameConnection.__GameConnection_init(_DAO);
     PausableUpgradeable.__Pausable_init();
     maxTokenId = 5;
     collection = IMartianColonists(_collection);
+  }
+
+  function _getXP(uint256 avatarId) private view returns(uint256) {
+    return xp[avatarId] + 100; // 100 is a base for every avatar
+  }
+
+  function getXP(uint256[] memory avatarIds) public view returns(uint256[] memory) {
+    uint256[] memory result = new uint256[](avatarIds.length);
+    for (uint256 i = 0; i < avatarIds.length; i++) {
+      result[i] = _getXP(avatarIds[i]);
+    }
+    return result;
+  }
+
+  function addXP(uint256 avatarId, uint256 increment) external onlyGameManager {
+    xp[avatarId] = xp[avatarId] + increment;
   }
 
   function allMyTokens() external view returns(uint256[] memory) {
