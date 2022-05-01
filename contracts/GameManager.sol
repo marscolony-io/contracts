@@ -8,12 +8,16 @@ import './interfaces/ERC20MintBurnInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IPoll.sol';
 import './interfaces/IMartianColonists.sol';
+import './interfaces/IAvatarManager.sol';
+
 
 
 /**
  * Game logic; upgradable
  */
 contract GameManager is PausableUpgradeable {
+  IAvatarManager public avatarManager;
+
   uint256[50] private ______gm_gap_0;
 
   address public DAO; // owner
@@ -147,6 +151,69 @@ contract GameManager is PausableUpgradeable {
     return result;
   }
 
+  function _getSignerAddress(
+    string memory message,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) private pure returns (address signer) {
+    string memory header = '\x19Ethereum Signed Message:\n000000';
+    uint256 lengthOffset;
+    uint256 length;
+    assembly {
+      length := mload(message)
+      lengthOffset := add(header, 57)
+    }
+
+    require(length <= 999999);
+
+    uint256 lengthLength = 0;
+    uint256 divisor = 100000;
+
+    while (divisor != 0) {
+      uint256 digit = length / divisor;
+      if (digit == 0) {
+        if (lengthLength == 0) {
+          divisor /= 10;
+          continue;
+        }
+      }
+
+      lengthLength++;
+      length -= digit * divisor;
+      divisor /= 10;
+      digit += 0x30;
+      lengthOffset++;
+
+      assembly {
+        mstore8(lengthOffset, digit)
+      }
+    }
+
+    if (lengthLength == 0) {
+      lengthLength = 1 + 0x19 + 1;
+    } else {
+      lengthLength += 1 + 0x19;
+    }
+
+    assembly {
+      mstore(header, lengthLength)
+    }
+
+    bytes32 check = keccak256(abi.encodePacked(header, message));
+
+    return ecrecover(check, v, r, s);
+  }
+
+function _substring(string memory str, uint startIndex, uint endIndex) private pure returns (uint256 ) {
+    bytes memory strBytes = bytes(str);
+    bytes memory result = new bytes(endIndex-startIndex);
+    for(uint i = startIndex; i < endIndex; i++) {
+        result[i-startIndex] = strBytes[i];
+    }
+    return stringToUint(string(result));
+}
+
   function finishMission(
     string calldata message,
     uint8 v,
@@ -154,18 +221,28 @@ contract GameManager is PausableUpgradeable {
     bytes32 s
   ) external {
     // TODO (1) check signature and that `message` is signed by `backendSigner`
+    address signerAddress = _getSignerAddress(message, v, r, s);
+    require(signerAddress == backendSigner, "Signature is not from server");
+
     bytes32 signatureHashed = keccak256(abi.encodePacked(v, r, s));
     require (!usedSignatures[signatureHashed], 'signature has been used');
     // 0..15 - random
     // 16..20 - avatar id
     // 21..25 - land id
-    // 26..33 - xp reward like 00000020
-    // 34..41 and several 8-byte blocks - reserved
-    uint256 _avatar = stringToUint(string(message[16:5]));
-    uint256 _land = stringToUint(string(message[16:5]));
-    uint256 _xp = stringToUint(string(message[21:8]));
+    // 26..34 - xp reward like 00000020
+    // 35..41 and several 8-byte blocks - reserved
+    uint256 _avatar = _substring(message, 16, 21);
+    uint256 _land = _substring(message, 21, 26);
+    uint256 _xp = _substring(message, 26, 34);
     // TODO (2) check that `_land`, `_avatar` and `_xp` are converted right way
+
+    require(_avatar > 0, "AvatarId is not valid");
+    require(_land > 0 && _land <= 21000, "LandId is not valid");
+    require(_xp > 230 && _xp < 19971800, "XP increment is not valid");
+
     // TODO (3) add XP and increase level to the avatar
+    avatarManager = IAvatarManager(avatarAddress);
+    avatarManager.addXP(_avatar, _xp);
 
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp; one event for every reward type
 

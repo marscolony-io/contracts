@@ -57,9 +57,7 @@ contract MissionManager is GameConnection, PausableUpgradeable {
         return 0;
       }
 
-      
-      return 1 + landAttributes.powerProduction;
-      
+      return 1 + landAttributes.powerProduction;      
   }
 
   function _getAvailableMissions(uint256 landId) private view returns (LandMissionData memory) {

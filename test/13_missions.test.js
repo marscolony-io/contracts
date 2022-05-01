@@ -92,4 +92,171 @@ contract("MissionsManager", (accounts) => {
       expect(availableLands[0].availableMissionCount).to.be.equal("4");
     });
   });
+
+  describe("GM.finishMission()", function() {
+    const signer = {
+      privateKey:
+        "4028ea385a848c51ff76c0d968305e273d415335ccd06854630a8465b67a9eef",
+      address: "0x5a636D26070A8a132E4731743CA12964CBB1950b",
+    };
+
+    it("Reverts if signature is not from server", async () => {
+      const message =
+        "1111111111111111000012100015555555111111111111111111111111";
+      const signature = await web3.eth.accounts.sign(
+        message,
+        signer.privateKey
+      );
+
+      const tx = gm.finishMission(
+        message,
+        signature.v,
+        signature.r,
+        signature.s
+      );
+      await truffleAssert.reverts(tx, "Signature is not from server");
+    });
+
+    it("Pass if signature is from server", async () => {
+      // set backendSigner in GM
+      await gm.setBackendSigner(signer.address);
+
+      const message =
+        "1111111111111111000012100015555555111111111111111111111111";
+      const signature = await web3.eth.accounts.sign(
+        message,
+        signer.privateKey
+      );
+
+      await gm.finishMission(message, signature.v, signature.r, signature.s);
+    });
+
+    // it("Substring Function parses correct ids", async () => {
+    //   const message =
+    //     "1111111111111110000122100055555555111111111111111111111111";
+
+    //   const avatarId = await gm._substring(message, 16, 21);
+    //   const landId = await gm._substring(message, 21, 26);
+    //   const xp = await gm._substring(message, 26, 34);
+
+    //   expect(+avatarId.toString()).to.be.equal(12);
+    //   expect(+landId.toString()).to.be.equal(21000);
+    //   expect(+xp.toString()).to.be.equal(55555555);
+    // });
+
+    it("Fails if avatarId is not valid", async () => {
+      const message =
+        "1111111111111111000002100015555555111111111111111111111111";
+      const signature = await web3.eth.accounts.sign(
+        message,
+        signer.privateKey
+      );
+
+      const tx = gm.finishMission(
+        message,
+        signature.v,
+        signature.r,
+        signature.s
+      );
+
+      await truffleAssert.reverts(tx, "AvatarId is not valid");
+    });
+
+    it("Fails if landId is not valid", async () => {
+      const message =
+        "1111111111111111000012200015555555111111111111111111111111";
+      const signature = await web3.eth.accounts.sign(
+        message,
+        signer.privateKey
+      );
+
+      const tx = gm.finishMission(
+        message,
+        signature.v,
+        signature.r,
+        signature.s
+      );
+
+      await truffleAssert.reverts(tx, "LandId is not valid");
+    });
+
+    it("Fails if XP increment is not valid", async () => {
+      const message =
+        "1111111111111111000012100055555555111111111111111111111111";
+      const signature = await web3.eth.accounts.sign(
+        message,
+        signer.privateKey
+      );
+
+      const tx = gm.finishMission(
+        message,
+        signature.v,
+        signature.r,
+        signature.s
+      );
+
+      await truffleAssert.reverts(tx, "XP increment is not valid");
+    });
+
+    it("XP Increment is valid", async () => {
+      const initialXp = await avatars.getXP([1]);
+      const message =
+        "1111111111111111000012100010000000111111111111111111111111";
+      const signature = await web3.eth.accounts.sign(
+        message,
+        signer.privateKey
+      );
+
+      await gm.finishMission(message, signature.v, signature.r, signature.s);
+
+      const addedXp = await avatars.getXP([1]);
+
+      expect(+addedXp - +initialXp).to.be.equal(10000000);
+    });
+
+    it("signature has been used", async () => {
+      const message =
+        "1111111111111111000012100010000000111111111111111111111111";
+      const signature = await web3.eth.accounts.sign(
+        message,
+        signer.privateKey
+      );
+
+      const tx = gm.finishMission(
+        message,
+        signature.v,
+        signature.r,
+        signature.s
+      );
+
+      await truffleAssert.reverts(tx, "signature has been used");
+    });
+
+    it("MissionReward event emitted", async () => {
+      const message =
+        "1111111111111111000012100010000005111111111111111111111111";
+      const signature = await web3.eth.accounts.sign(
+        message,
+        signer.privateKey
+      );
+
+      const tx = await gm.finishMission(
+        message,
+        signature.v,
+        signature.r,
+        signature.s
+      );
+
+      const mcTx = await truffleAssert.createTransactionResult(gm, tx.tx);
+
+      truffleAssert.eventEmitted(mcTx, "MissionReward", (ev) => {
+        return (
+          parseInt(ev.landId) === 21000 &&
+          parseInt(ev.avatarId) === 1 &&
+          parseInt(ev.rewardType) === 0 &&
+          parseInt(ev.rewardAmount) === 10000005
+        );
+      });
+    });
+  });
 });
