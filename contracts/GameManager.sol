@@ -203,14 +203,41 @@ contract GameManager is PausableUpgradeable {
     return ecrecover(check, v, r, s);
   }
 
-function _substring(string memory str, uint startIndex, uint endIndex) private pure returns (uint256 ) {
-  bytes memory strBytes = bytes(str);
-  bytes memory result = new bytes(endIndex-startIndex);
-  for(uint i = startIndex; i < endIndex; i++) {
-    result[i - startIndex] = strBytes[i];
+  function _substring(string memory str, uint startIndex, uint endIndex) private pure returns (uint256 ) {
+    bytes memory strBytes = bytes(str);
+    bytes memory result = new bytes(endIndex-startIndex);
+    for(uint i = startIndex; i < endIndex; i++) {
+      result[i - startIndex] = strBytes[i];
+    }
+    return stringToUint(string(result));
   }
-  return stringToUint(string(result));
-}
+
+  function getAssetsFromFinishMissionMessage(string calldata message) private pure returns (uint256, uint256, uint256) {
+    // 0..<32 - random
+    // 32..<37 - avatar id
+    // 37..<42 - land id
+    // 42..<47 - avatar id (again)
+    // 47..<55 - xp reward like 00000020
+    // 55... and several 8-byte blocks - reserved
+    uint256 _avatar = _substring(message, 32, 37);
+    uint256 _avatar2 = _substring(message, 37, 42);
+    uint256 _land = _substring(message, 42, 47);
+    uint256 _xp = _substring(message, 47, 55);
+    require(_avatar == _avatar2, 'check failed');
+    return (_avatar, _land, _xp);
+  }
+
+  function proceedFinishMissionMessage(string calldata message) private {
+    (uint256 _avatar, uint256 _land, uint256 _xp) = getAssetsFromFinishMissionMessage(message);
+
+    require(_avatar > 0, "AvatarId is not valid");
+    require(_land > 0 && _land <= 21000, "LandId is not valid");
+    require(_xp >= 230 && _xp < 19971800, "XP increment is not valid");
+
+    IAvatarManager(avatarAddress).addXP(_avatar, _xp);
+
+    emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp; one event for every reward type
+  }
 
   function finishMission(
     string calldata message,
@@ -223,22 +250,8 @@ function _substring(string memory str, uint startIndex, uint endIndex) private p
 
     bytes32 signatureHashed = keccak256(abi.encodePacked(v, r, s));
     require (!usedSignatures[signatureHashed], 'signature has been used');
-    // 0..<16 - random
-    // 16..<21 - avatar id
-    // 21..<25 - land id
-    // 26..<34 - xp reward like 00000020
-    // 34..<42 and several 8-byte blocks - reserved
-    uint256 _avatar = _substring(message, 16, 21);
-    uint256 _land = _substring(message, 21, 26);
-    uint256 _xp = _substring(message, 26, 34);
 
-    require(_avatar > 0, "AvatarId is not valid");
-    require(_land > 0 && _land <= 21000, "LandId is not valid");
-    require(_xp >= 230 && _xp < 19971800, "XP increment is not valid");
-
-    IAvatarManager(avatarAddress).addXP(_avatar, _xp);
-
-    emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp; one event for every reward type
+    proceedFinishMissionMessage(message);
 
     usedSignatures[signatureHashed] = true;
   }
