@@ -73,7 +73,6 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
     _unpause();
   }
 
-  // TODO setName from GameManager with CLNY burning
   function setName(uint256 tokenId, string memory _name) external {
     require (collection.ownerOf(tokenId) == msg.sender, 'not your token');
     require (bytes(_name).length > 0, 'empty name');
