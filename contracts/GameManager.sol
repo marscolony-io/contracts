@@ -24,8 +24,12 @@ contract GameManager is PausableUpgradeable {
   address public MCAddress;
   address public avatarAddress;
   address public pollAddress;
+  address public missionManagerReservedSlot;
+  address public martianColonistsReservedSlot;
+  address public backendSignerReservedSlot;
+  mapping (bytes32 => bool) private usedSignaturesReservedSlot;
 
-  uint256[48] private ______gm_gap_1;
+  uint256[44] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
