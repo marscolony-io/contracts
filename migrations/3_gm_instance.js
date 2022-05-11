@@ -15,5 +15,6 @@ module.exports = async (deployer, network, addresses) => {
   if (network === 'development') {
     return; // this file for manual migrations; pass in tests
   }
-  const inst = await deployer.deploy(CLNY, addresses[0]);
+  console.log({ADDRESS:addresses[0]});
+  const inst = await deployer.deploy(MartianColonists, 'https://meta-mumbai.marscolony.io/');
 };

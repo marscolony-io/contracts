@@ -2,9 +2,8 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
-import './interfaces/NFTMintableInterface.sol';
+import './interfaces/MintBurnInterface.sol';
 import './interfaces/PauseInterface.sol';
-import './interfaces/ERC20MintBurnInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IPoll.sol';
 
@@ -83,7 +82,7 @@ contract GameManager is PausableUpgradeable {
   }
 
   modifier onlyTokenOwner(uint256 tokenId) {
-    require(NFTMintableInterface(MCAddress).ownerOf(tokenId) == msg.sender, "You aren't the token owner");
+    require(MintBurnInterface(MCAddress).ownerOf(tokenId) == msg.sender, "You aren't the token owner");
     _;
   }
 
@@ -199,25 +198,26 @@ contract GameManager is PausableUpgradeable {
 
   function mintAvatar() external nonReentrant {
     _deduct(MINT_AVATAR_LEVEL, REASON_MINT_AVATAR);
-    NFTMintableInterface(avatarAddress).mint(msg.sender);
+    MintBurnInterface(avatarAddress).mint(msg.sender);
   }
 
-  function mintNFT(address _address, uint256 tokenId) private {
+  function mintLand(address _address, uint256 tokenId) private {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
     tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp);
-    NFTMintableInterface(MCAddress).mint(_address, tokenId);
+    MintBurnInterface(MCAddress).mint(_address, tokenId);
   }
 
   /**
    * Mints several tokens
-   * Pls check gas limits to get max possible count
    */
-  function claim(uint256[] calldata tokenIds) external payable whenNotPaused {
+  function claim(uint256[] calldata tokenIds) external payable nonReentrant whenNotPaused {
     require (tokenIds.length != 0, "You can't claim 0 tokens");
     require (msg.value == getFee(tokenIds.length), 'Wrong claiming fee');
     for (uint8 i = 0; i < tokenIds.length; i++) {
-      mintNFT(msg.sender, tokenIds[i]);
+      mintLand(msg.sender, tokenIds[i]);
     }
+    (bool success, ) = payable(DAO).call{ value: msg.value }('');
+    require(success, 'Transfer failed');
   }
 
   /**
@@ -241,7 +241,7 @@ contract GameManager is PausableUpgradeable {
   }
 
   function airdrop(address receiver, uint256 tokenId) external whenNotPaused onlyDAO {
-    mintNFT(receiver, tokenId);
+    mintLand(receiver, tokenId);
     emit Airdrop(receiver, tokenId);
   }
 
@@ -259,6 +259,10 @@ contract GameManager is PausableUpgradeable {
   uint256 constant REASON_PLACE = 2;
   uint256 constant REASON_RENAME_AVATAR = 3;
   uint256 constant REASON_MINT_AVATAR = 4;
+  uint256 constant REASON_ROYALTY = 5;
+  uint256 constant REASON_EARNING = 6;
+  uint256 constant REASON_TREASURY = 7;
+  uint256 constant REASON_LP_POOL = 8;
 
   /**
    * Burn CLNY token for building enhancements
@@ -284,11 +288,19 @@ contract GameManager is PausableUpgradeable {
     if (level == MINT_AVATAR_LEVEL) {
       amount = AVATAR_MINT_COST * 10 ** 18;
       // atrist and team minting royalties
-      ERC20MintBurnInterface(CLNYAddress).mint(0x352c478CD91BA54615Cc1eDFbA4A3E7EC9f60EE1, AVATAR_MINT_COST * 10 ** 18 * 2 / 100);
-      ERC20MintBurnInterface(CLNYAddress).mint(0x2581A6C674D84dAD92A81E8d3072C9561c21B935, AVATAR_MINT_COST * 10 ** 18 * 3 / 100);
+      MintBurnInterface(CLNYAddress).mint(
+        0x352c478CD91BA54615Cc1eDFbA4A3E7EC9f60EE1,
+        AVATAR_MINT_COST * 10 ** 18 * 2 / 100,
+        REASON_ROYALTY
+      );
+      MintBurnInterface(CLNYAddress).mint(
+        0x2581A6C674D84dAD92A81E8d3072C9561c21B935,
+        AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
+        REASON_ROYALTY
+      );
     }
     require (amount > 0, 'Wrong level');
-    ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, amount, reason);
+    MintBurnInterface(CLNYAddress).burn(msg.sender, amount, reason);
   }
 
   function getLastCheckout(uint256 tokenId) public view returns (uint256) {
@@ -315,7 +327,7 @@ contract GameManager is PausableUpgradeable {
   }
 
   function getEarningSpeed(uint256 tokenId) public view returns (uint256) {
-    require (NFTMintableInterface(MCAddress).ownerOf(tokenId) != address(0)); // reverts itself
+    require (MintBurnInterface(MCAddress).ownerOf(tokenId) != address(0)); // reverts itself
     uint256 speed = 1; // bare land
     if (tokenData[tokenId].baseStation > 0) {
       speed = speed + 1; // base station gives +1
@@ -545,13 +557,13 @@ contract GameManager is PausableUpgradeable {
   function claimEarned(uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
     require (tokenIds.length != 0, 'Empty array');
     for (uint8 i = 0; i < tokenIds.length; i++) {
-      require (msg.sender == NFTMintableInterface(MCAddress).ownerOf(tokenIds[i]));
+      require (msg.sender == MintBurnInterface(MCAddress).ownerOf(tokenIds[i]));
       uint256 earned = getEarned(tokenIds[i]);
       tokenData[tokenIds[i]].fixedEarnings = 0;
       tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
-      ERC20MintBurnInterface(CLNYAddress).mint(msg.sender, earned);
-      ERC20MintBurnInterface(CLNYAddress).mint(treasury, earned * 31 / 49);
-      ERC20MintBurnInterface(CLNYAddress).mint(liquidity, earned * 20 / 49);
+      MintBurnInterface(CLNYAddress).mint(msg.sender, earned, REASON_EARNING);
+      MintBurnInterface(CLNYAddress).mint(treasury, earned * 31 / 49, REASON_TREASURY);
+      MintBurnInterface(CLNYAddress).mint(liquidity, earned * 20 / 49, REASON_LP_POOL);
     }
   }
 
