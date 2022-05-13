@@ -1,4 +1,4 @@
-const { mnemonic } = require('./secrets.json');
+const { mnemonic, mumbai_node_key } = require('./secrets.json');
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 
 module.exports = {
@@ -44,25 +44,27 @@ module.exports = {
         });
       },
       network_id: 137,
-      gasPrice: 220 * 1e9,
-      gas: 2300000,
-      gasLimit: 2300000,
-      maxGasFees: 220 * 1e9,
-      maxPriorityFees: 250 * 1e9,
+      gasPrice: 300 * 1e9,
+      maxGasFees: 600 * 1e9,
+      maxPriorityFees: 60 * 1e9,
+      gas: 5000000
     },
     mumbai: {
       provider: () => {
         return new HDWalletProvider({
           mnemonic: mnemonic.mumbai,
-          providerOrUrl: 'https://matic-mumbai.chainstacklabs.com',
+          providerOrUrl: 'https://polygon-mumbai.g.alchemy.com/v2/' + mumbai_node_key,
           derivationPath: `m/44'/60'/0'/0/`,
           confirmations: 0,
           timeoutBlocks: 200,
           networkCheckTimeout: 200000,
         });
       },
+      // gas: 500000,
       network_id: 80001,
-      gasPrice: 50 * 1e9,
+      gasPrice: 20 * 1e9,
+      maxGasFees: 60 * 1e9,
+      maxPriorityFees: 70 * 1e9,
     },
   },
   compilers: {

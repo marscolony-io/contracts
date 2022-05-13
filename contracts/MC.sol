@@ -41,7 +41,7 @@ contract MC is ERC721Enumerable, GameConnection, Pausable, ReentrancyGuard {
     _unpause();
   }
 
-  function _afterTokenTransfer(address from, address to, uint256 tokenId) internal virtual override nonReentrant {
+  function _afterTokenTransfer(address from, address to, uint256 tokenId) internal virtual override {
     super._afterTokenTransfer(from, to, tokenId);
     if (address(salesManager) != address(0)) {
       salesManager.mcTransferHook(from, to, tokenId);

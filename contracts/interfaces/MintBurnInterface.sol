@@ -8,4 +8,5 @@ interface MintBurnInterface {
   function mint(address receiver, uint256 tokenId) external; // MC Land
   function mint(address receiver) external; // Avatar
   function ownerOf(uint256 tokenId) external view returns (address owner);
+  function totalSupply() external view returns (uint256);
 }

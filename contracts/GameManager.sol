@@ -29,7 +29,11 @@ contract GameManager is PausableUpgradeable {
   address public backendSignerReservedSlot;
   mapping (bytes32 => bool) private usedSignaturesReservedSlot;
 
-  uint256[44] private ______gm_gap_1;
+  bool allowlistOnly;
+  mapping (address => bool) private allowlist;
+  uint256 public allowlistLimit;
+
+  uint256[42] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
@@ -97,6 +101,31 @@ contract GameManager is PausableUpgradeable {
     locked = false;
   }
 
+  function addToAllowlist(address[] calldata _addresses) external {
+    // allowlist from one specific address
+    require(msg.sender == 0xf4Fb3ac483C339fC48AD095409C958cF93f2A548, 'invalid sender');
+    for (uint i = 0; i < _addresses.length; i++) {
+      allowlist[_addresses[i]] = true;
+    }
+  }
+
+  function setAllowListLimit(uint256 limit, bool listOn) external {
+    // allowlist from one specific address
+    require(msg.sender == 0xf4Fb3ac483C339fC48AD095409C958cF93f2A548, 'invalid sender');
+    allowlistLimit = limit;
+    allowlistOnly = listOn;
+  }
+
+  function setMCAddress(address _address) external onlyDAO {
+    MCAddress = _address;
+  }
+
+  function saleData() external view returns (bool allowed, uint256 minted, uint256 limit) {
+    allowed = !allowlistOnly || allowlist[msg.sender];
+    minted = MintBurnInterface(MCAddress).totalSupply();
+    limit = allowlistLimit;
+  }
+
   function setAvatarAddress(address _avatarAddress) external onlyDAO {
     avatarAddress = _avatarAddress;
   }
@@ -119,44 +148,6 @@ contract GameManager is PausableUpgradeable {
 
   function vote(uint8 decision) external {
     IPoll(pollAddress).vote(msg.sender, decision);
-  }
-
-  /**
-  * temporary to count burned clny (setBurned)
-  */
-  function getBurnedOnEnhancements() external view returns (uint256) {
-    uint256 result = 0;
-    for (uint256 i = 1; i <= 21000; i++) {
-      LandData memory data = tokenData[i];
-      if (data.baseStation != 0) {
-        result = result + 30;
-      }
-
-      if (data.powerProduction == 1) {
-        result = result + 120;
-      } else if (data.powerProduction == 2) {
-        result = result + 120 + 270;
-      } else if (data.powerProduction == 3) {
-        result = result + 120 + 270 + 480;
-      }
-
-      if (data.transport == 1) {
-        result = result + 120;
-      } else if (data.transport == 2) {
-        result = result + 120 + 270;
-      } else if (data.transport == 3) {
-        result = result + 120 + 270 + 480;
-      }
-
-      if (data.robotAssembly == 1) {
-        result = result + 120;
-      } else if (data.robotAssembly == 2) {
-        result = result + 120 + 270;
-      } else if (data.robotAssembly == 3) {
-        result = result + 120 + 270 + 480;
-      }
-    }
-    return result;
   }
 
   function initialize(
@@ -195,7 +186,7 @@ contract GameManager is PausableUpgradeable {
    * Sets the cost of minting for 1 token
    */
   function setPrice(uint256 _price) external onlyDAO {
-    require(_price >= 0.1 ether && _price <= 10000 ether, 'New price is out of bounds');
+    require(_price >= 0.01 ether && _price <= 10000 ether, 'New price is out of bounds');
     price = _price;
     emit SetPrice(_price);
   }
@@ -205,9 +196,15 @@ contract GameManager is PausableUpgradeable {
     MintBurnInterface(avatarAddress).mint(msg.sender);
   }
 
+  uint64 constant startCLNYDate = 1654041600; // 1 Jun 2022
+
   function mintLand(address _address, uint256 tokenId) private {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
-    tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp);
+    if (allowlistOnly) {
+      require(allowlist[msg.sender], 'you are not in allowlist');
+      require(MintBurnInterface(MCAddress).totalSupply() < allowlistLimit, 'Presale limit has ended');
+    }
+    tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp > startCLNYDate ? block.timestamp : startCLNYDate);
     MintBurnInterface(MCAddress).mint(_address, tokenId);
   }
 
@@ -231,7 +228,9 @@ contract GameManager is PausableUpgradeable {
     _pause();
     PauseInterface(CLNYAddress).pause();
     PauseInterface(MCAddress).pause();
-    PauseInterface(avatarAddress).pause();
+    if (avatarAddress != address(0)) {
+      PauseInterface(avatarAddress).pause();
+    }
   }
 
   /**
@@ -241,7 +240,9 @@ contract GameManager is PausableUpgradeable {
     _unpause();
     PauseInterface(CLNYAddress).unpause();
     PauseInterface(MCAddress).unpause();
-    PauseInterface(avatarAddress).unpause();
+    if (avatarAddress != address(0)) {
+      PauseInterface(avatarAddress).unpause();
+    }
   }
 
   function airdrop(address receiver, uint256 tokenId) external whenNotPaused onlyDAO {
@@ -291,12 +292,7 @@ contract GameManager is PausableUpgradeable {
     }
     if (level == MINT_AVATAR_LEVEL) {
       amount = AVATAR_MINT_COST * 10 ** 18;
-      // atrist and team minting royalties
-      MintBurnInterface(CLNYAddress).mint(
-        0x352c478CD91BA54615Cc1eDFbA4A3E7EC9f60EE1,
-        AVATAR_MINT_COST * 10 ** 18 * 2 / 100,
-        REASON_ROYALTY
-      );
+      // artist and team minting royalties
       MintBurnInterface(CLNYAddress).mint(
         0x2581A6C674D84dAD92A81E8d3072C9561c21B935,
         AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
@@ -312,6 +308,9 @@ contract GameManager is PausableUpgradeable {
   }
 
   function getEarned(uint256 tokenId) public view returns (uint256) {
+    if (block.timestamp <= startCLNYDate) {
+      return 0;
+    }
     return getEarningSpeed(tokenId)
       * (block.timestamp - getLastCheckout(tokenId)) * 10 ** 18 / (24 * 60 * 60)
       + tokenData[tokenId].fixedEarnings;
@@ -350,7 +349,7 @@ contract GameManager is PausableUpgradeable {
 
   function fixEarnings(uint256 tokenId) private {
     tokenData[tokenId].fixedEarnings = getEarned(tokenId);
-    tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp);
+    tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp > startCLNYDate ? block.timestamp : startCLNYDate);
   }
 
   /**
@@ -559,6 +558,7 @@ contract GameManager is PausableUpgradeable {
    * 0x42aa65f4
    */
   function claimEarned(uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
+    require (block.timestamp > startCLNYDate, 'CLNY not started');
     require (tokenIds.length != 0, 'Empty array');
     for (uint8 i = 0; i < tokenIds.length; i++) {
       require (msg.sender == MintBurnInterface(MCAddress).ownerOf(tokenIds[i]));
@@ -569,15 +569,6 @@ contract GameManager is PausableUpgradeable {
       MintBurnInterface(CLNYAddress).mint(treasury, earned * 31 / 49, REASON_TREASURY);
       MintBurnInterface(CLNYAddress).mint(liquidity, earned * 20 / 49, REASON_LP_POOL);
     }
-  }
-
-  /**
-   * 0x91cdd9f0
-   */
-  function withdrawValue(uint256 value) external onlyDAO {
-    require (address(this).balance != 0, 'Nothing to withdraw');
-    (bool success, ) = payable(DAO).call{ value: value }('');
-    require(success, 'Withdraw failed');
   }
 
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
