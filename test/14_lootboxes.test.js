@@ -3,43 +3,27 @@ const truffleAssert = require("truffle-assertions");
 const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
 
 const GM = artifacts.require("GameManager");
-const CLNY = artifacts.require("CLNY");
-const AvatarManager = artifacts.require("AvatarManager");
-const NFT = artifacts.require("MartianColonists");
-const MSN = artifacts.require("MissionManager");
-const MC = artifacts.require("MC");
 const LBX = artifacts.require("Lootboxes");
 
 contract("Lootboxes", (accounts) => {
   const [DAO, user1, user2] = accounts;
 
   let gm;
-  let clny;
-  let avatars;
-  let nft;
-  let msn;
   let lbx;
 
   before(async () => {
     gm = await GM.deployed();
-    clny = await CLNY.deployed();
-    avatars = await AvatarManager.deployed();
-    nft = await NFT.deployed();
-    msn = await MSN.deployed();
-    mc = await MC.deployed();
     lbx = await LBX.deployed();
   });
 
   describe("Mint", function() {
     it("Reverts if mint called not by mission manager", async () => {
       const tx = lbx.mint(user2);
-      await truffleAssert.reverts(tx, "only mission manager");
+      await truffleAssert.reverts(tx, "only game manager");
     });
 
     it("Mints if called by mission manager", async () => {
-      const supplyBefore = await lbx.totalSupply();
-      console.log("before", supplyBefore.toString());
-      await lbx.setMissionManager(DAO);
+      await lbx.setGameManager(DAO);
       await lbx.mint(user1);
       await lbx.mint(user2);
       const supplyAfterMint = await lbx.totalSupply();
@@ -53,6 +37,7 @@ contract("Lootboxes", (accounts) => {
 
   describe("Open", function() {
     it("Reverts if open called not by game manager", async () => {
+      await lbx.setGameManager(user1);
       const tx = lbx.open(1);
       await truffleAssert.reverts(tx, "only game manager");
     });

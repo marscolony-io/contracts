@@ -8,15 +8,9 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 contract Lootboxes is ERC721Enumerable, Ownable {
   string private nftBaseURI;
-  address public missionManager;
   address public gameManager;
   mapping (uint256 => bool) public opened;
   bool lock;
-
-  modifier onlyMissionManager {
-    require(msg.sender == missionManager, 'only mission manager');
-    _;
-  }
 
   modifier onlyGameManager {
     require(msg.sender == gameManager, 'only game manager');
@@ -25,10 +19,6 @@ contract Lootboxes is ERC721Enumerable, Ownable {
 
   constructor (string memory _nftBaseURI) ERC721('Lootboxes', 'LBX') {
     nftBaseURI = _nftBaseURI;
-  }
-
-  function setMissionManager(address _missionManager) external onlyOwner {
-    missionManager = _missionManager;
   }
 
   function setGameManager(address _gameManager) external onlyOwner {
@@ -43,7 +33,7 @@ contract Lootboxes is ERC721Enumerable, Ownable {
     nftBaseURI = newURI;
   }
 
-  function mint(address receiver) external onlyMissionManager {
+  function mint(address receiver) external onlyGameManager {
     require(!lock, 'locked');
     lock = true;
     _safeMint(receiver, ERC721Enumerable.totalSupply() + 1); // +1 because we emit 0 and start with 1
