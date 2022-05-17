@@ -28,12 +28,12 @@ contract GameManager is PausableUpgradeable {
   uint256 public maxTokenId;
   address public MCAddress;
   address public avatarAddress;
-  address public lootboxesAddress;
   address public pollAddress;
   address public missionManager;
   IMartianColonists public martianColonists;
   address public backendSigner;
   mapping (bytes32 => bool) private usedSignatures;
+  address public lootboxesAddress;
 
   uint256[43] private ______gm_gap_1;
 
