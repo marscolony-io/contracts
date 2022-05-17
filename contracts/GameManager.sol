@@ -9,6 +9,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IPoll.sol';
 import './interfaces/IMartianColonists.sol';
 import './interfaces/IAvatarManager.sol';
+import './interfaces/ILootboxes.sol';
 
 
 
@@ -27,13 +28,14 @@ contract GameManager is PausableUpgradeable {
   uint256 public maxTokenId;
   address public MCAddress;
   address public avatarAddress;
+  address public lootboxesAddress;
   address public pollAddress;
   address public missionManager;
   IMartianColonists public martianColonists;
   address public backendSigner;
   mapping (bytes32 => bool) private usedSignatures;
 
-  uint256[44] private ______gm_gap_1;
+  uint256[43] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
@@ -120,6 +122,10 @@ contract GameManager is PausableUpgradeable {
 
   function setPollAddress(address _address) external onlyDAO {
     pollAddress = _address;
+  }
+
+  function setLootboxesAddress(address _address) external onlyDAO {
+    lootboxesAddress = _address;
   }
 
   function getPollData() external view returns (string memory, string memory, string[] memory, uint256[] memory, bool) {
@@ -212,7 +218,7 @@ contract GameManager is PausableUpgradeable {
     return stringToUint(string(result));
   }
 
-  function getAssetsFromFinishMissionMessage(string calldata message) private pure returns (uint256, uint256, uint256) {
+  function getAssetsFromFinishMissionMessage(string calldata message) private pure returns (uint256, uint256, uint256, uint256) {
     // 0..<32 - random
     // 32..<37 - avatar id
     // 37..<42 - land id
@@ -223,18 +229,31 @@ contract GameManager is PausableUpgradeable {
     uint256 _avatar2 = _substring(message, 37, 42);
     uint256 _land = _substring(message, 42, 47);
     uint256 _xp = _substring(message, 47, 55);
+    uint256 _lootbox = _substring(message, 55, 57);
     require(_avatar == _avatar2, 'check failed');
-    return (_avatar, _land, _xp);
+    return (_avatar, _land, _xp, _lootbox);
   }
 
   function proceedFinishMissionMessage(string calldata message) private {
-    (uint256 _avatar, uint256 _land, uint256 _xp) = getAssetsFromFinishMissionMessage(message);
+    (uint256 _avatar, uint256 _land, uint256 _xp, uint256 _lootbox) = getAssetsFromFinishMissionMessage(message);
 
     require(_avatar > 0, "AvatarId is not valid");
     require(_land > 0 && _land <= 21000, "LandId is not valid");
     require(_xp >= 230 && _xp < 19971800, "XP increment is not valid");
+    require(_lootbox == 0 || _lootbox == 12 || _lootbox == 23 , "Lootbox code is not valid");
+
 
     IAvatarManager(avatarAddress).addXP(_avatar, _xp);
+
+    if (_lootbox == 12) {
+      address avatarOwner = martianColonists.ownerOf(_avatar);
+      ILootboxes(lootboxesAddress).mint(avatarOwner);
+    } 
+
+    if (_lootbox == 23) {
+      address landOwner = NFTMintableInterface(MCAddress).ownerOf(_land);
+      ILootboxes(lootboxesAddress).mint(landOwner);
+    }
 
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp; one event for every reward type
   }
