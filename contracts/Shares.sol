@@ -5,6 +5,7 @@ import './interfaces/MintBurnInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 abstract contract Shares {
+  uint256[20] private ______gap;
   struct LandInfo {
     uint256 share;
     uint256 rewardDebt;
@@ -14,6 +15,7 @@ abstract contract Shares {
   uint256 public clnyPerSecond;
   uint256 public totalShare;
   mapping (uint256 => LandInfo) public landInfo;
+  // to add variables here reduce `______gm_gap_0` in GameManager
 
   // Update reward variables to be up-to-date.
   function updatePool(address CLNYAddress) public {

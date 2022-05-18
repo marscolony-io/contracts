@@ -13,8 +13,8 @@ import './Shares.sol';
  * Game logic; upgradable
  */
 contract GameManager is PausableUpgradeable, Shares {
-  // 5 256bit slots in Shares.sol
-  uint256[45] private ______gm_gap_0;
+  // 25 256bit slots in Shares.sol
+  uint256[25] private ______gm_gap_0;
 
   address public DAO; // owner
 
@@ -38,8 +38,7 @@ contract GameManager is PausableUpgradeable, Shares {
   uint256[42] private ______gm_gap_1;
 
   struct LandData {
-    uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
-    uint64 lastCLNYCheckout; // (now - lastCLNYCheckout) * 'earning speed' + fixedEarnings = farmed so far
+    // TODO before deploy - check all zeros
     uint8 baseStation; // 0 or 1
     uint8 transport; // 0 or 1, 2, 3 (levels)
     uint8 robotAssembly; // 0 or 1, 2, 3 (levels)
@@ -207,7 +206,6 @@ contract GameManager is PausableUpgradeable, Shares {
       require(allowlist[msg.sender], 'you are not in allowlist');
       require(MintBurnInterface(MCAddress).totalSupply() < allowlistLimit, 'Presale limit has ended');
     }
-    tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp > startCLNYDate ? block.timestamp : startCLNYDate);
     setInitialShare(tokenId);
     MintBurnInterface(MCAddress).mint(_address, tokenId);
   }
