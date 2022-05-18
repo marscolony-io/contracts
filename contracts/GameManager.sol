@@ -6,13 +6,15 @@ import './interfaces/MintBurnInterface.sol';
 import './interfaces/PauseInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IPoll.sol';
+import './Shares.sol';
 
 
 /**
  * Game logic; upgradable
  */
-contract GameManager is PausableUpgradeable {
-  uint256[50] private ______gm_gap_0;
+contract GameManager is PausableUpgradeable, Shares {
+  // 5 256bit slots in Shares.sol
+  uint256[45] private ______gm_gap_0;
 
   address public DAO; // owner
 
@@ -177,6 +179,7 @@ contract GameManager is PausableUpgradeable {
 
   /**
    * Cost of minting for `tokenCount` tokens
+   * 0xfcee45f4
    */
   function getFee(uint256 tokenCount) public view returns (uint256) {
     return price * tokenCount;
@@ -205,6 +208,7 @@ contract GameManager is PausableUpgradeable {
       require(MintBurnInterface(MCAddress).totalSupply() < allowlistLimit, 'Presale limit has ended');
     }
     tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp > startCLNYDate ? block.timestamp : startCLNYDate);
+    setInitialShare(tokenId);
     MintBurnInterface(MCAddress).mint(_address, tokenId);
   }
 
@@ -217,7 +221,8 @@ contract GameManager is PausableUpgradeable {
     for (uint8 i = 0; i < tokenIds.length; i++) {
       mintLand(msg.sender, tokenIds[i]);
     }
-    (bool success, ) = payable(DAO).call{ value: msg.value }('');
+    // 0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4 - creatorsDAO
+    (bool success, ) = payable(0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4).call{ value: msg.value }('');
     require(success, 'Transfer failed');
   }
 
@@ -268,6 +273,7 @@ contract GameManager is PausableUpgradeable {
   uint256 constant REASON_EARNING = 6;
   uint256 constant REASON_TREASURY = 7;
   uint256 constant REASON_LP_POOL = 8;
+  uint256 constant CLNY_REASON_BASIC = 9;
 
   /**
    * Burn CLNY token for building enhancements
@@ -303,21 +309,9 @@ contract GameManager is PausableUpgradeable {
     MintBurnInterface(CLNYAddress).burn(msg.sender, amount, reason);
   }
 
-  function getLastCheckout(uint256 tokenId) public view returns (uint256) {
-    return tokenData[tokenId].lastCLNYCheckout;
-  }
-
-  function getEarned(uint256 tokenId) public view returns (uint256) {
-    if (block.timestamp <= startCLNYDate) {
-      return 0;
-    }
-    return getEarningSpeed(tokenId)
-      * (block.timestamp - getLastCheckout(tokenId)) * 10 ** 18 / (24 * 60 * 60)
-      + tokenData[tokenId].fixedEarnings;
-  }
-
   /**
    * deprecated, use getAttributesMany
+   * 0x08cfe44b
    */
   function getEarningData(uint256[] memory tokenIds) external view returns (uint256, uint256) {
     uint256 result = 0;
@@ -329,27 +323,9 @@ contract GameManager is PausableUpgradeable {
     return (result, speed);
   }
 
-  function getEarningSpeed(uint256 tokenId) public view returns (uint256) {
-    require (MintBurnInterface(MCAddress).ownerOf(tokenId) != address(0)); // reverts itself
-    uint256 speed = 1; // bare land
-    if (tokenData[tokenId].baseStation > 0) {
-      speed = speed + 1; // base station gives +1
-    }
-    if (tokenData[tokenId].transport > 0 && tokenData[tokenId].transport <= 3) {
-      speed = speed + tokenData[tokenId].transport + 1; // others give from +2 to +4
-    }
-    if (tokenData[tokenId].robotAssembly > 0 && tokenData[tokenId].robotAssembly <= 3) {
-      speed = speed + tokenData[tokenId].robotAssembly + 1;
-    }
-    if (tokenData[tokenId].powerProduction > 0 && tokenData[tokenId].powerProduction <= 3) {
-      speed = speed + tokenData[tokenId].powerProduction + 1;
-    }
-    return speed;
-  }
-
-  function fixEarnings(uint256 tokenId) private {
-    tokenData[tokenId].fixedEarnings = getEarned(tokenId);
-    tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp > startCLNYDate ? block.timestamp : startCLNYDate);
+  /* 0xfd5da729 */
+  function getEarningSpeed(uint256 tokenId) public pure returns (uint256) {
+    return 0; // no constant speed for polygon
   }
 
   /**
@@ -359,7 +335,7 @@ contract GameManager is PausableUpgradeable {
    */
   function buildBaseStation(uint256 tokenId) public onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].baseStation == 0, 'There is already a base station');
-    fixEarnings(tokenId);
+    addToShare(tokenId, 1, CLNYAddress);
     tokenData[tokenId].baseStation = 1;
     _deduct(BASE_STATION, REASON_UPGRADE);
     emit BuildBaseStation(tokenId, msg.sender);
@@ -401,8 +377,9 @@ contract GameManager is PausableUpgradeable {
    * 0x33e3480f
    */
   function buildTransport(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
+    require(level <= 3, 'wrong level');
     require(tokenData[tokenId].transport == level - 1, 'Can buy only next level');
-    fixEarnings(tokenId);
+    addToShare(tokenId, level == 3 ? 2 : 1, CLNYAddress); // level 3 gives +2 shares
     tokenData[tokenId].transport = level;
     _deduct(level, REASON_UPGRADE);
     emit BuildTransport(tokenId, msg.sender, level);
@@ -444,8 +421,9 @@ contract GameManager is PausableUpgradeable {
    * 0x9a3274c4
    */
   function buildRobotAssembly(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
+    require(level <= 3, 'wrong level');
     require(tokenData[tokenId].robotAssembly == level - 1, 'Can buy only next level');
-    fixEarnings(tokenId);
+    addToShare(tokenId, level == 3 ? 2 : 1, CLNYAddress); // level 3 gives +2 shares
     tokenData[tokenId].robotAssembly = level;
     _deduct(level, REASON_UPGRADE);
     emit BuildRobotAssembly(tokenId, msg.sender, level);
@@ -487,8 +465,9 @@ contract GameManager is PausableUpgradeable {
    * 0xcb6ff6f9
    */
   function buildPowerProduction(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
+    require(level <= 3, 'wrong level');
     require(tokenData[tokenId].powerProduction == level - 1, 'Can buy only next level');
-    fixEarnings(tokenId);
+    addToShare(tokenId, level == 3 ? 2 : 1, CLNYAddress); // level 3 gives +2 shares
     tokenData[tokenId].powerProduction = level;
     _deduct(level, REASON_UPGRADE);
     emit BuildPowerProduction(tokenId, msg.sender, level);
@@ -526,6 +505,7 @@ contract GameManager is PausableUpgradeable {
 
   /**
    * deprecated, use getAttributesMany
+   * 0x5bde71ac
    */
   function getEnhancements(uint256 tokenId) external view returns (uint8, uint8, uint8, uint8) {
     return (
@@ -536,6 +516,7 @@ contract GameManager is PausableUpgradeable {
     );
   }
 
+  /* 0x3eb87111 */
   function getAttributesMany(uint256[] calldata tokenIds) external view returns (AttributeData[] memory) {
     AttributeData[] memory result = new AttributeData[](tokenIds.length);
     for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -562,12 +543,7 @@ contract GameManager is PausableUpgradeable {
     require (tokenIds.length != 0, 'Empty array');
     for (uint8 i = 0; i < tokenIds.length; i++) {
       require (msg.sender == MintBurnInterface(MCAddress).ownerOf(tokenIds[i]));
-      uint256 earned = getEarned(tokenIds[i]);
-      tokenData[tokenIds[i]].fixedEarnings = 0;
-      tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
-      MintBurnInterface(CLNYAddress).mint(msg.sender, earned, REASON_EARNING);
-      MintBurnInterface(CLNYAddress).mint(treasury, earned * 31 / 49, REASON_TREASURY);
-      MintBurnInterface(CLNYAddress).mint(liquidity, earned * 20 / 49, REASON_LP_POOL);
+      claimClny(tokenIds[i], CLNYAddress);
     }
   }
 
