@@ -14,22 +14,22 @@ module.exports = {
       port: 9545,
       network_id: "*"
     },
-    ropsten: {
-      provider: new PrivateKeyProvider(key, `https://ropsten.infura.io/v3/${projectId}`),
-      network_id: 3,       // Ropsten's id
-      gas: 5500000,        // Ropsten has a lower block limit than mainnet
-      confirmations: 0,    // # of confs to wait between deployments. (default: 0)
-      timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
-      skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
-    },
-    rinkeby: {
-      provider: new PrivateKeyProvider(key, `https://rinkeby.infura.io/v3/${projectId}`),
-      network_id: 4,       // Rinkeby's id
-      gas: 4500000,        // Ropsten has a lower block limit than mainnet
-      confirmations: 0,    // # of confs to wait between deployments. (default: 0)
-      timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
-      skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
-    },
+    // ropsten: {
+    //   provider: new PrivateKeyProvider(key, `https://ropsten.infura.io/v3/${projectId}`),
+    //   network_id: 3,       // Ropsten's id
+    //   gas: 5500000,        // Ropsten has a lower block limit than mainnet
+    //   confirmations: 0,    // # of confs to wait between deployments. (default: 0)
+    //   timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
+    //   skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+    // },
+    // rinkeby: {
+    //   provider: new PrivateKeyProvider(key, `https://rinkeby.infura.io/v3/${projectId}`),
+    //   network_id: 4,       // Rinkeby's id
+    //   gas: 4500000,        // Ropsten has a lower block limit than mainnet
+    //   confirmations: 0,    // # of confs to wait between deployments. (default: 0)
+    //   timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
+    //   skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+    // },
     bsct: { // binance smart chain test
       provider: () => new HDWalletProvider(mnemonic.bsct, `https://data-seed-prebsc-1-s1.binance.org:8545`),
       network_id: 97,

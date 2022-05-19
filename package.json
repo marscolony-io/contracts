@@ -24,5 +24,8 @@
     "int-test": "truffle exec scripts/check-integrity.js --network hartest",
     "int-maxim": "MAXIM=1 truffle exec scripts/check-integrity.js --network hartest",
     "int-mainnet": "truffle exec scripts/check-integrity.js --network harmain"
+  },
+  "dependencies": {
+    "@openzeppelin/test-helpers": "^0.5.15"
   }
 }
