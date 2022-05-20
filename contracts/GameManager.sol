@@ -34,8 +34,9 @@ contract GameManager is PausableUpgradeable {
   address public backendSigner;
   mapping (bytes32 => bool) private usedSignatures;
   address public lootboxesAddress;
+  mapping (uint256 => uint256) public lootBoxesToMint;
 
-  uint256[43] private ______gm_gap_1;
+  uint256[42] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
@@ -251,11 +252,18 @@ contract GameManager is PausableUpgradeable {
     } 
 
     if (_lootbox == 23) {
-      address landOwner = NFTMintableInterface(MCAddress).ownerOf(_land);
-      ILootboxes(lootboxesAddress).mint(landOwner);
+      lootBoxesToMint[_land]++;
     }
 
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp; one event for every reward type
+  }
+
+  function mintLootbox(uint256 _landId) public {
+    require(lootBoxesToMint[_landId] > 0, "you can not mint lootbox for this land");
+    address landOwner = NFTMintableInterface(MCAddress).ownerOf(_landId);
+    require(landOwner == msg.sender, "you are not a land owner");
+    ILootboxes(lootboxesAddress).mint(landOwner);
+     lootBoxesToMint[_landId]--;
   }
 
   function finishMission(

@@ -100,11 +100,14 @@ contract("Lootboxes", (accounts) => {
       expect(lootBoxOwner).to.be.equal(ownerOfAvatar3);
     });
 
-    it("Mint land owner lootbox", async () => {
+    it("Increase lootBoxesToMint for land owner lootbox", async () => {
       await lbx.setGameManager(gm.address);
 
+      const lootBoxesToMintBefore = await gm.lootBoxesToMint(1);
+      console.log("lootBoxesToMintBefore", lootBoxesToMintBefore.toString());
+
       const message =
-        "1111111111111111111111111111111100002000020000110000000121111111111111111111111";
+        "1111111111111111111111111111111100002000020000110000000231111111111111111111111";
       const signature = await web3.eth.accounts.sign(
         message,
         signer.privateKey
@@ -117,10 +120,29 @@ contract("Lootboxes", (accounts) => {
       await gm.finishMission(message, signature.v, signature.r, signature.s);
 
       const totalSupply = await lbx.totalSupply();
-      expect(Number(totalSupply.toString())).to.be.equal(4);
+      expect(Number(totalSupply.toString())).to.be.equal(3);
 
-      const lootBoxOwner = await lbx.ownerOf(4);
-      expect(lootBoxOwner).to.be.equal(ownerOfLand);
+      const lootBoxesToMintAfter = await gm.lootBoxesToMint(1);
+      console.log("lootBoxesToMintAfter", lootBoxesToMintAfter.toString());
+
+      expect(lootBoxesToMintAfter - lootBoxesToMintBefore).to.be.equal(1);
+    });
+
+    it("Reverts if land has no lootboxes to mint", async () => {
+      const tx = gm.mintLootbox(2);
+      await truffleAssert.reverts(tx, "you can not mint lootbox for this land");
+    });
+
+    it("Reverts if minted by not the land ovner", async () => {
+      const tx = gm.mintLootbox(1, { from: user2 });
+      await truffleAssert.reverts(tx, "you are not a land owner");
+    });
+
+    it("Mint new lootbox success path", async () => {
+      await gm.mintLootbox(1, { from: user1 });
+
+      const lootBoxOwner = await lbx.ownerOf(3);
+      expect(lootBoxOwner).to.be.equal(user1);
     });
   });
 });
