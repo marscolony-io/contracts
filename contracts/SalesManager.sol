@@ -31,6 +31,9 @@ contract SalesManager is ISalesManager, OwnableUpgradeable, PausableUpgradeable 
     if (from == address(0)) {
       return; // allow mint
     }
+    if (from == 0x00F5058230D8Dff9047b2BDFa14eDAE21c53D0FC) { // allow marketing aims
+      return;
+    }
     require (msg.sender == MC, 'wrong sender');
     require (saleStart < block.timestamp, 'transfer is locked yet');
     // nothing yet
