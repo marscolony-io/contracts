@@ -13,7 +13,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 
 contract CLNY is ERC20, GameConnection, Pausable {
-  constructor (address _DAO) ERC20('ColonyToken', 'CLNY') {
+  constructor (address _DAO) ERC20('ColonyToken', 'pCLNY') {
     GameConnection.__GameConnection_init(_DAO);
   }
 
