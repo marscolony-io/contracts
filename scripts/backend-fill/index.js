@@ -56,10 +56,12 @@ module.exports = async (callback) => {
 
       // console.log({ userLandsIds });
 
-      await gm.claim(userLandsIds, {
-        value: web3.utils.toWei((userLandsCount / 10).toString()),
-        from: accounts[userId],
-      });
+      if (userLandsIds.length) {
+        await gm.claim(userLandsIds, {
+          value: web3.utils.toWei((userLandsCount / 10).toString()),
+          from: accounts[userId],
+        });
+      }
 
       // set some acounts private
 
@@ -109,6 +111,7 @@ module.exports = async (callback) => {
 
     // build stations
     for (const account of accounts) {
+      if (!userLandsMap.has(account)) continue;
       for (const landId of userLandsMap.get(account)) {
         if (Math.random() < 0.7) {
           console.log("build base station for land", landId);
