@@ -31,6 +31,8 @@ contract("MC", function (accounts) {
         nft = await NFT.deployed();
         salesManager = await SalesManager.deployed();
         await nft.setGameManager(DAO, { from: DAO });
+        await salesManager.setRoyaltyAddress(user3, { from: DAO })
+        await salesManager.setRoyalty(10600, { from: DAO })
     });
     const GM = DAO
     it("should mint to address[1]", async function () {
@@ -56,17 +58,21 @@ contract("MC", function (accounts) {
         expect(await nft.ownerOf(1)).equal(user1)
         const seller = await balance.tracker(user1)
         const buyer = await balance.tracker(user2)
+        const royalty = await balance.tracker(user3)
         let sellerFunds = Number(await seller.get())
         let buyerFunds = Number(await buyer.get())
-        console.log(sellerFunds, buyerFunds)
+        let royaltyFunds = Number(await royalty.get())
+        console.log(sellerFunds*1e-18, buyerFunds*1e-18, royaltyFunds*1e-18)
         await salesManager.buyToken(1, {from: user2, value: ether("0.6")})
         // let sl = Number(await seller.delta())
         // let br = -Number(await buyer.delta())
         let sl = Number(await seller.get())-sellerFunds
         let br = -(Number(await buyer.get())-buyerFunds)
+        let rl = Number(await royalty.get())-royaltyFunds
         // console.log(sl*1e-18, br*1e-18)
-        expect(sl*1e-18).to.be.greaterThanOrEqual(0.5)
+        expect(sl*1e-18).to.be.greaterThanOrEqual(0.5-0.5*0.06)
         expect(br*1e-18).to.be.greaterThanOrEqual(0.5)
+        expect(rl*1e-18).to.be.greaterThanOrEqual(0.5*0.06)
         // expect(sl>=ether("0.5")).to.be.true
         // expect(br>=ether("0.5")).to.be.true
         expect(await nft.ownerOf(1)).equal(user2)

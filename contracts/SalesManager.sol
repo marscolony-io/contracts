@@ -18,6 +18,7 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
     __Ownable_init();
     __ReentrancyGuard_init();
     MC = _MC;
+    royalty = 10000; // Is that necessary?
   }
 
   struct TokenData {
@@ -27,6 +28,8 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
   }
 
   mapping (uint256 => TokenData) public sales;
+  address public royaltyWallet;
+  uint256 public royalty;
 
   function placeToken (uint price, uint _days, uint256 tokenId) public {
     require(IERC721(MC).ownerOf(tokenId) == msg.sender, "You're not an owner of this token");
@@ -47,12 +50,14 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
     delete sales[tokenId];
   }
 
-  function buyToken(uint256 tokenId) public payable nonReentrant { // No Reentrancy
+  function buyToken(uint256 tokenId) public payable nonReentrant {
+    uint256 royaltyPrice = sales[tokenId].price*royalty/10000-sales[tokenId].price;
     require(msg.value >= sales[tokenId].price, "Not enough funds");
     require(sales[tokenId].time != 0, "Token is not for sale");
     require(sales[tokenId].time > block.timestamp, "Token time period ended");
     require(IERC721(MC).getApproved(tokenId) == address(this), "NFT must be approved to market");
-    payable(sales[tokenId].owner).transfer(sales[tokenId].price);
+    payable(sales[tokenId].owner).transfer(sales[tokenId].price-royaltyPrice);
+    payable(royaltyWallet).transfer(royaltyPrice);
     if (msg.value-sales[tokenId].price>0) {
       payable(msg.sender).transfer(msg.value-sales[tokenId].price);
     }
@@ -71,4 +76,15 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
     MC = _MC;
   }
 
+  function setRoyaltyAddress(address _royaltyWallet) external onlyOwner {
+    royaltyWallet = _royaltyWallet;
+  }
+
+  function setRoyalty(uint256 _royalty) external onlyOwner {
+    royalty = _royalty;
+  }
+
+  function getRoyaltyValue() external view returns (uint256) {
+    return royalty;
+  }
 }
