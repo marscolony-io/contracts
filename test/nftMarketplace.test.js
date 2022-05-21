@@ -49,10 +49,10 @@ contract("MC", function (accounts) {
         expect(await salesManager.isTokenPlaced(1)).to.be.true
     });
     it("Set royalty", async function () {
-        await expectRevert(salesManager.setRoyalty(0, { from: DAO }), "Royalty must be greater than 0")
-        await expectRevert(salesManager.setRoyalty(25, { from: DAO }), "Royalty must be less or equal 20")
-        await expectRevert(salesManager.buyToken(1, { from: user2, value: ether("0.5") }), "Royalty must be greater than 0")
-        await salesManager.setRoyalty(6, { from: DAO })
+        // await expectRevert(salesManager.setRoyalty(-20, { from: DAO }), "Royalty must be greater or equal 0")
+        await expectRevert(salesManager.setRoyalty(2500, { from: DAO }), "Royalty must be less or equal 2000")
+        await salesManager.setRoyalty(600, { from: DAO })
+        expect(Number(await salesManager.royalty())).to.be.equal(600)
     })
     it("buyToken", async function () {
         await nft.approve(salesManager.address, 1, {from: user1})

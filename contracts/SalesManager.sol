@@ -13,6 +13,8 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
 
   uint256[50] private ______gap_0;
 
+  uint256 constant ROYALTY_MULTIPLIER = 10000;
+
   function initialize (address _MC) public initializer {
     __Pausable_init();
     __Ownable_init();
@@ -51,13 +53,14 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
 
   function buyToken(uint256 tokenId) public payable nonReentrant {
     require(msg.value >= sales[tokenId].price, "Not enough funds");
-    require(royalty > 0, "Royalty must be greater than 0");
     require(sales[tokenId].time != 0, "Token is not for sale");
     require(sales[tokenId].time > block.timestamp, "Token time period ended");
     require(IERC721(MC).getApproved(tokenId) == address(this), "NFT must be approved to market");
-    uint256 royaltyPrice = sales[tokenId].price*royalty/100;
+    uint256 royaltyPrice = sales[tokenId].price*royalty/ROYALTY_MULTIPLIER;
     payable(sales[tokenId].owner).transfer(sales[tokenId].price-royaltyPrice);
-    payable(royaltyWallet).transfer(royaltyPrice);
+    if (royalty > 0) {
+      payable(royaltyWallet).transfer(royaltyPrice);
+    }
     if (msg.value-sales[tokenId].price>0) {
       payable(msg.sender).transfer(msg.value-sales[tokenId].price);
     }
@@ -81,12 +84,7 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
   }
 
   function setRoyalty(uint256 _royalty) external onlyOwner {
-    require(_royalty > 0, "Royalty must be greater than 0");
-    require(_royalty <= 20, "Royalty must be less or equal 20");
+    require(_royalty <= 2000, "Royalty must be less or equal 2000");
     royalty = _royalty;
-  }
-
-  function getRoyaltyValue() external view returns (uint256) {
-    return royalty;
   }
 }
