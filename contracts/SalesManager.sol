@@ -18,7 +18,6 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
     __Ownable_init();
     __ReentrancyGuard_init();
     MC = _MC;
-    royalty = 10000; // Is that necessary?
   }
 
   struct TokenData {
@@ -51,11 +50,12 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
   }
 
   function buyToken(uint256 tokenId) public payable nonReentrant {
-    uint256 royaltyPrice = sales[tokenId].price*royalty/10000-sales[tokenId].price;
     require(msg.value >= sales[tokenId].price, "Not enough funds");
+    require(royalty > 0, "Royalty must be greater than 0");
     require(sales[tokenId].time != 0, "Token is not for sale");
     require(sales[tokenId].time > block.timestamp, "Token time period ended");
     require(IERC721(MC).getApproved(tokenId) == address(this), "NFT must be approved to market");
+    uint256 royaltyPrice = sales[tokenId].price*royalty/100;
     payable(sales[tokenId].owner).transfer(sales[tokenId].price-royaltyPrice);
     payable(royaltyWallet).transfer(royaltyPrice);
     if (msg.value-sales[tokenId].price>0) {
@@ -81,6 +81,8 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
   }
 
   function setRoyalty(uint256 _royalty) external onlyOwner {
+    require(_royalty > 0, "Royalty must be greater than 0");
+    require(_royalty <= 20, "Royalty must be less or equal 20");
     royalty = _royalty;
   }
 

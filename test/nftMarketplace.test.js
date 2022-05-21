@@ -32,7 +32,6 @@ contract("MC", function (accounts) {
         salesManager = await SalesManager.deployed();
         await nft.setGameManager(DAO, { from: DAO });
         await salesManager.setRoyaltyAddress(user3, { from: DAO })
-        await salesManager.setRoyalty(10600, { from: DAO })
     });
     const GM = DAO
     it("should mint to address[1]", async function () {
@@ -49,6 +48,12 @@ contract("MC", function (accounts) {
         await salesManager.placeToken(ether("0.5"), 4, 1, {from: user1})
         expect(await salesManager.isTokenPlaced(1)).to.be.true
     });
+    it("Set royalty", async function () {
+        await expectRevert(salesManager.setRoyalty(0, { from: DAO }), "Royalty must be greater than 0")
+        await expectRevert(salesManager.setRoyalty(25, { from: DAO }), "Royalty must be less or equal 20")
+        await expectRevert(salesManager.buyToken(1, { from: user2, value: ether("0.5") }), "Royalty must be greater than 0")
+        await salesManager.setRoyalty(6, { from: DAO })
+    })
     it("buyToken", async function () {
         await nft.approve(salesManager.address, 1, {from: user1})
         await expectRevert(salesManager.buyToken(1, {from: user2, value: ether("0.4")}), "Not enough funds")
@@ -64,17 +69,12 @@ contract("MC", function (accounts) {
         let royaltyFunds = Number(await royalty.get())
         console.log(sellerFunds*1e-18, buyerFunds*1e-18, royaltyFunds*1e-18)
         await salesManager.buyToken(1, {from: user2, value: ether("0.6")})
-        // let sl = Number(await seller.delta())
-        // let br = -Number(await buyer.delta())
         let sl = Number(await seller.get())-sellerFunds
         let br = -(Number(await buyer.get())-buyerFunds)
         let rl = Number(await royalty.get())-royaltyFunds
-        // console.log(sl*1e-18, br*1e-18)
         expect(sl*1e-18).to.be.greaterThanOrEqual(0.5-0.5*0.06)
         expect(br*1e-18).to.be.greaterThanOrEqual(0.5)
         expect(rl*1e-18).to.be.greaterThanOrEqual(0.5*0.06)
-        // expect(sl>=ether("0.5")).to.be.true
-        // expect(br>=ether("0.5")).to.be.true
         expect(await nft.ownerOf(1)).equal(user2)
     })
     it("removeToken", async function () {

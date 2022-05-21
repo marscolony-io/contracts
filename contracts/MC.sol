@@ -12,7 +12,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import "./interfaces/ISalesManager.sol";
 
 
-contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable, OwnableUpgradeable {
+contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable {
   string private nftBaseURI;
   mapping (uint256 => string) public names; // token owner can set a name for their NFT
 
