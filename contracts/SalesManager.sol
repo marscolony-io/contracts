@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import "./interfaces/ISalesManager.sol";
+import "./interfaces/IMC.sol";
 
 contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, PausableUpgradeable, ISalesManager {
 
@@ -34,7 +35,7 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
 
   function placeToken (uint price, uint _days, uint256 tokenId) public {
     require(IERC721(MC).ownerOf(tokenId) == msg.sender, "You're not an owner of this token");
-    require(IERC721(MC).getApproved(tokenId) == address(this), "NFT must be approved to market");
+    // require(IERC721(MC).getApproved(tokenId) == address(this), "NFT must be approved to market");
     require(price > 0, "Price is too low");
     require(_days <= 30, "Too long period of time");
     require(_days > 0, "Time period too short");
@@ -55,7 +56,7 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
     require(msg.value >= sales[tokenId].price, "Not enough funds");
     require(sales[tokenId].time != 0, "Token is not for sale");
     require(sales[tokenId].time > block.timestamp, "Token time period ended");
-    require(IERC721(MC).getApproved(tokenId) == address(this), "NFT must be approved to market");
+    // require(IERC721(MC).getApproved(tokenId) == address(this), "NFT must be approved to market");
     uint256 royaltyPrice = sales[tokenId].price*royalty/ROYALTY_MULTIPLIER;
     payable(sales[tokenId].owner).transfer(sales[tokenId].price-royaltyPrice);
     if (royalty > 0) {
@@ -64,7 +65,8 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
     if (msg.value-sales[tokenId].price>0) {
       payable(msg.sender).transfer(msg.value-sales[tokenId].price);
     }
-    IERC721(MC).safeTransferFrom(sales[tokenId].owner, msg.sender, tokenId, "");
+    // IERC721(MC).safeTransferFrom(sales[tokenId].owner, msg.sender, tokenId, "");
+    IMC(MC).trade(sales[tokenId].owner, msg.sender, tokenId);
   }
 
   function isTokenPlaced (uint256 tokenId) view external returns(bool) {

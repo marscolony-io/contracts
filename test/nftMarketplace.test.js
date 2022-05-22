@@ -39,7 +39,7 @@ contract("MC", function (accounts) {
         expect(await nft.ownerOf(1)).equal(user1)
     });
     it("placeToken", async function () {
-        await nft.approve(salesManager.address, 1, {from: user1})
+        // await nft.approve(salesManager.address, 1, {from: user1})
         await expectRevert(salesManager.placeToken(ether("0.5"), 4, 1, {from: user2}), "You're not an owner of this token")
         await expectRevert(salesManager.placeToken(ether("0"), 4, 1, {from: user1}), "Price is too low")
         await expectRevert(salesManager.placeToken(ether("0.5"), 40, 1, {from: user1}), "Too long period of time")
@@ -55,7 +55,7 @@ contract("MC", function (accounts) {
         expect(Number(await salesManager.royalty())).to.be.equal(600)
     })
     it("buyToken", async function () {
-        await nft.approve(salesManager.address, 1, {from: user1})
+        // await nft.approve(salesManager.address, 1, {from: user1})
         await expectRevert(salesManager.buyToken(1, {from: user2, value: ether("0.4")}), "Not enough funds")
         await time.increase(5*24*60*60)
         await expectRevert(salesManager.buyToken(1, {from: user2, value: ether("0.5")}), "Token time period ended")
@@ -78,7 +78,7 @@ contract("MC", function (accounts) {
         expect(await nft.ownerOf(1)).equal(user2)
     })
     it("removeToken", async function () {
-        await nft.approve(salesManager.address, 1, {from: user2})
+        // await nft.approve(salesManager.address, 1, {from: user2})
         await expectRevert(salesManager.removeToken(1, {from: user1}), "You're not an owner of this token")
         await salesManager.placeToken(ether("0.5"), 4, 1, {from: user2})
         expect(await salesManager.isTokenPlaced(1)).to.be.true
@@ -86,7 +86,7 @@ contract("MC", function (accounts) {
         expect(await salesManager.isTokenPlaced(1)).to.be.false
     })
     it("afterTransfer", async function () {
-        await nft.approve(salesManager.address, 1, {from: user2})
+        // await nft.approve(salesManager.address, 1, {from: user2})
         await salesManager.placeToken(ether("0.5"), 4, 1, {from: user2})
         expect(await nft.ownerOf(1)).equal(user2)
         await nft.transferFrom(user2, user1, 1, {from: user2})
