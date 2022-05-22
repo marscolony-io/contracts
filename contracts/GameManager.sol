@@ -42,7 +42,8 @@ contract GameManager is PausableUpgradeable, Shares {
   uint256[41] private ______gm_gap_1;
 
   struct LandData {
-    // TODO before deploy - check all zeros
+    uint256 deprecated1;
+    uint64 deprecated2;
     uint8 baseStation; // 0 or 1
     uint8 transport; // 0 or 1, 2, 3 (levels)
     uint8 robotAssembly; // 0 or 1, 2, 3 (levels)
@@ -287,44 +288,6 @@ contract GameManager is PausableUpgradeable, Shares {
     usedSignatures[signatureHashed] = true;
   }
 
-  /**
-  * temporary to count burned clny (setBurned)
-  */
-  function getBurnedOnEnhancements() external view returns (uint256) {
-    uint256 result = 0;
-    for (uint256 i = 1; i <= 21000; i++) {
-      LandData memory data = tokenData[i];
-      if (data.baseStation != 0) {
-        result = result + 30;
-      }
-
-      if (data.powerProduction == 1) {
-        result = result + 120;
-      } else if (data.powerProduction == 2) {
-        result = result + 120 + 270;
-      } else if (data.powerProduction == 3) {
-        result = result + 120 + 270 + 480;
-      }
-
-      if (data.transport == 1) {
-        result = result + 120;
-      } else if (data.transport == 2) {
-        result = result + 120 + 270;
-      } else if (data.transport == 3) {
-        result = result + 120 + 270 + 480;
-      }
-
-      if (data.robotAssembly == 1) {
-        result = result + 120;
-      } else if (data.robotAssembly == 2) {
-        result = result + 120 + 270;
-      } else if (data.robotAssembly == 3) {
-        result = result + 120 + 270 + 480;
-      }
-    }
-    return result;
-  }
-
   function initialize(
     address _DAO,
     address _CLNYAddress,
@@ -446,7 +409,6 @@ contract GameManager is PausableUpgradeable, Shares {
   uint256 constant REASON_EARNING = 6;
   uint256 constant REASON_TREASURY = 7;
   uint256 constant REASON_LP_POOL = 8;
-  uint256 constant CLNY_REASON_BASIC = 9;
 
   /**
    * Burn CLNY token for building enhancements
