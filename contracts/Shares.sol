@@ -29,11 +29,12 @@ abstract contract Shares {
     uint256 clnyReward = (block.timestamp - lastRewardTime) * clnyPerSecond;
     accColonyPerShare = accColonyPerShare + clnyReward * 1e12 / totalShare;
     lastRewardTime = block.timestamp;
-    MintBurnInterface(CLNYAddress).mint(address(this), clnyReward, 100); // TODO to const
+    MintBurnInterface(CLNYAddress).mint(address(this), clnyReward, 100); // TODO 100 to const
   }
 
   function setInitialShare(uint256 tokenId) internal {
     landInfo[tokenId].share = 1;
+    landInfo[tokenId].rewardDebt = accColonyPerShare / 1e12;
     totalShare = totalShare + 1;
   }
 
@@ -46,6 +47,7 @@ abstract contract Shares {
   }
 
   function getShare(uint256 tokenId) external view returns (uint256) {
+    // TODO getShares(uint256[])
     return landInfo[tokenId].share;
   }
 
@@ -61,9 +63,8 @@ abstract contract Shares {
     require(result, 'transfer failed');
   }
 
-  function claimClny(uint256 tokenId, address CLNY) internal {
+  function claimClnyWithoutPoolUpdate(uint256 tokenId, address CLNY) internal {
     LandInfo storage land = landInfo[tokenId];
-    updatePool(CLNY);
     uint256 pending = land.share * accColonyPerShare / 1e12 - land.rewardDebt;
     land.rewardDebt = (land.share * accColonyPerShare) / 1e12;
     safeClnyTransfer(msg.sender, pending, IERC20(CLNY));

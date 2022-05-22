@@ -102,6 +102,11 @@ contract GameManager is PausableUpgradeable, Shares {
     locked = false;
   }
 
+  function setClnyPerSecond(uint256 newSpeed) external onlyDAO {
+    updatePool(CLNYAddress);
+    clnyPerSecond = newSpeed;
+  }
+
   function addToAllowlist(address[] calldata _addresses) external {
     // allowlist from one specific address
     require(msg.sender == 0xf4Fb3ac483C339fC48AD095409C958cF93f2A548, 'invalid sender');
@@ -216,6 +221,7 @@ contract GameManager is PausableUpgradeable, Shares {
   function claim(uint256[] calldata tokenIds) external payable nonReentrant whenNotPaused {
     require (tokenIds.length != 0, "You can't claim 0 tokens");
     require (msg.value == getFee(tokenIds.length), 'Wrong claiming fee');
+    updatePool(CLNYAddress);
     for (uint8 i = 0; i < tokenIds.length; i++) {
       mintLand(msg.sender, tokenIds[i]);
     }
@@ -539,9 +545,10 @@ contract GameManager is PausableUpgradeable, Shares {
   function claimEarned(uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
     require (block.timestamp > startCLNYDate, 'CLNY not started');
     require (tokenIds.length != 0, 'Empty array');
+    updatePool(CLNYAddress);
     for (uint8 i = 0; i < tokenIds.length; i++) {
       require (msg.sender == MintBurnInterface(MCAddress).ownerOf(tokenIds[i]));
-      claimClny(tokenIds[i], CLNYAddress);
+      claimClnyWithoutPoolUpdate(tokenIds[i], CLNYAddress);
     }
   }
 
