@@ -8,6 +8,7 @@
 const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 
 const GameManager = artifacts.require('GameManager');
+const AM = artifacts.require('AvatarManager');
 const MC = artifacts.require('MC');
 const CLNY = artifacts.require('CLNY');
 const MartianColonists = artifacts.require('MartianColonists');

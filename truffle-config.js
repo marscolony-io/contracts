@@ -13,7 +13,7 @@ module.exports = {
         return new HDWalletProvider({
           mnemonic: mnemonic.hart,
           providerOrUrl: 'https://api.s0.b.hmny.io',
-          derivationPath: `m/44'/1023'/0'/0/`
+          derivationPath: `m/44'/60'/0'/0/`
         });
       },
       network_id: 1666700000,

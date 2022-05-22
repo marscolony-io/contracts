@@ -7,6 +7,9 @@ import './interfaces/PauseInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IPoll.sol';
 import './Shares.sol';
+import './interfaces/IMartianColonists.sol';
+import './interfaces/IAvatarManager.sol';
+
 
 
 /**
@@ -26,16 +29,17 @@ contract GameManager is PausableUpgradeable, Shares {
   address public MCAddress;
   address public avatarAddress;
   address public pollAddress;
-  address public missionManagerReservedSlot;
-  address public martianColonistsReservedSlot;
-  address public backendSignerReservedSlot;
-  mapping (bytes32 => bool) private usedSignaturesReservedSlot;
+
+  address public missionManager;
+  IMartianColonists public martianColonists;
+  address public backendSigner;
+  mapping (bytes32 => bool) private usedSignatures;
 
   bool allowlistOnly;
   mapping (address => bool) private allowlist;
   uint256 public allowlistLimit;
 
-  uint256[42] private ______gm_gap_1;
+  uint256[41] private ______gm_gap_1;
 
   struct LandData {
     // TODO before deploy - check all zeros
@@ -84,6 +88,7 @@ contract GameManager is PausableUpgradeable, Shares {
   // 9914b04dac571a45d7a7b33184088cbd4d62a2ed88e64602a6b8a6a93b3fb0a6
   event BuildPowerProduction (uint256 tokenId, address indexed owner, uint8 level);
   event SetPrice (uint256 price);
+  event MissionReward (uint256 indexed landId, uint256 indexed avatarId, uint256 indexed rewardType, uint256 rewardAmount);
 
   modifier onlyDAO {
     require(msg.sender == DAO, 'Only DAO');
@@ -122,14 +127,22 @@ contract GameManager is PausableUpgradeable, Shares {
     allowlistOnly = listOn;
   }
 
-  function setMCAddress(address _address) external onlyDAO {
-    MCAddress = _address;
-  }
-
   function saleData() external view returns (bool allowed, uint256 minted, uint256 limit) {
     allowed = !allowlistOnly || allowlist[msg.sender];
     minted = MintBurnInterface(MCAddress).totalSupply();
     limit = allowlistLimit;
+  }
+
+  function setMissionManager(address _address) external onlyDAO {
+    missionManager = _address;
+  }
+
+  function setBackendSigner(address _address) external onlyDAO {
+    backendSigner = _address;
+  }
+
+  function setMartianColonists(address _address) external onlyDAO {
+    martianColonists = IMartianColonists(_address);
   }
 
   function setAvatarAddress(address _avatarAddress) external onlyDAO {
@@ -154,6 +167,162 @@ contract GameManager is PausableUpgradeable, Shares {
 
   function vote(uint8 decision) external {
     IPoll(pollAddress).vote(msg.sender, decision);
+  }
+
+  function stringToUint(string memory s) private pure returns (uint256) {
+    bytes memory b = bytes(s);
+    uint result = 0;
+    for (uint i = 0; i < b.length; i++) {
+      if (uint8(b[i]) >= 48 && uint8(b[i]) <= 57) {
+        result = result * 10 + (uint8(b[i]) - 48);
+      }
+    }
+    return result;
+  }
+
+  function _getSignerAddress(
+    string memory message,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) private pure returns (address signer) {
+    string memory header = '\x19Ethereum Signed Message:\n000000';
+    uint256 lengthOffset;
+    uint256 length;
+    assembly {
+      length := mload(message)
+      lengthOffset := add(header, 57)
+    }
+
+    require(length <= 999999);
+
+    uint256 lengthLength = 0;
+    uint256 divisor = 100000;
+
+    while (divisor != 0) {
+      uint256 digit = length / divisor;
+      if (digit == 0) {
+        if (lengthLength == 0) {
+          divisor /= 10;
+          continue;
+        }
+      }
+
+      lengthLength++;
+      length -= digit * divisor;
+      divisor /= 10;
+      digit += 0x30;
+      lengthOffset++;
+
+      assembly {
+        mstore8(lengthOffset, digit)
+      }
+    }
+
+    if (lengthLength == 0) {
+      lengthLength = 1 + 0x19 + 1;
+    } else {
+      lengthLength += 1 + 0x19;
+    }
+
+    assembly {
+      mstore(header, lengthLength)
+    }
+
+    bytes32 check = keccak256(abi.encodePacked(header, message));
+
+    return ecrecover(check, v, r, s);
+  }
+
+  function _substring(string memory str, uint startIndex, uint endIndex) private pure returns (uint256 ) {
+    bytes memory strBytes = bytes(str);
+    bytes memory result = new bytes(endIndex-startIndex);
+    for(uint i = startIndex; i < endIndex; i++) {
+      result[i - startIndex] = strBytes[i];
+    }
+    return stringToUint(string(result));
+  }
+
+  function getAssetsFromFinishMissionMessage(string calldata message) private pure returns (uint256, uint256, uint256) {
+    // 0..<32 - random
+    // 32..<37 - avatar id
+    // 37..<42 - land id
+    // 42..<47 - avatar id (again)
+    // 47..<55 - xp reward like 00000020
+    // 55... and several 8-byte blocks - reserved
+    uint256 _avatar = _substring(message, 32, 37);
+    uint256 _avatar2 = _substring(message, 37, 42);
+    uint256 _land = _substring(message, 42, 47);
+    uint256 _xp = _substring(message, 47, 55);
+    require(_avatar == _avatar2, 'check failed');
+    return (_avatar, _land, _xp);
+  }
+
+  function proceedFinishMissionMessage(string calldata message) private {
+    (uint256 _avatar, uint256 _land, uint256 _xp) = getAssetsFromFinishMissionMessage(message);
+
+    require(_avatar > 0, "AvatarId is not valid");
+    require(_land > 0 && _land <= 21000, "LandId is not valid");
+    require(_xp >= 230 && _xp < 19971800, "XP increment is not valid");
+
+    IAvatarManager(avatarAddress).addXP(_avatar, _xp);
+
+    emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp; one event for every reward type
+  }
+
+  function finishMission(
+    string calldata message,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) external {
+    address signerAddress = _getSignerAddress(message, v, r, s);
+    require(signerAddress == backendSigner, "Signature is not from server");
+
+    bytes32 signatureHashed = keccak256(abi.encodePacked(v, r, s));
+    require (!usedSignatures[signatureHashed], 'signature has been used');
+
+    proceedFinishMissionMessage(message);
+
+    usedSignatures[signatureHashed] = true;
+  }
+
+  /**
+  * temporary to count burned clny (setBurned)
+  */
+  function getBurnedOnEnhancements() external view returns (uint256) {
+    uint256 result = 0;
+    for (uint256 i = 1; i <= 21000; i++) {
+      LandData memory data = tokenData[i];
+      if (data.baseStation != 0) {
+        result = result + 30;
+      }
+
+      if (data.powerProduction == 1) {
+        result = result + 120;
+      } else if (data.powerProduction == 2) {
+        result = result + 120 + 270;
+      } else if (data.powerProduction == 3) {
+        result = result + 120 + 270 + 480;
+      }
+
+      if (data.transport == 1) {
+        result = result + 120;
+      } else if (data.transport == 2) {
+        result = result + 120 + 270;
+      } else if (data.transport == 3) {
+        result = result + 120 + 270 + 480;
+      }
+
+      if (data.robotAssembly == 1) {
+        result = result + 120;
+      } else if (data.robotAssembly == 2) {
+        result = result + 120 + 270;
+      } else if (data.robotAssembly == 3) {
+        result = result + 120 + 270 + 480;
+      }
+    }
+    return result;
   }
 
   function initialize(
