@@ -14,6 +14,8 @@ contract("Lootboxes", (accounts) => {
   let lbx;
   let mc;
 
+  const baseUri = "baseuri.test/";
+
   before(async () => {
     gm = await GM.deployed();
     lbx = await LBX.deployed();
@@ -33,20 +35,57 @@ contract("Lootboxes", (accounts) => {
 
   describe("Mint", function() {
     it("Reverts if mint called not by mission manager", async () => {
-      const tx = lbx.mint(user2);
+      const tx = lbx.mint(user2, 1);
       await truffleAssert.reverts(tx, "only game manager");
     });
 
     it("Mints if called by mission manager", async () => {
       await lbx.setGameManager(DAO);
-      await lbx.mint(user1);
-      await lbx.mint(user2);
+      await lbx.setBaseURI(baseUri);
+      await lbx.mint(user1, 0);
+      await lbx.mint(user2, 1);
       const supplyAfterMint = await lbx.totalSupply();
       expect(Number(supplyAfterMint.toString())).to.be.equal(2);
       const ownerOf1 = await lbx.ownerOf(1);
       const ownerOf2 = await lbx.ownerOf(2);
       expect(ownerOf1).to.be.equal(user1);
       expect(ownerOf2).to.be.equal(user2);
+    });
+  });
+
+  describe("Rarity", function() {
+    it("Returns correct rarity from struct", async () => {
+      let lastTokenId = await lbx.totalSupply();
+      await lbx.mint(user1, 3);
+      await lbx.mint(user1, 2);
+      await lbx.mint(user1, 1);
+      await lbx.mint(user1, 0);
+
+      const rarity1 = await lbx.rarities(++lastTokenId);
+      const rarity2 = await lbx.rarities(++lastTokenId);
+      const rarity3 = await lbx.rarities(++lastTokenId);
+      const rarity4 = await lbx.rarities(++lastTokenId);
+
+      expect(rarity1.toString()).to.be.equal("3");
+      expect(rarity2.toString()).to.be.equal("2");
+      expect(rarity3.toString()).to.be.equal("1");
+      expect(rarity4.toString()).to.be.equal("0");
+    });
+  });
+
+  describe("TokenURI", function() {
+    it("Returns correct URI with rarity part", async () => {
+      const uri1 = await lbx.tokenURI(1);
+      const uri2 = await lbx.tokenURI(2);
+      const [base1, id1, rarity1] = uri1.split("/");
+      expect(baseUri.startsWith(base1)).to.be.true;
+      expect(id1).to.be.equal("1");
+      expect(rarity1).to.be.equal("0");
+
+      const [base2, id2, rarity2] = uri2.split("/");
+      expect(baseUri.startsWith(base2)).to.be.true;
+      expect(id2).to.be.equal("2");
+      expect(rarity2).to.be.equal("1");
     });
   });
 
@@ -79,70 +118,134 @@ contract("Lootboxes", (accounts) => {
       await gm.setBackendSigner(signer.address);
     });
 
-    it("Mint avatar owner lootbox", async () => {
+    it("Mint avatar owner lootbox with common rarity ", async () => {
       await lbx.setGameManager(gm.address);
+      const totalSupplyBefore = await lbx.totalSupply();
 
-      const message =
-        "1111111111111111111111111111111100002000022100010000000121111111111111111111111";
+      const rarity = "01";
+
+      const message = `1111111111111111111111111111111100002000022100010000000${rarity}1111111111111111111111`;
       const signature = await web3.eth.accounts.sign(
         message,
         signer.privateKey
       );
 
-      const ownerOfAvatar3 = await avatars.ownerOf(2);
+      const ownerOfAvatar = await avatars.ownerOf(1);
 
       await gm.finishMission(message, signature.v, signature.r, signature.s);
 
-      const totalSupply = await lbx.totalSupply();
-      expect(Number(totalSupply.toString())).to.be.equal(3);
+      const totalSupplyAfter = await lbx.totalSupply();
+      expect((totalSupplyAfter - totalSupplyBefore).toString()).to.be.equal(
+        "1"
+      );
 
-      const lootBoxOwner = await lbx.ownerOf(3);
-      expect(lootBoxOwner).to.be.equal(ownerOfAvatar3);
+      const lootBoxOwner = await lbx.ownerOf(totalSupplyAfter);
+      expect(lootBoxOwner).to.be.equal(ownerOfAvatar);
+
+      const lootboxRarity = await lbx.rarities(totalSupplyAfter);
+      // console.log({ lootboxRarity });
+      expect(lootboxRarity.toString()).to.be.equal("0");
     });
 
-    it("Increase lootBoxesToMint for land owner lootbox", async () => {
+    it("Mint avatar owner lootbox with legendary rarity ", async () => {
       await lbx.setGameManager(gm.address);
 
-      const lootBoxesToMintBefore = await gm.lootBoxesToMint(1);
-      console.log("lootBoxesToMintBefore", lootBoxesToMintBefore.toString());
+      const rarity = "04";
 
-      const message =
-        "1111111111111111111111111111111100002000020000110000000231111111111111111111111";
+      const message = `1111111111111111111111111111111100002000022100010000000${rarity}1111111111111111111111`;
       const signature = await web3.eth.accounts.sign(
         message,
         signer.privateKey
       );
 
-      const ownerOfLand = await mc.ownerOf(1);
+      await gm.finishMission(message, signature.v, signature.r, signature.s);
 
-      console.log({ ownerOfLand: ownerOfLand.toString() });
+      const totalSupplyAfter = await lbx.totalSupply();
+      const lootboxRarity = await lbx.rarities(totalSupplyAfter);
+      expect(lootboxRarity.toString()).to.be.equal("3");
+    });
+
+    it("Doesn't mint avatar for land owner", async () => {
+      const totalSupplyBefore = await lbx.totalSupply();
+      const rarity = "00";
+      const message = `1111111111111111111111111111111100002000020000110000000${rarity}1111111111111111111111`;
+      const signature = await web3.eth.accounts.sign(
+        message,
+        signer.privateKey
+      );
 
       await gm.finishMission(message, signature.v, signature.r, signature.s);
 
+      const totalSupplyAfter = await lbx.totalSupply();
+
+      expect(totalSupplyAfter - totalSupplyBefore).to.be.equal(0);
+    });
+
+    it("Increases lootBoxesToMint common field for land owner", async () => {
+      const rarity = "23";
+      const message = `1111111111111111111111111111111100002000020020010000000${rarity}1111111111111111111111`;
+      const signature = await web3.eth.accounts.sign(
+        message,
+        signer.privateKey
+      );
+
+      await gm.finishMission(message, signature.v, signature.r, signature.s, {
+        from: user2,
+      });
+
+      const landOwner = await mc.ownerOf(200);
+
+      const lootBoxesToMintAfter = await gm.lootBoxesToMint(landOwner);
+
+      expect(lootBoxesToMintAfter.common.toString()).to.be.equal("1");
+    });
+
+    it("Increases lootBoxesToMint legendary field for land owner", async () => {
+      const rarity = "26";
+      const message = `1111111111111111111111111111111100002000020020010000000${rarity}1111111111111111111111`;
+      const signature = await web3.eth.accounts.sign(
+        message,
+        signer.privateKey
+      );
+
+      await gm.finishMission(message, signature.v, signature.r, signature.s, {
+        from: user2,
+      });
+
+      const landOwner = await mc.ownerOf(200);
+
+      const lootBoxesToMintAfter = await gm.lootBoxesToMint(landOwner);
+
+      expect(lootBoxesToMintAfter.legendary.toString()).to.be.equal("1");
+    });
+
+    it("Mint legendary first", async () => {
+      await gm.mintLootbox({ from: user2 });
       const totalSupply = await lbx.totalSupply();
-      expect(Number(totalSupply.toString())).to.be.equal(3);
+      const lootBoxOwner = await lbx.ownerOf(totalSupply);
 
-      const lootBoxesToMintAfter = await gm.lootBoxesToMint(1);
-      console.log("lootBoxesToMintAfter", lootBoxesToMintAfter.toString());
+      const lootBoxesToMintAfter = await gm.lootBoxesToMint(lootBoxOwner);
+      expect(lootBoxesToMintAfter.legendary.toString()).to.be.equal("0");
 
-      expect(lootBoxesToMintAfter - lootBoxesToMintBefore).to.be.equal(1);
+      const rarity = await lbx.rarities(totalSupply);
+      expect(rarity.toString()).to.be.equal("3");
     });
 
-    it("Reverts if land has no lootboxes to mint", async () => {
-      const tx = gm.mintLootbox(2);
-      await truffleAssert.reverts(tx, "you can not mint lootbox for this land");
+    it("Mint common last", async () => {
+      await gm.mintLootbox({ from: user2 });
+      const totalSupply = await lbx.totalSupply();
+      const lootBoxOwner = await lbx.ownerOf(totalSupply);
+
+      const lootBoxesToMintAfter = await gm.lootBoxesToMint(lootBoxOwner);
+      expect(lootBoxesToMintAfter.common.toString()).to.be.equal("0");
+
+      const rarity = await lbx.rarities(totalSupply);
+      expect(rarity.toString()).to.be.equal("0");
     });
 
-    it("Reverts if minted by not the land ovner", async () => {
-      const tx = gm.mintLootbox(1, { from: user2 });
-      await truffleAssert.reverts(tx, "you are not a land owner");
-    });
-
-    it("Mint new lootbox success path", async () => {
-      await gm.mintLootbox(1, { from: user1 });
-
-      const lootBoxOwner = await lbx.ownerOf(3);
-      expect(lootBoxOwner).to.be.equal(user1);
+    it("Reverts if no lootboxes to mint more", async () => {
+      const tx = gm.mintLootbox({ from: user2 });
+      await truffleAssert.reverts(tx, "you can not mint lootbox");
     });
   });
 });

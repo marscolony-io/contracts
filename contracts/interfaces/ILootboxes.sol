@@ -2,6 +2,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 interface ILootboxes {
-  function mint(address user) external;
+  enum Rarity{ COMMON, UNCOMMON, RARE, LEGENDARY }
+  function mint(address user, Rarity rarity) external;
   function setBaseURI(string memory newURI) external;
 }

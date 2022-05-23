@@ -34,9 +34,16 @@ contract GameManager is PausableUpgradeable {
   address public backendSigner;
   mapping (bytes32 => bool) private usedSignatures;
   address public lootboxesAddress;
-  mapping (uint256 => uint256) public lootBoxesToMint;
 
-  uint256[42] private ______gm_gap_1;
+  struct AvailableRarities {
+    uint64 common;
+    uint64 uncommon;
+    uint64 rare;
+    uint64 legendary;
+  }
+  mapping (address => AvailableRarities) public lootBoxesToMint;
+
+  uint256[41] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
@@ -235,35 +242,82 @@ contract GameManager is PausableUpgradeable {
     return (_avatar, _land, _xp, _lootbox);
   }
 
+  function getLootboxRarity(uint256 _lootbox) private pure returns (ILootboxes.Rarity rarity) {
+    if (_lootbox == 1 || _lootbox == 23) return ILootboxes.Rarity.COMMON;
+    if (_lootbox == 2 || _lootbox == 24) return ILootboxes.Rarity.UNCOMMON;
+    if (_lootbox == 3 || _lootbox == 25) return ILootboxes.Rarity.RARE;
+    if (_lootbox == 4 || _lootbox == 26) return ILootboxes.Rarity.LEGENDARY;
+  }
+
   function proceedFinishMissionMessage(string calldata message) private {
     (uint256 _avatar, uint256 _land, uint256 _xp, uint256 _lootbox) = getAssetsFromFinishMissionMessage(message);
 
     require(_avatar > 0, "AvatarId is not valid");
     require(_land > 0 && _land <= 21000, "LandId is not valid");
     require(_xp >= 230 && _xp < 19971800, "XP increment is not valid");
-    require(_lootbox == 0 || _lootbox == 12 || _lootbox == 23 , "Lootbox code is not valid");
+    require((_lootbox >=0 && _lootbox <=4 ) || (_lootbox >= 23 && _lootbox <= 26), "Lootbox code is not valid");
 
 
     IAvatarManager(avatarAddress).addXP(_avatar, _xp);
 
-    if (_lootbox == 12) {
+    if (_lootbox == 0) {
+      return;
+    }
+
+    if (_lootbox >=1 && _lootbox <=4) {
       address avatarOwner = martianColonists.ownerOf(_avatar);
-      ILootboxes(lootboxesAddress).mint(avatarOwner);
+
+      ILootboxes(lootboxesAddress).mint(avatarOwner, getLootboxRarity(_lootbox));
     } 
 
     if (_lootbox == 23) {
-      lootBoxesToMint[_land]++;
+      lootBoxesToMint[msg.sender].common++;
     }
+
+    if (_lootbox == 24) {
+      lootBoxesToMint[msg.sender].uncommon++;
+    }
+
+
+    if (_lootbox == 25) {
+      lootBoxesToMint[msg.sender].rare++;
+    }
+
+
+    if (_lootbox == 26) {
+      lootBoxesToMint[msg.sender].legendary++;
+    }
+
 
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp; one event for every reward type
   }
 
-  function mintLootbox(uint256 _landId) public {
-    require(lootBoxesToMint[_landId] > 0, "you can not mint lootbox for this land");
-    address landOwner = NFTMintableInterface(MCAddress).ownerOf(_landId);
-    require(landOwner == msg.sender, "you are not a land owner");
-    ILootboxes(lootboxesAddress).mint(landOwner);
-     lootBoxesToMint[_landId]--;
+  function getCurrentMintRarity() private returns (ILootboxes.Rarity) {
+    if (lootBoxesToMint[msg.sender].legendary > 0) {
+      lootBoxesToMint[msg.sender].legendary--;
+      return ILootboxes.Rarity.LEGENDARY;
+    }
+
+    if (lootBoxesToMint[msg.sender].rare > 0) {
+      lootBoxesToMint[msg.sender].rare--;
+      return ILootboxes.Rarity.RARE;
+    }
+
+    if (lootBoxesToMint[msg.sender].uncommon > 0) {
+      lootBoxesToMint[msg.sender].uncommon--;
+      return ILootboxes.Rarity.UNCOMMON;
+    }
+
+    if (lootBoxesToMint[msg.sender].common > 0) {
+      lootBoxesToMint[msg.sender].common--;
+      return ILootboxes.Rarity.COMMON;
+    }
+
+    revert("you can not mint lootbox"); 
+  }
+
+  function mintLootbox() public {
+    ILootboxes(lootboxesAddress).mint(msg.sender, getCurrentMintRarity());
   }
 
   function finishMission(
