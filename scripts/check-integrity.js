@@ -29,6 +29,16 @@ const CONTRACTS = {
     MISSION_MANAGER: MAXIM ? '' : '0xC0633bcaB848D1738Ad22A05135C8E9EC9265092',
     OWNER: MAXIM ? '' : '0xD8A6E21AeFa5C8F0b5CAb6b81C08662D710E134e',
     BACKEND_SIGNER: MAXIM ? '' : '',
+  },
+  mumbai: {
+    GAME_MANAGER: '0xCAFAeD55fEfEd74Ca866fE72D65CfF073eb42797',
+    MC_ERC721: '0xBF5C3027992690d752be3e764a4B61Fc6910A5c0',
+    CLNY_ERC20: '0x73E6432Ec675536BBC6825E16F1D427be44B9639',
+    AVATAR_MANAGER: '0x85f8e0aBdb0f45D8488ca608Ac6327Edd3705de2',
+    MARTIAN_COLONISTS_ERC721: '0x76F8089064f58586471f38824da290913E6a5454',
+    MISSION_MANAGER: '0xf91719366dec915741E57b246f97048D4b5D338e',
+    OWNER: '0x3A47a5be317DCF439F91D0A45716B64547F21bc1',
+    BACKEND_SIGNER: '0xfbfe71afec1b7eb860542111b7a2ce5afaa2c11f',
   }
 }
 
@@ -47,27 +57,32 @@ module.exports = async (callback) => {
     const mcl = await MCL.at(CONTRACT_LIST.MARTIAN_COLONISTS_ERC721);
     const mm = await MM.at(CONTRACT_LIST.MISSION_MANAGER);
 
-    expect(await gm.CLNYAddress()).to.be.equal(clny.address, 'gm.CLNYAddress()');
-    expect(await gm.MCAddress()).to.be.equal(mc.address, 'gm.MCAddress()');
-    expect(await gm.avatarAddress()).to.be.equal(am.address, 'gm.avatarAddress()');
-    expect(await gm.missionManager()).to.be.equal(mm.address, 'gm.missionManager()');
-    expect(await gm.martianColonists()).to.be.equal(mcl.address, 'gm.martianColonists()');
-    expect(await gm.DAO()).to.be.equal(CONTRACT_LIST.OWNER, 'gm.DAO()');
+    const expectAddress = async (promise, compare, name) => {
+      expect(await promise).to.be.equal(compare, name);
+      console.log(name, 'OK');
+    };
 
-    expect(await mc.GameManager()).to.be.equal(gm.address, 'mc.GameManager()');
-    expect(await mc.DAO()).to.be.equal(CONTRACT_LIST.OWNER, 'mc.DAO()');
+    await expectAddress(gm.CLNYAddress(), clny.address, 'CLNYAddress');
+    await expectAddress(gm.MCAddress(), mc.address, 'MCAddress');
+    await expectAddress(gm.avatarAddress(), am.address, 'gm.avatarAddress()');
+    await expectAddress(gm.missionManager(), mm.address, 'gm.missionManager()');
+    await expectAddress(gm.martianColonists(), mcl.address, 'gm.martianColonists()');
+    await expectAddress(gm.DAO(), CONTRACT_LIST.OWNER, 'gm.DAO()');
 
-    expect(await clny.GameManager()).to.be.equal(gm.address, 'clny.GameManager()');
-    expect(await clny.DAO()).to.be.equal(CONTRACT_LIST.OWNER, 'clny.DAO()');
+    await expectAddress(mc.GameManager(), gm.address, 'mc.GameManager()');
+    await expectAddress(mc.DAO(), CONTRACT_LIST.OWNER, 'mc.DAO()');
 
-    expect(await mcl.avatarManager()).to.be.equal(am.address, 'mcl.avatarManager()');
-    expect(await mcl.owner()).to.be.equal(CONTRACT_LIST.OWNER, 'mcl.owner()');
+    await expectAddress(clny.GameManager(), gm.address, 'clny.GameManager()');
+    await expectAddress(clny.DAO(), CONTRACT_LIST.OWNER, 'clny.DAO()');
 
-    expect(await mm.DAO()).to.be.equal(CONTRACT_LIST.OWNER, 'mm.DAO()');
-    expect(await mm.GameManager()).to.be.equal(gm.address, 'mm.GameManager()');
-    expect(await mm.avatarManager()).to.be.equal(am.address, 'mm.avatarManager()');
-    expect(await mm.MC()).to.be.equal(mc.address, 'mm.MC()');
-    expect(await mm.collection()).to.be.equal(mcl.address, 'mm.collection()');
+    await expectAddress(mcl.avatarManager(), am.address, 'mcl.avatarManager()');
+    await expectAddress(mcl.owner(), CONTRACT_LIST.OWNER, 'mcl.owner()');
+
+    await expectAddress(mm.DAO(), CONTRACT_LIST.OWNER, 'mm.DAO()');
+    await expectAddress(mm.GameManager(), gm.address, 'mm.GameManager()');
+    await expectAddress(mm.avatarManager(), am.address, 'mm.avatarManager()');
+    await expectAddress(mm.MC(), mc.address, 'mm.MC()');
+    await expectAddress(mm.collection(), mcl.address, 'mm.collection()');
 
 
     console.log('test passed');
