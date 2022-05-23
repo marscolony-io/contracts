@@ -50,7 +50,7 @@ contract("MC", function (accounts) {
     });
     it("Set royalty", async function () {
         // await expectRevert(salesManager.setRoyalty(-20, { from: DAO }), "Royalty must be greater or equal 0")
-        await expectRevert(salesManager.setRoyalty(2500, { from: DAO }), "Royalty must be less or equal 2000")
+        await expectRevert(salesManager.setRoyalty(2500, { from: DAO }), "Royalty must be less or equal 20%")
         await salesManager.setRoyalty(600, { from: DAO })
         expect(Number(await salesManager.royalty())).to.be.equal(600)
     })

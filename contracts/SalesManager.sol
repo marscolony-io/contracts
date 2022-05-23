@@ -14,7 +14,7 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
 
   uint256[50] private ______gap_0;
 
-  uint256 constant ROYALTY_MULTIPLIER = 10000;
+  uint256 constant ROYALTY_MULTIPLIER = 100;
 
   function initialize (address _MC) public initializer {
     __Pausable_init();
@@ -57,7 +57,7 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
     require(sales[tokenId].time != 0, "Token is not for sale");
     require(sales[tokenId].time > block.timestamp, "Token time period ended");
     // require(IERC721(MC).getApproved(tokenId) == address(this), "NFT must be approved to market");
-    uint256 royaltyPrice = sales[tokenId].price*royalty/ROYALTY_MULTIPLIER;
+    uint256 royaltyPrice = sales[tokenId].price*royalty/(ROYALTY_MULTIPLIER*100);
     payable(sales[tokenId].owner).transfer(sales[tokenId].price-royaltyPrice);
     if (royalty > 0) {
       payable(royaltyWallet).transfer(royaltyPrice);
@@ -86,7 +86,7 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
   }
 
   function setRoyalty(uint256 _royalty) external onlyOwner {
-    require(_royalty <= 2000, "Royalty must be less or equal 2000");
+    require(_royalty <= 20*ROYALTY_MULTIPLIER, "Royalty must be less or equal 20%");
     royalty = _royalty;
   }
 }
