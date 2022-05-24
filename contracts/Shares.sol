@@ -73,12 +73,21 @@ abstract contract Shares {
   // View function to see pending ColonyToken on frontend.
   /* 0xe9387504 */
   function getEarned(uint256 landId) public view returns (uint256) {
+    if (lastRewardTime == 0) {
+      return 0;
+    }
     LandInfo storage land = landInfo[landId];
     uint256 _accColonyPerShare = accColonyPerShare;
     if (block.timestamp > lastRewardTime && totalShare != 0) {
       uint256 clnyReward = (block.timestamp - lastRewardTime) * clnyPerSecond;
       _accColonyPerShare = _accColonyPerShare + clnyReward * 1e12 / totalShare;
     }
-    return land.share * _accColonyPerShare / 1e12 - land.rewardDebt;
+    // we need to treat 0 as 1 because we migrate from allowlist and no-share minting
+    return (land.share == 0 ? 1 : land.share) * _accColonyPerShare / 1e12 - land.rewardDebt;
+  }
+
+  function startShareSystem(uint256 timestamp) external {
+    require (lastRewardTime == 0, 'System already started');
+    lastRewardTime = timestamp;
   }
 }

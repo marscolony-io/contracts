@@ -395,9 +395,9 @@ contract GameManager is PausableUpgradeable, Shares {
   /** these constants (for sure just `_deduct` function) can be changed while upgrading */
   uint256 constant BASE_STATION_COST = 30;
   uint256 constant AVATAR_MINT_COST = 30;
-  uint256 constant LEVEL_1_COST = 120;
-  uint256 constant LEVEL_2_COST = 270;
-  uint256 constant LEVEL_3_COST = 480;
+  uint256 constant LEVEL_1_COST = 60;
+  uint256 constant LEVEL_2_COST = 120;
+  uint256 constant LEVEL_3_COST = 240;
   uint8 constant MINT_AVATAR_LEVEL = 254;
   uint8 constant PLACEMENT_LEVEL = 255;
   uint256 constant PLACEMENT_COST = 5;
@@ -459,8 +459,8 @@ contract GameManager is PausableUpgradeable, Shares {
   }
 
   /* 0xfd5da729 */
-  function getEarningSpeed(uint256 tokenId) public pure returns (uint256) {
-    return 0; // no constant speed for polygon
+  function getEarningSpeed(uint256 tokenId) public view returns (uint256) { // for polygon it is for shares
+    return landInfo[tokenId].share;
   }
 
   /**
