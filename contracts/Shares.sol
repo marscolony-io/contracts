@@ -40,10 +40,16 @@ abstract contract Shares {
 
   function addToShare(uint256 tokenId, uint256 _share, address CLNYAddress) internal {
     LandInfo storage land = landInfo[tokenId];
+    uint256 _accColonyPerShare = accColonyPerShare;
+    if (block.timestamp > lastRewardTime && totalShare != 0) {
+      uint256 clnyReward = (block.timestamp - lastRewardTime) * clnyPerSecond;
+      _accColonyPerShare = _accColonyPerShare + clnyReward * 1e12 / totalShare;
+    }
+    uint256 earned = land.share * _accColonyPerShare / 1e12 - land.rewardDebt;
     totalShare = totalShare + _share;
     updatePool(CLNYAddress);
     land.share = land.share + _share;
-    land.rewardDebt = land.share * accColonyPerShare / 1e12;
+    land.rewardDebt = land.share * accColonyPerShare / 1e12 - earned;
   }
 
   function getShare(uint256 tokenId) external view returns (uint256) {

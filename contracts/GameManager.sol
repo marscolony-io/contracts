@@ -335,7 +335,7 @@ contract GameManager is PausableUpgradeable, Shares {
     MintBurnInterface(avatarAddress).mint(msg.sender);
   }
 
-  uint64 constant startCLNYDate = 1654041600; // 1 Jun 2022
+  uint64 constant startCLNYDate = 1653407440; // 1 Jun 2022 EDITED
 
   function mintLand(address _address, uint256 tokenId) private {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
@@ -686,5 +686,22 @@ contract GameManager is PausableUpgradeable, Shares {
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
+  }
+
+  function setTotalShareFromTotalSupply() external onlyDAO {
+    totalShare = IERC721Enumerable(MCAddress).totalSupply();
+    updatePool(CLNYAddress);
+  }
+
+  function setInitialShareMigrateOne(uint256 tokenId) external onlyDAO {
+    landInfo[tokenId].share = 1;
+    landInfo[tokenId].rewardDebt = accColonyPerShare / 1e12;
+  }
+
+  function setInitialShareMigrate(uint256[] calldata tokenIds) external onlyDAO {
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      landInfo[tokenIds[i]].share = 1;
+      landInfo[tokenIds[i]].rewardDebt = accColonyPerShare / 1e12;
+    }
   }
 }

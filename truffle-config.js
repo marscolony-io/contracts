@@ -53,8 +53,8 @@ module.exports = {
       provider: () => {
         return new HDWalletProvider({
           mnemonic: mnemonic.mumbai,
-          providerOrUrl: 'https://matic-mumbai.chainstacklabs.com',
-          // providerOrUrl: 'https://polygon-mumbai.g.alchemy.com/v2/' + mumbai_node_key,
+          // providerOrUrl: 'https://matic-mumbai.chainstacklabs.com',
+          providerOrUrl: 'https://polygon-mumbai.g.alchemy.com/v2/' + mumbai_node_key,
           derivationPath: `m/44'/60'/0'/0/`,
           confirmations: 0,
           timeoutBlocks: 200,
