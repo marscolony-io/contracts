@@ -22,7 +22,7 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
     _;
   }
 
-  constructor (string memory _nftBaseURI) ERC721('Lootboxes', 'LBX') {
+  constructor (string memory _nftBaseURI) ERC721('Utility crates', 'UCR') {
     nftBaseURI = _nftBaseURI;
   }
 

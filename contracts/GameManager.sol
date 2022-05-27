@@ -43,7 +43,7 @@ contract GameManager is PausableUpgradeable {
   }
   mapping (address => AvailableRarities) public lootBoxesToMint;
 
-  uint256[41] private ______gm_gap_1;
+  uint256[42] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
@@ -260,9 +260,6 @@ contract GameManager is PausableUpgradeable {
 
     IAvatarManager(avatarAddress).addXP(_avatar, _xp);
 
-    if (_lootbox == 0) {
-      return;
-    }
 
     if (_lootbox >=1 && _lootbox <=4) {
       address avatarOwner = martianColonists.ownerOf(_avatar);
@@ -313,7 +310,7 @@ contract GameManager is PausableUpgradeable {
       return ILootboxes.Rarity.COMMON;
     }
 
-    revert("you can not mint lootbox"); 
+    revert("you cannot mint lootbox"); 
   }
 
   function mintLootbox() public {
