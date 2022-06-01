@@ -404,6 +404,7 @@ contract GameManager is PausableUpgradeable {
   uint256 constant REASON_RENAME_AVATAR = 3;
   uint256 constant REASON_MINT_AVATAR = 4;
   uint256 constant REASON_PURCHASE_CRYOCHAMBER = 5;
+  uint256 constant REASON_PURCHASE_CRYOCHAMBER_ENERGY = 6;
 
   /**
    * Burn CLNY token for building enhancements
@@ -719,6 +720,14 @@ contract GameManager is PausableUpgradeable {
 
     uint256 cryochamberPrice = ICryochamber(cryochamberAddress).getCryochamberPrice()  * 10 ** 18;
     ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
+
+  }
+
+  function purchaseCryochamberEnergy(uint256 amount) external {
+    ICryochamber(cryochamberAddress).purchaseCryochamberEnergy(msg.sender, amount);
+
+    uint256 energyPrice = ICryochamber(cryochamberAddress).getEnergyPrice()  * 10 ** 18;
+    ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, energyPrice, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
 
   }
 }

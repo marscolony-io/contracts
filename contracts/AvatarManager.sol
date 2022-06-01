@@ -5,6 +5,8 @@ import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import './GameConnection.sol';
 import './interfaces/IMartianColonists.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import './interfaces/ICryochamber.sol';
+
 
 
 contract AvatarManager is GameConnection, PausableUpgradeable {
@@ -13,13 +15,16 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
   IMartianColonists public collection;
   mapping (uint256 => uint256) private xp;
 
-  uint256[49] private ______mc_gap;
+  ICryochamber public cryochambers;
 
-  function initialize(address _DAO, address _collection) external initializer {
+  uint256[48] private ______mc_gap;
+
+  function initialize(address _DAO, address _collection, address _cryochambers) external initializer {
     GameConnection.__GameConnection_init(_DAO);
     PausableUpgradeable.__Pausable_init();
     maxTokenId = 5;
     collection = IMartianColonists(_collection);
+    cryochambers = ICryochamber(_cryochambers);
   }
 
   function _getXP(uint256 avatarId) private view returns(uint256) {
@@ -28,8 +33,18 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
 
   function getXP(uint256[] memory avatarIds) public view returns(uint256[] memory) {
     uint256[] memory result = new uint256[](avatarIds.length);
+    uint256 cryoXpAddition = cryochambers.getCryoXpAddition();
+
     for (uint256 i = 0; i < avatarIds.length; i++) {
+      
       result[i] = _getXP(avatarIds[i]);
+
+      ICryochamber.CryoTime[] memory cryos = cryochambers.getAvatarCryos(avatarIds[i]);
+      for (uint256 c = 0; c < cryos.length; c++) {
+        if (uint64(block.timestamp) - cryos[c].endTime > 0) {
+          result[i] += cryoXpAddition;
+        }
+      }
     }
     return result;
   }
