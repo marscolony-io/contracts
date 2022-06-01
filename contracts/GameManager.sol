@@ -9,6 +9,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IPoll.sol';
 import './interfaces/IMartianColonists.sol';
 import './interfaces/IAvatarManager.sol';
+import './interfaces/ICryochamber.sol';
 
 
 
@@ -32,8 +33,9 @@ contract GameManager is PausableUpgradeable {
   IMartianColonists public martianColonists;
   address public backendSigner;
   mapping (bytes32 => bool) private usedSignatures;
+  address public cryochamberAddress;
 
-  uint256[44] private ______gm_gap_1;
+  uint256[43] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
@@ -120,6 +122,10 @@ contract GameManager is PausableUpgradeable {
 
   function setPollAddress(address _address) external onlyDAO {
     pollAddress = _address;
+  }
+
+  function setCryochamberAddress(address _address) external onlyDAO {
+    cryochamberAddress = _address;
   }
 
   function getPollData() external view returns (string memory, string memory, string[] memory, uint256[] memory, bool) {
@@ -397,6 +403,7 @@ contract GameManager is PausableUpgradeable {
   uint256 constant REASON_PLACE = 2;
   uint256 constant REASON_RENAME_AVATAR = 3;
   uint256 constant REASON_MINT_AVATAR = 4;
+  uint256 constant REASON_PURCHASE_CRYOCHAMBER = 5;
 
   /**
    * Burn CLNY token for building enhancements
@@ -705,5 +712,13 @@ contract GameManager is PausableUpgradeable {
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
+  }
+
+  function purchaseCryochamber() external {
+    ICryochamber(cryochamberAddress).purchase(msg.sender);
+
+    uint256 cryochamberPrice = ICryochamber(cryochamberAddress).getCryochamberPrice()  * 10 ** 18;
+    ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
+
   }
 }
