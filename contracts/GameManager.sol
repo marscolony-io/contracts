@@ -9,6 +9,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IPoll.sol';
 import './interfaces/IMartianColonists.sol';
 import './interfaces/IAvatarManager.sol';
+import './interfaces/ISalesManager.sol';
 
 
 
@@ -29,7 +30,9 @@ contract GameManager is PausableUpgradeable {
   address public avatarAddress;
   address public pollAddress;
   address public missionManager;
+  uint256 public tradeBurnAmount;
   IMartianColonists public martianColonists;
+  ISalesManager public salesManager;
   address public backendSigner;
   mapping (bytes32 => bool) private usedSignatures;
 
@@ -120,6 +123,14 @@ contract GameManager is PausableUpgradeable {
 
   function setPollAddress(address _address) external onlyDAO {
     pollAddress = _address;
+  }
+
+  function setTradeBurnAmount(uint256 _tradeBurnAmount) external onlyDAO {
+    tradeBurnAmount = _tradeBurnAmount;
+  }
+
+  function setSalesManager(address _address) external onlyDAO {
+    salesManager = ISalesManager(_address);
   }
 
   function getPollData() external view returns (string memory, string memory, string[] memory, uint256[] memory, bool) {
@@ -390,6 +401,7 @@ contract GameManager is PausableUpgradeable {
   uint256 constant LEVEL_1_COST = 120;
   uint256 constant LEVEL_2_COST = 270;
   uint256 constant LEVEL_3_COST = 480;
+  uint8 constant BUY_LAND_LEVEL = 253;
   uint8 constant MINT_AVATAR_LEVEL = 254;
   uint8 constant PLACEMENT_LEVEL = 255;
   uint256 constant PLACEMENT_COST = 5;
@@ -397,6 +409,7 @@ contract GameManager is PausableUpgradeable {
   uint256 constant REASON_PLACE = 2;
   uint256 constant REASON_RENAME_AVATAR = 3;
   uint256 constant REASON_MINT_AVATAR = 4;
+  uint256 constant REASON_BUY_LAND = 5;
 
   /**
    * Burn CLNY token for building enhancements
@@ -424,6 +437,9 @@ contract GameManager is PausableUpgradeable {
       // atrist and team minting royalties
       ERC20MintBurnInterface(CLNYAddress).mint(0x352c478CD91BA54615Cc1eDFbA4A3E7EC9f60EE1, AVATAR_MINT_COST * 10 ** 18 * 2 / 100);
       ERC20MintBurnInterface(CLNYAddress).mint(0x2581A6C674D84dAD92A81E8d3072C9561c21B935, AVATAR_MINT_COST * 10 ** 18 * 3 / 100);
+    }
+    if (level == BUY_LAND_LEVEL) {
+      amount = tradeBurnAmount * 10 ** 18;
     }
     require (amount > 0, 'Wrong level');
     ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, amount, reason);
@@ -691,6 +707,12 @@ contract GameManager is PausableUpgradeable {
       ERC20MintBurnInterface(CLNYAddress).mint(treasury, earned * 31 / 49);
       ERC20MintBurnInterface(CLNYAddress).mint(liquidity, earned * 20 / 49);
     }
+  }
+
+  function buyLand(uint256 tokenId) external payable {
+    require(address(salesManager) != address(0), "SalesManager address not set");
+    salesManager.buyToken{value: msg.value}(tokenId, msg.sender);
+    _deduct(BUY_LAND_LEVEL, REASON_BUY_LAND);
   }
 
   /**

@@ -7,8 +7,9 @@ import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import "./interfaces/ISalesManager.sol";
 import "./interfaces/IMC.sol";
+import "./GameConnection.sol";
 
-contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, PausableUpgradeable, ISalesManager {
+contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, PausableUpgradeable, ISalesManager, GameConnection {
 
   address public MC;
 
@@ -16,10 +17,11 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
 
   uint256 constant ROYALTY_MULTIPLIER = 100;
 
-  function initialize (address _MC) public initializer {
+  function initialize (address _DAO, address _MC) public initializer {
     __Pausable_init();
     __Ownable_init();
     __ReentrancyGuard_init();
+    GameConnection.__GameConnection_init(_DAO);
     MC = _MC;
   }
 
@@ -52,7 +54,7 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
     delete sales[tokenId];
   }
 
-  function buyToken(uint256 tokenId) public payable nonReentrant {
+  function buyToken(uint256 tokenId, address buyer) external override payable nonReentrant onlyGameManager {
     require(msg.value >= sales[tokenId].price, "Not enough funds");
     require(sales[tokenId].time != 0, "Token is not for sale");
     require(sales[tokenId].time > block.timestamp, "Token time period ended");
@@ -63,10 +65,10 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
       payable(royaltyWallet).transfer(royaltyPrice);
     }
     if (msg.value-sales[tokenId].price>0) {
-      payable(msg.sender).transfer(msg.value-sales[tokenId].price);
+      payable(buyer).transfer(msg.value-sales[tokenId].price);
     }
     // IERC721(MC).safeTransferFrom(sales[tokenId].owner, msg.sender, tokenId, "");
-    IMC(MC).trade(sales[tokenId].owner, msg.sender, tokenId);
+    IMC(MC).trade(sales[tokenId].owner, buyer, tokenId);
   }
 
   function isTokenPlaced (uint256 tokenId) view external returns(bool) {

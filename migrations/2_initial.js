@@ -3,7 +3,7 @@ const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 const MC = artifacts.require('MC');
 const CLNY = artifacts.require('CLNY');
 const GameManager = artifacts.require('GameManager');
-const SalesManager = artifacts.require("SalesManager")
+// const SalesManager = artifacts.require("SalesManager")
 
 module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
   console.log({ DAO, treasury, liquidity });
@@ -19,14 +19,15 @@ module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
     treasury,
     liquidity,
   ], { deployer });
-  await deployProxy(SalesManager, [
-    MC.address
-  ], { deployer });
+  // await deployProxy(SalesManager, [
+  //   DAO,
+  //   MC.address
+  // ], { deployer });
   
   const _MC = await MC.deployed();
   const _CLNY = await CLNY.deployed();
   await GameManager.deployed();
-  await _MC.setSalesManager(SalesManager.address);
+  // await _MC.setSalesManager(SalesManager.address);
 
   await Promise.all([
     _CLNY.setGameManager(GameManager.address),
