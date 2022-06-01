@@ -30,13 +30,13 @@ contract GameManager is PausableUpgradeable {
   address public avatarAddress;
   address public pollAddress;
   address public missionManager;
-  uint256 public tradeBurnAmount;
   IMartianColonists public martianColonists;
-  ISalesManager public salesManager;
   address public backendSigner;
   mapping (bytes32 => bool) private usedSignatures;
+  uint256 public tradeBurnAmount;
+  ISalesManager public salesManager;
 
-  uint256[44] private ______gm_gap_1;
+  uint256[42] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
@@ -439,7 +439,7 @@ contract GameManager is PausableUpgradeable {
       ERC20MintBurnInterface(CLNYAddress).mint(0x2581A6C674D84dAD92A81E8d3072C9561c21B935, AVATAR_MINT_COST * 10 ** 18 * 3 / 100);
     }
     if (level == BUY_LAND_LEVEL) {
-      amount = tradeBurnAmount * 10 ** 18;
+      amount = tradeBurnAmount;
     }
     require (amount > 0, 'Wrong level');
     ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, amount, reason);

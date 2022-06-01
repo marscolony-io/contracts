@@ -7,7 +7,6 @@ pragma solidity >=0.8.0 <0.9.0;
 import '@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol';
 import './GameConnection.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import "./interfaces/ISalesManager.sol";
 
@@ -16,8 +15,7 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
   string private nftBaseURI;
   mapping (uint256 => string) public names; // token owner can set a name for their NFT
 
-  bool lockMint;
-  bool lockTrade;
+  bool lock;
 
   ISalesManager public salesManager;
 
@@ -51,10 +49,10 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
   }
 
   function mint(address receiver, uint256 tokenId) external onlyGameManager whenNotPaused {
-    require(!lockMint, "locked");
-    lockMint = true;
+    require(!lock, "locked");
+    lock = true;
     _safeMint(receiver, tokenId);
-    lockMint = false;
+    lock = false;
   }
 
   function pause() external onlyGameManager {
@@ -102,10 +100,10 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
 
   function trade(address _from, address _to, uint256 _tokenId) external whenNotPaused {
     require (msg.sender == address(salesManager), 'only SalesManager');
-    require(!lockTrade, "locked");
-    lockTrade = true;
+    require(!lock, "locked");
+    lock = true;
     _safeTransfer(_from, _to, _tokenId, '');
-    lockTrade = false;
+    lock = false;
   }
 
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
