@@ -17,16 +17,15 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
 
   uint256 public cryochamberPrice;
   uint256 public energyPrice;
-  uint256 private initialEnergy;
-  uint256 private cryoEnergyCost; // energy decrease amount when avatar goes in cryochamber
-  uint64 private cryoPeriodLength;
-  uint256 private cryoXpAddition;
+  uint256 public initialEnergy;
+  uint256 public cryoEnergyCost; // energy decrease amount when avatar goes in cryochamber
+  uint64 public cryoPeriodLength;
+  uint256 public cryoXpAddition;
 
   // uint256 cryochambersCounter; 
   
   struct Cryochamber {
-    // uint256 id;
-    // address owner;
+
     uint256 energy; 
     bool isSet;
   }
@@ -81,7 +80,7 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
   }
 
   function purchaseCryochamber(address user) external onlyGameManager {
-    require(!cryochambers[user].isSet, "you have purchased the cryochamber already");
+    require(!cryochambers[user].isSet, "you have already purchased the cryochamber");
 
     cryochambers[user] = Cryochamber(initialEnergy, true);
   }

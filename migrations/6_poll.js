@@ -5,44 +5,49 @@
  * ```
  */
 
-const GM = artifacts.require('GameManager');
-const MC = artifacts.require('MC');
-const CLNY = artifacts.require('CLNY');
-const MartianColonists = artifacts.require('MartianColonists');
-const Poll = artifacts.require('Poll');
-const fs = require('fs');
+const GM = artifacts.require("GameManager");
+const MC = artifacts.require("MC");
+const CLNY = artifacts.require("CLNY");
+const MartianColonists = artifacts.require("MartianColonists");
+const Poll = artifacts.require("Poll");
+const fs = require("fs");
 
 module.exports = async (deployer, network, addresses) => {
-  console.log(addresses[0]);
-  if (network === 'development') {
+  if (network === "development") {
     return; // this file for manual migrations; pass in tests
   }
   let gmAddress;
   let landlords;
-  if (network === 'hartest') {
-    const [ , , ...accountsExceptFirstTwo] = addresses;
-    landlords = fs.readFileSync('./landlords-testnet.txt', 'utf-8')
-      .split('\n').map(lord => lord.trim()).filter(lord => lord.length > 5);
+  if (network === "hartest") {
+    const [, , ...accountsExceptFirstTwo] = addresses;
+    landlords = fs
+      .readFileSync("./landlords-testnet.txt", "utf-8")
+      .split("\n")
+      .map((lord) => lord.trim())
+      .filter((lord) => lord.length > 5);
     landlords = [...landlords, ...accountsExceptFirstTwo]; // for tests
-    gmAddress = '0xc65F8BA708814653EDdCe0e9f75827fe309E29aD';
-  } else if (network === 'harmain') {
-    landlords = fs.readFileSync('./landlords.txt', 'utf-8')
-      .split('\n').map(lord => lord.trim()).filter(lord => lord.length > 5);
-    gmAddress = '0x0D112a449D23961d03E906572D8ce861C441D6c3';
+    gmAddress = "0xc65F8BA708814653EDdCe0e9f75827fe309E29aD";
+  } else if (network === "harmain") {
+    landlords = fs
+      .readFileSync("./landlords.txt", "utf-8")
+      .split("\n")
+      .map((lord) => lord.trim())
+      .filter((lord) => lord.length > 5);
+    gmAddress = "0x0D112a449D23961d03E906572D8ce861C441D6c3";
   } else {
-    console.log('--- WRONG NETWORK ---');
+    console.log("--- WRONG NETWORK ---");
     return;
   }
   await deployer.deploy(
     Poll,
     addresses[0],
-    'Vote for your favorite mission rewards proposal!',
-    'Be sure to read the proposals at [people.marscolony.io](https://people.marscolony.io/t/official-vote-mission-rewards/4628) before voting',
+    "Vote for your favorite mission rewards proposal!",
+    "Be sure to read the proposals at [people.marscolony.io](https://people.marscolony.io/t/official-vote-mission-rewards/4628) before voting",
     [
-      'Revenue share, layered economy with future resources',
-      'ORE token (Profession-specific rewards)',
-      'Combined proposal with strong points from each',
-    ],
+      "Revenue share, layered economy with future resources",
+      "ORE token (Profession-specific rewards)",
+      "Combined proposal with strong points from each",
+    ]
   );
   const poll = await Poll.deployed();
   const gm = await GM.at(gmAddress);
@@ -62,9 +67,9 @@ module.exports = async (deployer, network, addresses) => {
   }
   const size = await poll.voterCount();
   // console.log(+size, landlords.length);
-  console.log('starting...');
+  console.log("starting...");
   await poll.start();
-  console.log('linking...', Poll.address);
+  console.log("linking...", Poll.address);
   await gm.setPollAddress(Poll.address);
-  console.log('linked');
+  console.log("linked");
 };
