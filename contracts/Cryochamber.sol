@@ -19,9 +19,9 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
   uint256 public cryochamberPrice;
   uint256 public energyPrice;
   uint256 private initialEnergy;
-  uint256 private cryoCost;
+  uint256 private cryoEnergyCost; // energy decrease amount when avatar goes in cryochamber
   uint64 private cryoPeriodLength;
-  uint256 private cryoXpAddition = 1000;
+  uint256 private cryoXpAddition;
 
   // uint256 cryochambersCounter; 
   
@@ -34,9 +34,10 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
 
   struct CryoTime {
     uint64 endTime;
+    uint256 reward;
   }
 
-  mapping (uint256 => CryoTime[]) public cryos;  // avatarId => array of avatar's cryo periods
+  mapping (uint256 => CryoTime) public cryos;  // avatarId => array of avatar's cryo periods
   mapping (address => Cryochamber) public cryochambers;
 
   
@@ -48,6 +49,13 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     avatars = IMartianColonists(_collection);
     avatarManager = IAvatarManager(_avatarManager);
     MC = NFTMintableInterface(_MC);
+
+    cryochamberPrice = 30 * 10 ** 18;
+    energyPrice = 5 * 10 ** 18;
+    initialEnergy = 5;
+    cryoEnergyCost = 1;
+    cryoPeriodLength = 7 * 24 * 60 * 60 * 1000; 
+    cryoXpAddition = 1000;
   }
 
   function setCryochamberPrice(uint256 _price) external onlyDAO whenNotPaused {
@@ -55,15 +63,15 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
   }
 
   function setCryochamberCost(uint256 _cost) external onlyDAO whenNotPaused {
-    cryoCost = _cost;
+    cryoEnergyCost = _cost;
+  }
+
+  function setCryoXpAddition(uint256 addition) external onlyDAO whenNotPaused {
+    cryoXpAddition = addition;
   }
 
   function setEnergyPrice(uint256 _price) external onlyDAO whenNotPaused {
     energyPrice = _price;
-  }
-
-  function getEnergyPrice() external view returns (uint256) {
-    return energyPrice;
   }
 
   function setInitialEnergy(uint256 _energy) external onlyDAO whenNotPaused {
@@ -73,11 +81,6 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
   function setCryoPeriodLength(uint64 _time) external onlyDAO whenNotPaused {
     cryoPeriodLength = _time;
   }
-
-  function getCryoXpAddition() external view returns (uint256) {
-    return cryoXpAddition;
-  }
-
 
   function purchaseCryochamber(address user) external onlyGameManager {
     require(!cryochambers[user].isSet, "you have purchased the cryochamber already");
@@ -97,31 +100,29 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     cryochamber.energy -= _amount;
   }
 
-  function checkIfAvatarIsNotInChamber (uint256 avatarId) private view {
-    CryoTime[] memory avatarCryos = cryos[avatarId];
-    
-    if (avatarCryos.length == 0) {
-      return;
-    }
-
-    CryoTime memory lastCryo = avatarCryos[avatarCryos.length - 1];
-    require(uint64(block.timestamp) - lastCryo.endTime <= 0, "This avatar is in cryptochamber already");
+  function isAvatarInCryoChamber(CryoTime memory avatarCryo) public view returns (bool) {
+    return avatarCryo.endTime == 0 || uint64(block.timestamp) - avatarCryo.endTime <= 0;
   }
 
-  function putAvatarInCryochamber(uint256 avatarId) external hasCryochamber {
+
+  function putAvatarInCryochamber(uint256 avatarId) external hasCryochamber(msg.sender) {
     require(avatars.ownerOf(avatarId) == msg.sender, "You are not an avatar owner");
 
-    checkIfAvatarIsNotInChamber(avatarId);
+    CryoTime memory avatarCryo = cryos[avatarId];
 
-    decreaseCryochamberEnergy(msg.sender, cryoCost);
-    cryos[avatarId].push(CryoTime(uint64(block.timestamp) + cryoPeriodLength));
+    require(!isAvatarInCryoChamber(avatarCryo), "This avatar is in cryptochamber already");
+
+    // if last cryoperiod ended, add previous reward to xp
+
+    if (avatarCryo.endTime != 0 && avatarCryo.endTime <= uint64(block.timestamp)) {
+      avatarManager.addXP(avatarId, avatarCryo.reward);
+    }
+
+    decreaseCryochamberEnergy(msg.sender, cryoEnergyCost);
+    cryos[avatarId] = CryoTime(uint64(block.timestamp) + cryoPeriodLength, cryoXpAddition);
   }
 
-  function getAvatarCryos(uint256 avatarId) external view returns (CryoTime[] memory) {
-    return cryos[avatarId];
-  }
  
-
   function pause() external onlyGameManager {
     _pause();
   }
@@ -130,8 +131,8 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     _unpause();
   }
 
-  modifier hasCryochamber {
-    require(cryochambers[msg.sender].isSet, 'You have not purchased cryochamber yet');
+  modifier hasCryochamber(address user) {
+    require(cryochambers[user].isSet, 'You have not purchased cryochamber yet');
     _;
   }
 

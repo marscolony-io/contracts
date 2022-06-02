@@ -33,18 +33,17 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
 
   function getXP(uint256[] memory avatarIds) public view returns(uint256[] memory) {
     uint256[] memory result = new uint256[](avatarIds.length);
-    uint256 cryoXpAddition = cryochambers.getCryoXpAddition();
 
     for (uint256 i = 0; i < avatarIds.length; i++) {
       
       result[i] = _getXP(avatarIds[i]);
 
-      ICryochamber.CryoTime[] memory cryos = cryochambers.getAvatarCryos(avatarIds[i]);
-      for (uint256 c = 0; c < cryos.length; c++) {
-        if (uint64(block.timestamp) - cryos[c].endTime > 0) {
-          result[i] += cryoXpAddition;
-        }
+      ICryochamber.CryoTime memory cryo = cryochambers.cryos(avatarIds[i]);
+      
+      if (cryochambers.isAvatarInCryoChamber(cryo)) {
+        result[i] += cryo.reward;
       }
+      
     }
     return result;
   }

@@ -403,8 +403,8 @@ contract GameManager is PausableUpgradeable {
   uint256 constant REASON_PLACE = 2;
   uint256 constant REASON_RENAME_AVATAR = 3;
   uint256 constant REASON_MINT_AVATAR = 4;
-  uint256 constant REASON_PURCHASE_CRYOCHAMBER = 5;
-  uint256 constant REASON_PURCHASE_CRYOCHAMBER_ENERGY = 6;
+  uint256 constant REASON_PURCHASE_CRYOCHAMBER = 10;
+  uint256 constant REASON_PURCHASE_CRYOCHAMBER_ENERGY = 11;
 
   /**
    * Burn CLNY token for building enhancements
@@ -718,7 +718,7 @@ contract GameManager is PausableUpgradeable {
   function purchaseCryochamber() external {
     ICryochamber(cryochamberAddress).purchase(msg.sender);
 
-    uint256 cryochamberPrice = ICryochamber(cryochamberAddress).getCryochamberPrice()  * 10 ** 18;
+    uint256 cryochamberPrice = ICryochamber(cryochamberAddress).cryochamberPrice();
     ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
 
   }
@@ -726,8 +726,8 @@ contract GameManager is PausableUpgradeable {
   function purchaseCryochamberEnergy(uint256 amount) external {
     ICryochamber(cryochamberAddress).purchaseCryochamberEnergy(msg.sender, amount);
 
-    uint256 energyPrice = ICryochamber(cryochamberAddress).getEnergyPrice()  * 10 ** 18;
-    ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, energyPrice, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
+    uint256 energyPrice = ICryochamber(cryochamberAddress).energyPrice();
+    ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
 
   }
 }

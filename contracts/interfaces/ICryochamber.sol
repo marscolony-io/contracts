@@ -4,12 +4,13 @@ pragma solidity >=0.8.0 <0.9.0;
 interface ICryochamber {
   struct CryoTime {
     uint64 endTime;
+    uint256 reward;
   }
 
   function purchase(address user) external;
-  function getCryochamberPrice() external returns (uint256);
+  function cryochamberPrice() external returns (uint256);
   function purchaseCryochamberEnergy(address user, uint256 _energyAmount) external;
-  function getEnergyPrice() external view returns (uint256);
-  function getAvatarCryos(uint256 avatarId) external view returns (CryoTime[] memory);
-  function getCryoXpAddition() external view returns (uint256);
+  function energyPrice() external view returns (uint256);
+  function cryos(uint256 avatarId) external view returns (CryoTime memory);
+  function isAvatarInCryoChamber(CryoTime memory avatarCryo) external view returns (bool);
 }
