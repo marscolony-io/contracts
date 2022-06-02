@@ -8,11 +8,8 @@ contract('MC', (accounts) => {
 
   let mc;
 
-  before(async () => {
-    mc = await MC.deployed();
-  });
-
   it('Set DAO as game manager from DAO', async () => {
+    mc = await MC.deployed();
     await mc.setGameManager(DAO, { from: DAO });
   });
 
