@@ -38,4 +38,5 @@ module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
   }
 
   await _GM.setCryochamberAddress(_CRYO.address);
+  await _CRYO.setGameManager(_GM.address);
 };

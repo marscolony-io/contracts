@@ -716,7 +716,7 @@ contract GameManager is PausableUpgradeable {
   }
 
   function purchaseCryochamber() external {
-    ICryochamber(cryochamberAddress).purchase(msg.sender);
+    ICryochamber(cryochamberAddress).purchaseCryochamber(msg.sender);
 
     uint256 cryochamberPrice = ICryochamber(cryochamberAddress).cryochamberPrice();
     ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);

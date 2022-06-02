@@ -7,7 +7,7 @@ interface ICryochamber {
     uint256 reward;
   }
 
-  function purchase(address user) external;
+  function purchaseCryochamber(address user) external;
   function cryochamberPrice() external returns (uint256);
   function purchaseCryochamberEnergy(address user, uint256 _energyAmount) external;
   function energyPrice() external view returns (uint256);
