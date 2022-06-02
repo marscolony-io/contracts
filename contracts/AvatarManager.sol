@@ -19,13 +19,16 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
 
   uint256[48] private ______mc_gap;
 
-  function initialize(address _DAO, address _collection, address _cryochambers) external initializer {
+  function initialize(address _DAO, address _collection) external initializer {
     GameConnection.__GameConnection_init(_DAO);
     PausableUpgradeable.__Pausable_init();
     maxTokenId = 5;
     collection = IMartianColonists(_collection);
-    cryochambers = ICryochamber(_cryochambers);
   }
+
+function setCryochamberManager(address cryochamberManager) external {
+  cryochambers = ICryochamber(cryochamberManager);
+}
 
   function _getXP(uint256 avatarId) private view returns(uint256) {
     return xp[avatarId] + 100; // 100 is a base for every avatar

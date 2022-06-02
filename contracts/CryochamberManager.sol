@@ -14,7 +14,6 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 contract CryochamberManager is GameConnection, PausableUpgradeable {
   IMartianColonists public avatars;
   IAvatarManager public avatarManager;
-  NFTMintableInterface public MC;
 
   uint256 public cryochamberPrice;
   uint256 public energyPrice;
@@ -43,12 +42,11 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
   
   uint256[49] private ______gap;
 
-  function initialize(address _DAO, address _collection, address _avatarManager, address _MC) external initializer {
+  function initialize(address _DAO, address _collection, address _avatarManager) external initializer {
     GameConnection.__GameConnection_init(_DAO);
     PausableUpgradeable.__Pausable_init();
     avatars = IMartianColonists(_collection);
     avatarManager = IAvatarManager(_avatarManager);
-    MC = NFTMintableInterface(_MC);
 
     cryochamberPrice = 30 * 10 ** 18;
     energyPrice = 5 * 10 ** 18;
