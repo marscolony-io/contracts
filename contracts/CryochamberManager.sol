@@ -51,7 +51,7 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     energyPrice = 5 * 10 ** 18;
     initialEnergy = 5;
     cryoEnergyCost = 1;
-    cryoPeriodLength = 7 * 24 * 60 * 60 * 1000; 
+    cryoPeriodLength = 7 * 24 * 60 * 60; 
     cryoXpAddition = 1000;
   }
 
@@ -85,22 +85,23 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     cryochambers[user] = Cryochamber(initialEnergy, true);
   }
 
-  function purchaseCryochamberEnergy(address user, uint256 _energyAmount) external onlyGameManager  {
-    require(cryochambers[user].isSet, "you have not purchased cryochamber yet");
-
+  function purchaseCryochamberEnergy(address user, uint256 _energyAmount) external onlyGameManager hasCryochamber(user) {
     cryochambers[user].energy += _energyAmount;
   }
 
   function decreaseCryochamberEnergy(address user, uint256 _amount) private {
     Cryochamber storage cryochamber = cryochambers[user];
-    require(cryochamber.energy - _amount >= 0, "You have not enough energy in cryochamber, please buy more");
+    require(cryochamber.energy >= _amount, "You have not enough energy in cryochamber, please buy more");
     cryochamber.energy -= _amount;
   }
 
   function isAvatarInCryoChamber(CryoTime memory avatarCryo) public view returns (bool) {
-    return avatarCryo.endTime == 0 || uint64(block.timestamp) - avatarCryo.endTime <= 0;
+    return avatarCryo.endTime > 0 && avatarCryo.endTime > uint64(block.timestamp);
   }
 
+  function isAvatarCryoFinished(CryoTime memory avatarCryo) public view returns (bool) {
+    return avatarCryo.endTime > 0 && uint64(block.timestamp) > avatarCryo.endTime;
+  }
 
   function putAvatarInCryochamber(uint256 avatarId) external hasCryochamber(msg.sender) {
     require(avatars.ownerOf(avatarId) == msg.sender, "You are not an avatar owner");
@@ -111,8 +112,8 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
 
     // if last cryoperiod ended, add previous reward to xp
 
-    if (avatarCryo.endTime != 0 && avatarCryo.endTime <= uint64(block.timestamp)) {
-      avatarManager.addXP(avatarId, avatarCryo.reward);
+    if (avatarCryo.endTime > 0 && avatarCryo.endTime <= uint64(block.timestamp)) {
+      avatarManager.addXPAfterCryo(avatarId, avatarCryo.reward);
     }
 
     decreaseCryochamberEnergy(msg.sender, cryoEnergyCost);

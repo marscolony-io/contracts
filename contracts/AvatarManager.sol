@@ -26,9 +26,9 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
     collection = IMartianColonists(_collection);
   }
 
-function setCryochamberManager(address cryochamberManager) external {
-  cryochambers = ICryochamber(cryochamberManager);
-}
+  function setCryochamberManager(address cryochamberManager) external {
+    cryochambers = ICryochamber(cryochamberManager);
+  }
 
   function _getXP(uint256 avatarId) private view returns(uint256) {
     return xp[avatarId] + 100; // 100 is a base for every avatar
@@ -43,7 +43,7 @@ function setCryochamberManager(address cryochamberManager) external {
 
       ICryochamber.CryoTime memory cryo = cryochambers.cryos(avatarIds[i]);
       
-      if (cryochambers.isAvatarInCryoChamber(cryo)) {
+      if (cryochambers.isAvatarCryoFinished(cryo)) {
         result[i] += cryo.reward;
       }
       
@@ -52,6 +52,10 @@ function setCryochamberManager(address cryochamberManager) external {
   }
 
   function addXP(uint256 avatarId, uint256 increment) external onlyGameManager {
+    xp[avatarId] = xp[avatarId] + increment;
+  }
+
+  function addXPAfterCryo(uint256 avatarId, uint256 increment) external onlyCryochamberManager {
     xp[avatarId] = xp[avatarId] + increment;
   }
 
@@ -109,5 +113,10 @@ function setCryochamberManager(address cryochamberManager) external {
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
+  }
+
+  modifier onlyCryochamberManager {
+    require(msg.sender == address(cryochambers), 'Only CryochamberManager');
+    _;
   }
 }
