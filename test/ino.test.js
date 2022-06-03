@@ -15,8 +15,10 @@ contract('INO NFT test', (accounts) => {
   it('Mint', async () => {
     await expectRevert(ino.mint(user, 10, { from: user }), 'Ownable: caller is not the owner');
     await ino.mint(user, 10, { from: owner });
+    await ino.mint(user, 10, { from: owner });
+    await ino.mint(user, 1, { from: owner });
     const totalSupply = await ino.totalSupply();
-    expect(+totalSupply).to.be.equal(10);
+    expect(+totalSupply).to.be.equal(21);
     const uri = await ino.tokenURI(2);
     expect(uri).to.be.equal('https://marscolony.io/ino.json');
   });

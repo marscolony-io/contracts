@@ -9,7 +9,6 @@ module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
   await deployer.deploy(CLNY, DAO);
   await deployer.deploy(
     MC,
-    DAO,
     network === 'hartest' ? 'https://meta-test.marscolony.io/' : 'https://meta.marscolony.io/',
   );
   await deployProxy(GameManager, [

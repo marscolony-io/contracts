@@ -12,7 +12,7 @@ const MC = artifacts.require('MC');
 const CLNY = artifacts.require('CLNY');
 const MartianColonists = artifacts.require('MartianColonists');
 const SalesManager = artifacts.require('SalesManager');
-const ProxyAdmin = artifacts.require('ProxyAdmin');
+// const ProxyAdmin = artifacts.require('ProxyAdmin');
 
 module.exports = async (deployer, network, addresses) => {
   if (network === 'development') {
@@ -24,8 +24,13 @@ module.exports = async (deployer, network, addresses) => {
   // const clny = await CLNY.at('0xCEBaF32BBF205aDB2BcC5d2a5A5DAd91b83Ba424');
   await deployer.deploy(GameManager);
 
+<<<<<<< HEAD
   const PA = await ProxyAdmin.at('0xa85Dda80Dd10ecE178e59B964Bc094AdE4fa4f31');
   await PA.upgrade('0xCAFAeD55fEfEd74Ca866fE72D65CfF073eb42797', GameManager.address);
+=======
+  // const PA = await ProxyAdmin.at('0xa85Dda80Dd10ecE178e59B964Bc094AdE4fa4f31');
+  // await PA.upgrade('0xCAFAeD55fEfEd74Ca866fE72D65CfF073eb42797', '0xD9879F45De0D6F7c89d6592b821062d048B126d9')
+>>>>>>> 2f8a1ce3945d467b05713c0ab03711861d378806
 
   // const gameManager = await GameManager.at('0xCAFAeD55fEfEd74Ca866fE72D65CfF073eb42797');
   // await gameManager.setCLNYAddress(CLNY.address);

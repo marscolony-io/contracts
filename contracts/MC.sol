@@ -5,27 +5,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.13;
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
-import './GameConnection.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
 import './interfaces/ISalesManager.sol';
 
 
-contract MC is ERC721Enumerable, GameConnection, Pausable, ReentrancyGuard {
+contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable {
   string private nftBaseURI;
   ISalesManager public salesManager;
+  address public GameManager;
 
-  constructor (address _DAO, string memory _nftBaseURI) ERC721('MarsColony', 'MC') {
-    GameConnection.__GameConnection_init(_DAO);
+  constructor (string memory _nftBaseURI) ERC721('MarsColony', 'MC') {
     nftBaseURI = _nftBaseURI;
+  }
+
+  modifier onlyGameManager {
+    require(msg.sender == GameManager, 'Only GameManager');
+    _;
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
     return nftBaseURI;
   }
 
-  function setBaseURI(string memory newURI) external onlyDAO whenNotPaused {
+  function setBaseURI(string memory newURI) external onlyOwner whenNotPaused {
     nftBaseURI = newURI;
   }
 
@@ -39,6 +44,10 @@ contract MC is ERC721Enumerable, GameConnection, Pausable, ReentrancyGuard {
 
   function unpause() external onlyGameManager {
     _unpause();
+  }
+
+  function setGameManager(address _GameManager) external onlyOwner {
+    GameManager = _GameManager;
   }
 
   function _afterTokenTransfer(address from, address to, uint256 tokenId) internal virtual override {
@@ -87,7 +96,7 @@ contract MC is ERC721Enumerable, GameConnection, Pausable, ReentrancyGuard {
     return result;
   }
 
-  function setSalesManager(ISalesManager _address) external onlyDAO {
+  function setSalesManager(ISalesManager _address) external onlyOwner {
     salesManager = _address;
   }
 
@@ -97,7 +106,7 @@ contract MC is ERC721Enumerable, GameConnection, Pausable, ReentrancyGuard {
     _safeTransfer(_from, _to, _tokenId, '');
   }
 
-  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO nonReentrant {
+  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner nonReentrant {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
   }
