@@ -21,9 +21,4 @@ contract('Withdraw', (accounts) => {
     const fee = await gm.getFee(1);
     await gm.claim([100], { value: fee, from: user1 });
   });
-  
-  it('Withdraw value', async () => {
-    await truffleAssert.reverts(gm.withdrawValue(web3.utils.toWei('1'), { from: user1 }), 'Only DAO');
-    await gm.withdrawValue(web3.utils.toWei('1'), { from: DAO });
-  });
 });

@@ -196,7 +196,7 @@ contract GameManager is PausableUpgradeable {
     MintBurnInterface(avatarAddress).mint(msg.sender);
   }
 
-  uint64 constant startCLNYDate = 1654041600; // 1 Jun 2022
+  uint64 constant startCLNYDate = 1664654983; // 1 Oct 2022
 
   function mintLand(address _address, uint256 tokenId) private {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
