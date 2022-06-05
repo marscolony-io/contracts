@@ -2,9 +2,8 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
-import './interfaces/NFTMintableInterface.sol';
+import './interfaces/TokenInterface.sol';
 import './interfaces/PauseInterface.sol';
-import './interfaces/ERC20MintBurnInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IPoll.sol';
 import './interfaces/IMartianColonists.sol';
@@ -101,7 +100,7 @@ contract GameManager is PausableUpgradeable {
   }
 
   modifier onlyTokenOwner(uint256 tokenId) {
-    require(NFTMintableInterface(MCAddress).ownerOf(tokenId) == msg.sender, "You aren't the token owner");
+    require(TokenInterface(MCAddress).ownerOf(tokenId) == msg.sender, "You aren't the token owner");
     _;
   }
 
@@ -232,7 +231,8 @@ contract GameManager is PausableUpgradeable {
     // 37..<42 - land id
     // 42..<47 - avatar id (again)
     // 47..<55 - xp reward like 00000020
-    // 55... and several 8-byte blocks - reserved
+    // 55..<58 - lootbox
+    // 58... and several 8-byte blocks - reserved
     uint256 _avatar = _substring(message, 32, 37);
     uint256 _avatar2 = _substring(message, 37, 42);
     uint256 _land = _substring(message, 42, 47);
@@ -255,13 +255,13 @@ contract GameManager is PausableUpgradeable {
     require(_avatar > 0, "AvatarId is not valid");
     require(_land > 0 && _land <= 21000, "LandId is not valid");
     require(_xp >= 230 && _xp < 19971800, "XP increment is not valid");
-    require((_lootbox >=0 && _lootbox <=4 ) || (_lootbox >= 23 && _lootbox <= 26), "Lootbox code is not valid");
+    require((_lootbox >= 0 && _lootbox <= 4) || (_lootbox >= 23 && _lootbox <= 26), "Lootbox code is not valid");
 
 
     IAvatarManager(avatarAddress).addXP(_avatar, _xp);
 
 
-    if (_lootbox >=1 && _lootbox <=4) {
+    if (_lootbox >= 1 && _lootbox <= 4) {
       address avatarOwner = martianColonists.ownerOf(_avatar);
 
       ILootboxes(lootboxesAddress).mint(avatarOwner, getLootboxRarity(_lootbox));
@@ -275,46 +275,35 @@ contract GameManager is PausableUpgradeable {
       lootBoxesToMint[msg.sender].uncommon++;
     }
 
-
     if (_lootbox == 25) {
       lootBoxesToMint[msg.sender].rare++;
     }
-
 
     if (_lootbox == 26) {
       lootBoxesToMint[msg.sender].legendary++;
     }
 
-
-    emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp; one event for every reward type
-  }
-
-  function getCurrentMintRarity() private returns (ILootboxes.Rarity) {
-    if (lootBoxesToMint[msg.sender].legendary > 0) {
-      lootBoxesToMint[msg.sender].legendary--;
-      return ILootboxes.Rarity.LEGENDARY;
-    }
-
-    if (lootBoxesToMint[msg.sender].rare > 0) {
-      lootBoxesToMint[msg.sender].rare--;
-      return ILootboxes.Rarity.RARE;
-    }
-
-    if (lootBoxesToMint[msg.sender].uncommon > 0) {
-      lootBoxesToMint[msg.sender].uncommon--;
-      return ILootboxes.Rarity.UNCOMMON;
-    }
-
-    if (lootBoxesToMint[msg.sender].common > 0) {
-      lootBoxesToMint[msg.sender].common--;
-      return ILootboxes.Rarity.COMMON;
-    }
-
-    revert("you cannot mint lootbox"); 
+    // one event for every reward type
+    emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp
+    emit MissionReward(_land, _avatar, 100_000 + _lootbox, 1); // 1000xx - lootboxes
   }
 
   function mintLootbox() public {
-    ILootboxes(lootboxesAddress).mint(msg.sender, getCurrentMintRarity());
+    if (lootBoxesToMint[msg.sender].legendary > 0) {
+      lootBoxesToMint[msg.sender].legendary--;
+      ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.LEGENDARY);
+    } else if (lootBoxesToMint[msg.sender].rare > 0) {
+      lootBoxesToMint[msg.sender].rare--;
+      ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.RARE);
+    } else if (lootBoxesToMint[msg.sender].uncommon > 0) {
+      lootBoxesToMint[msg.sender].uncommon--;
+      ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.UNCOMMON);
+    } else if (lootBoxesToMint[msg.sender].common > 0) {
+      lootBoxesToMint[msg.sender].common--;
+      ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.COMMON);
+    } else {
+      revert("you cannot mint lootbox");
+    }
   }
 
   function finishMission(
@@ -335,8 +324,8 @@ contract GameManager is PausableUpgradeable {
   }
 
   /**
-  * temporary to count burned clny (setBurned)
-  */
+   * temporary to count burned clny (setBurned)
+   */
   function getBurnedOnEnhancements() external view returns (uint256) {
     uint256 result = 0;
     for (uint256 i = 1; i <= 21000; i++) {
@@ -415,13 +404,13 @@ contract GameManager is PausableUpgradeable {
 
   function mintAvatar() external nonReentrant {
     _deduct(MINT_AVATAR_LEVEL, REASON_MINT_AVATAR);
-    NFTMintableInterface(avatarAddress).mint(msg.sender);
+    TokenInterface(avatarAddress).mint(msg.sender);
   }
 
   function mintNFT(address _address, uint256 tokenId) private {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
     tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp);
-    NFTMintableInterface(MCAddress).mint(_address, tokenId);
+    TokenInterface(MCAddress).mint(_address, tokenId);
   }
 
   /**
@@ -500,11 +489,11 @@ contract GameManager is PausableUpgradeable {
     if (level == MINT_AVATAR_LEVEL) {
       amount = AVATAR_MINT_COST * 10 ** 18;
       // atrist and team minting royalties
-      ERC20MintBurnInterface(CLNYAddress).mint(0x352c478CD91BA54615Cc1eDFbA4A3E7EC9f60EE1, AVATAR_MINT_COST * 10 ** 18 * 2 / 100);
-      ERC20MintBurnInterface(CLNYAddress).mint(0x2581A6C674D84dAD92A81E8d3072C9561c21B935, AVATAR_MINT_COST * 10 ** 18 * 3 / 100);
+      TokenInterface(CLNYAddress).mint(0x352c478CD91BA54615Cc1eDFbA4A3E7EC9f60EE1, AVATAR_MINT_COST * 10 ** 18 * 2 / 100);
+      TokenInterface(CLNYAddress).mint(0x2581A6C674D84dAD92A81E8d3072C9561c21B935, AVATAR_MINT_COST * 10 ** 18 * 3 / 100);
     }
     require (amount > 0, 'Wrong level');
-    ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, amount, reason);
+    TokenInterface(CLNYAddress).burn(msg.sender, amount, reason);
   }
 
   function getLastCheckout(uint256 tokenId) public view returns (uint256) {
@@ -531,7 +520,7 @@ contract GameManager is PausableUpgradeable {
   }
 
   function getEarningSpeed(uint256 tokenId) public view returns (uint256) {
-    require (NFTMintableInterface(MCAddress).ownerOf(tokenId) != address(0)); // reverts itself
+    require (TokenInterface(MCAddress).ownerOf(tokenId) != address(0)); // reverts itself
     uint256 speed = 1; // bare land
     if (tokenData[tokenId].baseStation > 0) {
       speed = speed + 1; // base station gives +1
@@ -761,13 +750,13 @@ contract GameManager is PausableUpgradeable {
   function claimEarned(uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
     require (tokenIds.length != 0, 'Empty array');
     for (uint8 i = 0; i < tokenIds.length; i++) {
-      require (msg.sender == NFTMintableInterface(MCAddress).ownerOf(tokenIds[i]));
+      require (msg.sender == TokenInterface(MCAddress).ownerOf(tokenIds[i]));
       uint256 earned = getEarned(tokenIds[i]);
       tokenData[tokenIds[i]].fixedEarnings = 0;
       tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
-      ERC20MintBurnInterface(CLNYAddress).mint(msg.sender, earned);
-      ERC20MintBurnInterface(CLNYAddress).mint(treasury, earned * 31 / 49);
-      ERC20MintBurnInterface(CLNYAddress).mint(liquidity, earned * 20 / 49);
+      TokenInterface(CLNYAddress).mint(msg.sender, earned);
+      TokenInterface(CLNYAddress).mint(treasury, earned * 31 / 49);
+      TokenInterface(CLNYAddress).mint(liquidity, earned * 20 / 49);
     }
   }
 

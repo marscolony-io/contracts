@@ -39,10 +39,10 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
   }
 
   function getRarityUriPath(Rarity _rarity) private pure returns (string memory) {
-    if (_rarity == Rarity.COMMON) return"/0/";
-    if (_rarity == Rarity.UNCOMMON) return"/1/";
-    if (_rarity == Rarity.RARE) return"/2/";
-    if (_rarity == Rarity.LEGENDARY) return"/3/";
+    if (_rarity == Rarity.COMMON) return "/0/";
+    if (_rarity == Rarity.UNCOMMON) return "/1/";
+    if (_rarity == Rarity.RARE) return "/2/";
+    if (_rarity == Rarity.LEGENDARY) return "/3/";
     revert("Invalid rarity");
   }
 
@@ -63,13 +63,12 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
     lock = false;
   }
 
+  function open(uint256 tokenId) external onlyGameManager {
+    opened[tokenId] = true;
+  }
 
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
-  }
-
-  function open(uint256 tokenId) external onlyGameManager {
-    opened[tokenId] = true;
   }
 }
