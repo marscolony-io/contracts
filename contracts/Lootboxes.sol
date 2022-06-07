@@ -40,9 +40,8 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
 
   function getRarityUriPath(Rarity _rarity) private pure returns (string memory) {
     if (_rarity == Rarity.COMMON) return "/0/";
-    if (_rarity == Rarity.UNCOMMON) return "/1/";
-    if (_rarity == Rarity.RARE) return "/2/";
-    if (_rarity == Rarity.LEGENDARY) return "/3/";
+    if (_rarity == Rarity.RARE) return "/1/";
+    if (_rarity == Rarity.LEGENDARY) return "/2/";
     revert("Invalid rarity");
   }
 

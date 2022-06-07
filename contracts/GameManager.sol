@@ -36,7 +36,6 @@ contract GameManager is PausableUpgradeable {
 
   struct AvailableRarities {
     uint64 common;
-    uint64 uncommon;
     uint64 rare;
     uint64 legendary;
   }
@@ -244,9 +243,8 @@ contract GameManager is PausableUpgradeable {
 
   function getLootboxRarity(uint256 _lootbox) private pure returns (ILootboxes.Rarity rarity) {
     if (_lootbox == 1 || _lootbox == 23) return ILootboxes.Rarity.COMMON;
-    if (_lootbox == 2 || _lootbox == 24) return ILootboxes.Rarity.UNCOMMON;
-    if (_lootbox == 3 || _lootbox == 25) return ILootboxes.Rarity.RARE;
-    if (_lootbox == 4 || _lootbox == 26) return ILootboxes.Rarity.LEGENDARY;
+    if (_lootbox == 2 || _lootbox == 24) return ILootboxes.Rarity.RARE;
+    if (_lootbox == 3 || _lootbox == 25) return ILootboxes.Rarity.LEGENDARY;
   }
 
   function proceedFinishMissionMessage(string calldata message) private {
@@ -255,13 +253,13 @@ contract GameManager is PausableUpgradeable {
     require(_avatar > 0, "AvatarId is not valid");
     require(_land > 0 && _land <= 21000, "LandId is not valid");
     require(_xp >= 230 && _xp < 19971800, "XP increment is not valid");
-    require((_lootbox >= 0 && _lootbox <= 4) || (_lootbox >= 23 && _lootbox <= 26), "Lootbox code is not valid");
+    require((_lootbox >= 0 && _lootbox <= 3) || (_lootbox >= 23 && _lootbox <= 25), "Lootbox code is not valid");
 
 
     IAvatarManager(avatarAddress).addXP(_avatar, _xp);
 
 
-    if (_lootbox >= 1 && _lootbox <= 4) {
+    if (_lootbox >= 1 && _lootbox <= 3) {
       address avatarOwner = martianColonists.ownerOf(_avatar);
 
       ILootboxes(lootboxesAddress).mint(avatarOwner, getLootboxRarity(_lootbox));
@@ -272,14 +270,10 @@ contract GameManager is PausableUpgradeable {
     }
 
     if (_lootbox == 24) {
-      lootBoxesToMint[msg.sender].uncommon++;
-    }
-
-    if (_lootbox == 25) {
       lootBoxesToMint[msg.sender].rare++;
     }
 
-    if (_lootbox == 26) {
+    if (_lootbox == 25) {
       lootBoxesToMint[msg.sender].legendary++;
     }
 
@@ -295,9 +289,6 @@ contract GameManager is PausableUpgradeable {
     } else if (lootBoxesToMint[msg.sender].rare > 0) {
       lootBoxesToMint[msg.sender].rare--;
       ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.RARE);
-    } else if (lootBoxesToMint[msg.sender].uncommon > 0) {
-      lootBoxesToMint[msg.sender].uncommon--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.UNCOMMON);
     } else if (lootBoxesToMint[msg.sender].common > 0) {
       lootBoxesToMint[msg.sender].common--;
       ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.COMMON);

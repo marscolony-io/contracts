@@ -56,7 +56,6 @@ contract("Lootboxes", (accounts) => {
   describe("Rarity", function() {
     it("Returns correct rarity from struct", async () => {
       let lastTokenId = await lbx.totalSupply();
-      await lbx.mint(user1, 3);
       await lbx.mint(user1, 2);
       await lbx.mint(user1, 1);
       await lbx.mint(user1, 0);
@@ -64,12 +63,10 @@ contract("Lootboxes", (accounts) => {
       const rarity1 = await lbx.rarities(++lastTokenId);
       const rarity2 = await lbx.rarities(++lastTokenId);
       const rarity3 = await lbx.rarities(++lastTokenId);
-      const rarity4 = await lbx.rarities(++lastTokenId);
 
-      expect(rarity1.toString()).to.be.equal("3");
-      expect(rarity2.toString()).to.be.equal("2");
-      expect(rarity3.toString()).to.be.equal("1");
-      expect(rarity4.toString()).to.be.equal("0");
+      expect(rarity1.toString()).to.be.equal("2");
+      expect(rarity2.toString()).to.be.equal("1");
+      expect(rarity3.toString()).to.be.equal("0");
     });
   });
 
@@ -150,7 +147,7 @@ contract("Lootboxes", (accounts) => {
     it("Mint avatar owner lootbox with legendary rarity ", async () => {
       await lbx.setGameManager(gm.address);
 
-      const rarity = "04";
+      const rarity = "03";
 
       const message = `1111111111111111111111111111111100002000022100010000000${rarity}1111111111111111111111`;
       const signature = await web3.eth.accounts.sign(
@@ -162,7 +159,7 @@ contract("Lootboxes", (accounts) => {
 
       const totalSupplyAfter = await lbx.totalSupply();
       const lootboxRarity = await lbx.rarities(totalSupplyAfter);
-      expect(lootboxRarity.toString()).to.be.equal("3");
+      expect(lootboxRarity.toString()).to.be.equal("2");
     });
 
     it("Doesn't mint avatar for land owner", async () => {
@@ -201,7 +198,7 @@ contract("Lootboxes", (accounts) => {
     });
 
     it("Increases lootBoxesToMint legendary field for land owner", async () => {
-      const rarity = "26";
+      const rarity = "25";
       const message = `1111111111111111111111111111111100002000020020010000000${rarity}1111111111111111111111`;
       const signature = await web3.eth.accounts.sign(
         message,
@@ -245,7 +242,7 @@ contract("Lootboxes", (accounts) => {
 
     it("Reverts if no lootboxes to mint more", async () => {
       const tx = gm.mintLootbox({ from: user2 });
-      await truffleAssert.reverts(tx, "you can not mint lootbox");
+      await truffleAssert.reverts(tx, "you cannot mint lootbox");
     });
   });
 });
