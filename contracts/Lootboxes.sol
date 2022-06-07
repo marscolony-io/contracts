@@ -53,6 +53,12 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
     return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString(), getRarityUriPath(rarity))) : "";
   }
 
+  function lastOwnedTokenURI() public view returns (string memory) {
+    uint256 tokenCount = balanceOf(msg.sender);
+    uint256 tokenId = tokenOfOwnerByIndex(msg.sender, tokenCount - 1);
+    return tokenURI(tokenId);
+  }
+
   function mint(address receiver, Rarity _rarity) external override onlyGameManager {
     require(!lock, 'locked');
     lock = true;
@@ -64,6 +70,19 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
 
   function open(uint256 tokenId) external onlyGameManager {
     opened[tokenId] = true;
+  }
+
+  function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns(uint256[] memory) {
+    uint256 tokenCount = balanceOf(msg.sender);
+    if (tokenCount <= _from || _from > _to || tokenCount == 0) {
+      return new uint256[](0);
+    }
+    uint256 to = (tokenCount - 1 > _to) ? _to : tokenCount - 1;
+    uint256[] memory result = new uint256[](to - _from + 1);
+    for (uint256 i = _from; i <= to; i++) {
+      result[i - _from] = tokenOfOwnerByIndex(msg.sender, i);
+    }
+    return result;
   }
 
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
