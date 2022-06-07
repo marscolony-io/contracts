@@ -225,7 +225,7 @@ contract("Lootboxes", (accounts) => {
       expect(lootBoxesToMintAfter.legendary.toString()).to.be.equal("0");
 
       const rarity = await lbx.rarities(totalSupply);
-      expect(rarity.toString()).to.be.equal("3");
+      expect(rarity.toString()).to.be.equal("2");
     });
 
     it("Mint common last", async () => {
