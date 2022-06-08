@@ -2,8 +2,8 @@ node_modules/
 
 secrets.json
 
+build/contracts/*.json
 !build/contracts/ProxyAdmin.json
-build/*
 .openzeppelin/*
 test/.openzeppelin/*
 
