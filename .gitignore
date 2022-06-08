@@ -2,6 +2,7 @@ node_modules/
 
 secrets.json
 
+!build/contracts/ProxyAdmin.json
 build/*
 .openzeppelin/*
 test/.openzeppelin/*

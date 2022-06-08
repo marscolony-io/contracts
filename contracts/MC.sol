@@ -12,10 +12,14 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import './interfaces/ISalesManager.sol';
 
 
+// TODO rarible and other royalties
+
+
 contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable {
   string private nftBaseURI;
   ISalesManager public salesManager;
   address public GameManager;
+  bool migrationPhase = true;
 
   constructor (string memory _nftBaseURI) ERC721('MarsColony', 'MC') {
     nftBaseURI = _nftBaseURI;
@@ -36,6 +40,22 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable {
 
   function mint(address receiver, uint256 tokenId) external onlyGameManager whenNotPaused nonReentrant {
     _safeMint(receiver, tokenId);
+  }
+
+  // is used manually to migrate tokens to a new contract, then closes onse 'close=true' is send
+  function migrationMint(address[] calldata receivers, uint256[] calldata tokenIds, bool close) external onlyOwner {
+    require(migrationPhase, 'Migration finished');
+    require(receivers.length == tokenIds.length, 'Invalid array sizes');
+
+    if (receivers.length > 0) {
+      for (uint256 i = 0; i < receivers.length; i++) {
+        _mint(receivers[i], tokenIds[i]);
+      }
+    }
+
+    if (close) {
+      migrationPhase = false;
+    }
   }
 
   function pause() external onlyGameManager {
