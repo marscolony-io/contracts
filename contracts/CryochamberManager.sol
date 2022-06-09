@@ -103,12 +103,12 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     return avatarCryo.endTime > 0 && uint64(block.timestamp) > avatarCryo.endTime;
   }
 
-  function putAvatarInCryochamber(uint256 avatarId) external hasCryochamber(msg.sender) {
+  function putAvatarInCryochamber(uint256 avatarId, address user) private {
     require(avatars.ownerOf(avatarId) == msg.sender, "You are not an avatar owner");
 
     CryoTime memory avatarCryo = cryos[avatarId];
 
-    require(!isAvatarInCryoChamber(avatarCryo), "This avatar is in cryptochamber already");
+    require(!isAvatarInCryoChamber(avatarCryo), "This avatar is in cryochamber already");
 
     // if last cryoperiod ended, add previous reward to xp
 
@@ -116,8 +116,18 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
       avatarManager.addXPAfterCryo(avatarId, avatarCryo.reward);
     }
 
-    decreaseCryochamberEnergy(msg.sender, cryoEnergyCost);
+    decreaseCryochamberEnergy(user, cryoEnergyCost);
     cryos[avatarId] = CryoTime(uint64(block.timestamp) + cryoPeriodLength, cryoXpAddition);
+  }
+
+  function putAvatarsInCryochamber(uint256[] calldata avatarIds) external hasCryochamber(msg.sender) {
+    for (uint256 i = 0; i < avatarIds.length; i++) {
+      putAvatarInCryochamber(avatarIds[i], msg.sender);
+    }
+  }
+
+  function estimateXpAddition(uint256 avatarId) external returns (uint256) {
+
   }
 
  

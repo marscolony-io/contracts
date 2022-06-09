@@ -105,7 +105,7 @@ contract("CryochamberManager", (accounts) => {
 
   it("can not send avatar when it in cryo already", async () => {
     const tx = cryo.putAvatarInCryochamber(1, { from: user1 });
-    await truffleAssert.reverts(tx, "This avatar is in cryptochamber already");
+    await truffleAssert.reverts(tx, "This avatar is in cryochamber already");
   });
 
   it("adds avatar xp when cryo has been finished", async () => {
