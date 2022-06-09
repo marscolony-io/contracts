@@ -15,6 +15,7 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
   address public gameManager;
   mapping (uint256 => bool) public opened;
   mapping (uint256 => Rarity) public rarities;
+  mapping (address => uint256) private lastTokenMinted;
   bool lock;
 
   modifier onlyGameManager {
@@ -54,9 +55,8 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
   }
 
   function lastOwnedTokenURI() public view returns (string memory) {
-    uint256 tokenCount = balanceOf(msg.sender);
-    uint256 tokenId = tokenOfOwnerByIndex(msg.sender, tokenCount - 1);
-    return tokenURI(tokenId);
+    require (lastTokenMinted[msg.sender] != 0, "User hasn't minted any token");
+    return tokenURI(lastTokenMinted[msg.sender]);
   }
 
   function mint(address receiver, Rarity _rarity) external override onlyGameManager {
@@ -64,6 +64,7 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
     lock = true;
     uint256 tokenId = ERC721Enumerable.totalSupply() + 1;
     rarities[tokenId] = _rarity;
+    lastTokenMinted[receiver] = tokenId;
     _safeMint(receiver, tokenId); // +1 because we emit 0 and start with 1
     lock = false;
   }

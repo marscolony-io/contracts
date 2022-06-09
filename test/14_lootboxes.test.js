@@ -245,4 +245,18 @@ contract("Lootboxes", (accounts) => {
       await truffleAssert.reverts(tx, "you cannot mint lootbox");
     });
   });
+
+  describe("Last owned token URI", async () => {
+    it("Chacks the function", async () => {
+      await lbx.setGameManager(DAO);
+      await lbx.mint(user1, 0);
+      const balanceOf = +await lbx.balanceOf(user1);
+      const token = +await lbx.tokenOfOwnerByIndex(user1, balanceOf - 1);
+      const lastUriClassic = await lbx.tokenURI(token);
+      await expectRevert(lbx.lastOwnedTokenURI(), "User hasn't minted any token");
+      const lastUri = await lbx.lastOwnedTokenURI({ from: user1 });
+      expect(lastUri).to.be.equal(lastUriClassic);
+      expect(lastUri).to.be.equal(baseUri + '10/0/');
+    });
+  });
 });
