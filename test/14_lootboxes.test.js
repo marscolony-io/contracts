@@ -247,7 +247,7 @@ contract("Lootboxes", (accounts) => {
   });
 
   describe("Last owned token URI", async () => {
-    it("Chacks the function", async () => {
+    it("Checks the function", async () => {
       await lbx.setGameManager(DAO);
       await lbx.mint(user1, 0);
       const balanceOf = +await lbx.balanceOf(user1);
@@ -257,6 +257,26 @@ contract("Lootboxes", (accounts) => {
       const lastUri = await lbx.lastOwnedTokenURI({ from: user1 });
       expect(lastUri).to.be.equal(lastUriClassic);
       expect(lastUri).to.be.equal(baseUri + '10/0/');
+    });
+  });
+
+  describe("All My Tokens Paginate", async () => {
+    it("Checks the function", async () => {
+      const twoFirstTokens = await lbx.allMyTokensPaginate(0, 1, { from: user1 });
+      expect(twoFirstTokens.map(value => +value)).to.be.eql([1, 3]);
+      const upTo100FirstTokens = await lbx.allMyTokensPaginate(0, 99, { from: user1 });
+      expect(upTo100FirstTokens.map(value => +value)).to.be.eql([1, 3, 4, 5, 6, 7, 10]);
+    });
+  });
+
+  describe("GameManager burns a token", async () => {
+    it("Not a GameManager can't burn", async () => {
+      await expectRevert(lbx.burn(1, { from: user1 }), 'only game manager');
+    });
+    it("GameManager can burn", async () => {
+      // DAO is GM
+      await lbx.burn(1, { from: DAO });
+      await expectRevert(lbx.ownerOf(1), "ERC721: owner query for nonexistent token");
     });
   });
 });

@@ -69,6 +69,10 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
     lock = false;
   }
 
+  function burn(uint256 tokenId) external onlyGameManager {
+    _burn(tokenId);
+  }
+
   function open(uint256 tokenId) external onlyGameManager {
     opened[tokenId] = true;
   }
