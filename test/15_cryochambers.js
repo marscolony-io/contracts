@@ -37,7 +37,7 @@ contract("CryochamberManager", (accounts) => {
   });
 
   it("send avatar to cryo fails if no chamber purchased", async () => {
-    const tx = cryo.putAvatarInCryochamber(1);
+    const tx = cryo.putAvatarsInCryochamber([1]);
     await truffleAssert.reverts(tx, "You have not purchased cryochamber yet");
   });
 

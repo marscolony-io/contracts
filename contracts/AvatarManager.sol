@@ -31,6 +31,8 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
   }
 
   function _getXP(uint256 avatarId) private view returns(uint256) {
+    uint256 totalAvatarsCount = collection.totalSupply();
+    require(avatarId < totalAvatarsCount, "wrong avatarId requested");
     return xp[avatarId] + 100; // 100 is a base for every avatar
   }
 

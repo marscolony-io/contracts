@@ -89,36 +89,31 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     cryochamber.energy -= _amount;
   }
 
-  function isAvatarInCryoChamber(CryoTime memory avatarCryo) public view returns (bool) {
+  function isAvatarInCryoChamber(uint256 avatarId) public view returns (bool) {
+    CryoTime memory avatarCryo = cryos[avatarId];
     return avatarCryo.endTime > 0 && avatarCryo.endTime > uint64(block.timestamp);
   }
 
-   function isInCryoChamber(uint256[] calldata avatarIds) public view returns (bool[] memory) {
+   function isInCryoChamber(uint256[] calldata avatarIds) external view returns (bool[] memory) {
     if (avatarIds.length == 0) {
       return new bool[](0);
     } else {
       bool[] memory result = new bool[](avatarIds.length);
       for (uint256 i = 0; i < avatarIds.length; i++) {
-        CryoTime memory avatarCryo = cryos[avatarIds[i]];
-        result[i] = isAvatarInCryoChamber(avatarCryo);
+        result[i] = isAvatarInCryoChamber(avatarIds[i]);
       }
       return result;
     }
   }
 
-  function isAvatarCryoFinished(CryoTime memory avatarCryo) public view returns (bool) {
-    return avatarCryo.endTime > 0 && uint64(block.timestamp) > avatarCryo.endTime;
-  }
-
   function putAvatarInCryochamber(uint256 avatarId, address user) private {
     require(avatars.ownerOf(avatarId) == msg.sender, "You are not an avatar owner");
 
-    CryoTime memory avatarCryo = cryos[avatarId];
-
-    require(!isAvatarInCryoChamber(avatarCryo), "This avatar is in cryochamber already");
+    require(!isAvatarInCryoChamber(avatarId), "This avatar is in cryochamber already");
 
     // if last cryoperiod ended, add previous reward to xp
 
+    CryoTime memory avatarCryo = cryos[avatarId];
     if (avatarCryo.endTime > 0 && avatarCryo.endTime <= uint64(block.timestamp)) {
       avatarManager.addXPAfterCryo(avatarId, avatarCryo.reward);
     }
