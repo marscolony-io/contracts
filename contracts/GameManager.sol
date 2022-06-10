@@ -777,7 +777,7 @@ contract GameManager is PausableUpgradeable {
     ICryochamber(cryochamberAddress).purchaseCryochamber(msg.sender);
 
     uint256 cryochamberPrice = ICryochamber(cryochamberAddress).cryochamberPrice();
-    ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
+    TokenInterface(CLNYAddress).burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
 
   }
 
@@ -785,7 +785,7 @@ contract GameManager is PausableUpgradeable {
     ICryochamber(cryochamberAddress).purchaseCryochamberEnergy(msg.sender, amount);
 
     uint256 energyPrice = ICryochamber(cryochamberAddress).energyPrice();
-    ERC20MintBurnInterface(CLNYAddress).burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
+    TokenInterface(CLNYAddress).burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
 
   }
 }
