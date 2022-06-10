@@ -20,7 +20,6 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
   uint256 public initialEnergy;
   uint256 public cryoEnergyCost; // energy decrease amount when avatar goes in cryochamber
   uint64 public cryoPeriodLength;
-  uint256 public cryoXpAddition;
 
   // uint256 cryochambersCounter; 
   
@@ -52,7 +51,6 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     initialEnergy = 5;
     cryoEnergyCost = 1;
     cryoPeriodLength = 7 * 24 * 60 * 60; 
-    cryoXpAddition = 1000;
   }
 
   function setCryochamberPrice(uint256 _price) external onlyDAO whenNotPaused {
@@ -61,10 +59,6 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
 
   function setCryochamberCost(uint256 _cost) external onlyDAO whenNotPaused {
     cryoEnergyCost = _cost;
-  }
-
-  function setCryoXpAddition(uint256 addition) external onlyDAO whenNotPaused {
-    cryoXpAddition = addition;
   }
 
   function setEnergyPrice(uint256 _price) external onlyDAO whenNotPaused {
@@ -130,7 +124,7 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     }
 
     decreaseCryochamberEnergy(user, cryoEnergyCost);
-    cryos[avatarId] = CryoTime(uint64(block.timestamp) + cryoPeriodLength, cryoXpAddition);
+    cryos[avatarId] = CryoTime(uint64(block.timestamp) + cryoPeriodLength, estimateXpAddition(avatarId));
   }
 
   function putAvatarsInCryochamber(uint256[] calldata avatarIds) external hasCryochamber(msg.sender) {
@@ -138,8 +132,33 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
       putAvatarInCryochamber(avatarIds[i], msg.sender);
     }
   }
+  
+  function numDigits(uint256 number) private pure returns (uint8) {
+    uint8 digits = 0;
+    while (number != 0) {
+        number /= 10;
+        digits++;
+    }
+    return digits;
+  }
 
-  function estimateXpAddition(uint256 avatarId) external returns (uint256) {
+  function cryoXpAddition(uint256 currentXp) private pure returns (uint256) {
+    if (currentXp <= 1000) {
+      return uint256(400);
+    } else {
+      uint8 countOfDigits = numDigits(currentXp);
+      return currentXp * (7 / (2**(countOfDigits-4) * 100));
+    }
+  }
+
+  function estimateXpAddition(uint256 avatarId) public view returns (uint256) {
+    uint256[] memory avatarArg = new uint256[](1);
+    avatarArg[0] = avatarId;
+
+    uint256[] memory currentXps = avatarManager.getXP(avatarArg);
+    uint256 currentXp = currentXps[0];
+
+    return cryoXpAddition(currentXp);
 
   }
 
