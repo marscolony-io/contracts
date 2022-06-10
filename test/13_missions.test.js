@@ -117,36 +117,31 @@ contract("MissionsManager", (accounts) => {
       await truffleAssert.reverts(tx, "Signature is not from server");
     });
 
-    it("Pass if signature is from server", async () => {
-      // set backendSigner in GM
+    it("Set message sender to backend sender", async () => {
       await gm.setBackendSigner(signer.address);
+    });
 
+    it("Fails if avatarId is not doubled", async () => {
       const message =
-        "1111111111111111000012100015555555111111111111111111111111";
+        "1111111111111111111111111111111100001000022100015555555111111111111111111111111";
       const signature = await web3.eth.accounts.sign(
         message,
         signer.privateKey
       );
 
-      await gm.finishMission(message, signature.v, signature.r, signature.s);
+      const tx = gm.finishMission(
+        message,
+        signature.v,
+        signature.r,
+        signature.s
+      );
+
+      await truffleAssert.reverts(tx, "check failed");
     });
-
-    // it("Substring Function parses correct ids", async () => {
-    //   const message =
-    //     "1111111111111110000122100055555555111111111111111111111111";
-
-    //   const avatarId = await gm._substring(message, 16, 21);
-    //   const landId = await gm._substring(message, 21, 26);
-    //   const xp = await gm._substring(message, 26, 34);
-
-    //   expect(+avatarId.toString()).to.be.equal(12);
-    //   expect(+landId.toString()).to.be.equal(21000);
-    //   expect(+xp.toString()).to.be.equal(55555555);
-    // });
 
     it("Fails if avatarId is not valid", async () => {
       const message =
-        "1111111111111111000002100015555555111111111111111111111111";
+        "1111111111111111111111111111111100000000002100015555555111111111111111111111111";
       const signature = await web3.eth.accounts.sign(
         message,
         signer.privateKey
@@ -164,7 +159,7 @@ contract("MissionsManager", (accounts) => {
 
     it("Fails if landId is not valid", async () => {
       const message =
-        "1111111111111111000012200015555555111111111111111111111111";
+        "1111111111111111111111111111111100001000012100115555555111111111111111111111111";
       const signature = await web3.eth.accounts.sign(
         message,
         signer.privateKey
@@ -182,7 +177,7 @@ contract("MissionsManager", (accounts) => {
 
     it("Fails if XP increment is not valid", async () => {
       const message =
-        "1111111111111111000012100055555555111111111111111111111111";
+        "1111111111111111111111111111111100001000012100055555555111111111111111111111111";
       const signature = await web3.eth.accounts.sign(
         message,
         signer.privateKey
@@ -198,10 +193,28 @@ contract("MissionsManager", (accounts) => {
       await truffleAssert.reverts(tx, "XP increment is not valid");
     });
 
-    it("XP Increment is valid", async () => {
+    it("Fails if Lootbox code is not valid", async () => {
+      const message =
+        "1111111111111111111111111111111100001000012100015555555111111111111111111111111";
+      const signature = await web3.eth.accounts.sign(
+        message,
+        signer.privateKey
+      );
+
+      const tx = gm.finishMission(
+        message,
+        signature.v,
+        signature.r,
+        signature.s
+      );
+
+      await truffleAssert.reverts(tx, "Lootbox code is not valid");
+    });
+
+    it("Xp added", async () => {
       const initialXp = await avatars.getXP([1]);
       const message =
-        "1111111111111111000012100010000000111111111111111111111111";
+        "1111111111111111111111111111111100002000022100010000000001111111111111111111111";
       const signature = await web3.eth.accounts.sign(
         message,
         signer.privateKey
@@ -209,14 +222,14 @@ contract("MissionsManager", (accounts) => {
 
       await gm.finishMission(message, signature.v, signature.r, signature.s);
 
-      const addedXp = await avatars.getXP([1]);
+      const addedXp = await avatars.getXP([2]);
 
       expect(+addedXp - +initialXp).to.be.equal(10000000);
     });
 
     it("signature has been used", async () => {
       const message =
-        "1111111111111111000012100010000000111111111111111111111111";
+        "1111111111111111111111111111111100002000022100010000000001111111111111111111111";
       const signature = await web3.eth.accounts.sign(
         message,
         signer.privateKey
@@ -234,7 +247,7 @@ contract("MissionsManager", (accounts) => {
 
     it("MissionReward event emitted", async () => {
       const message =
-        "1111111111111111000012100010000005111111111111111111111111";
+        "1111111111111111111111111111111100002000022000010000005001111111111111111111111";
       const signature = await web3.eth.accounts.sign(
         message,
         signer.privateKey
@@ -251,8 +264,8 @@ contract("MissionsManager", (accounts) => {
 
       truffleAssert.eventEmitted(mcTx, "MissionReward", (ev) => {
         return (
-          parseInt(ev.landId) === 21000 &&
-          parseInt(ev.avatarId) === 1 &&
+          parseInt(ev.landId) === 20000 &&
+          parseInt(ev.avatarId) === 2 &&
           parseInt(ev.rewardType) === 0 &&
           parseInt(ev.rewardAmount) === 10000005
         );
