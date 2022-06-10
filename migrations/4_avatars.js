@@ -17,7 +17,7 @@ module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
 
   const _AvatarManager = await AvatarManager.deployed();
   let _GM;
-  if (network === "development") {
+  if (network === 'hartest' || network === 'development') {
     await _AvatarManager.setGameManager(GM.address);
     _GM = await GM.deployed();
   } else if (network === "hartest") {
