@@ -16,12 +16,15 @@ module.exports = async (deployer, network, addresses) => {
   if (network === "development") {
     return; // this file for manual migrations; pass in tests
   }
-  const inst = await deployer.deploy(GM);
-  const lb = await deployer.deploy(Lootboxes, 'https://lootboxes-harmony.marscolony.io/');
-  const PA = await ProxyAdmin.at('0xc470b22A8D173a0DA50191A4A0E5e2b42f6B6009');
-  await PA.upgrade('0xc65F8BA708814653EDdCe0e9f75827fe309E29aD', GM.address);
-  const gm = await GM.at('0xc65F8BA708814653EDdCe0e9f75827fe309E29aD');
-  await gm.setLootboxesAddress(Lootboxes.address);
+  // const inst = await deployer.deploy(GM);
+  // const lb = await deployer.deploy(Lootboxes, 'https://lootboxes-harmony.marscolony.io/');
+  // const PA = await ProxyAdmin.at('0xc470b22A8D173a0DA50191A4A0E5e2b42f6B6009');
+  // await PA.upgrade('0xc65F8BA708814653EDdCe0e9f75827fe309E29aD', GM.address);
+  // const gm = await GM.at('0xc65F8BA708814653EDdCe0e9f75827fe309E29aD');
+  // await gm.setLootboxesAddress(Lootboxes.address);
 
+
+  const lb = await Lootboxes.at('0x6C43382b870d63841774FE1Aa2df899361b2D04E');
+  await lb.setGameManager('0xc65F8BA708814653EDdCe0e9f75827fe309E29aD');
 
 };

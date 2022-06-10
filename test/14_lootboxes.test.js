@@ -263,9 +263,11 @@ contract("Lootboxes", (accounts) => {
   describe("All My Tokens Paginate", async () => {
     it("Checks the function", async () => {
       const twoFirstTokens = await lbx.allMyTokensPaginate(0, 1, { from: user1 });
-      expect(twoFirstTokens.map(value => +value)).to.be.eql([1, 3]);
+      expect(twoFirstTokens[0].map(value => +value)).to.be.eql([1, 3]);
+      expect(twoFirstTokens[1].map(value => +value)).to.be.eql([0, 2]);
       const upTo100FirstTokens = await lbx.allMyTokensPaginate(0, 99, { from: user1 });
-      expect(upTo100FirstTokens.map(value => +value)).to.be.eql([1, 3, 4, 5, 6, 7, 10]);
+      expect(upTo100FirstTokens[0].map(value => +value)).to.be.eql([1, 3, 4, 5, 6, 7, 10]);
+      expect(upTo100FirstTokens[1].map(value => +value)).to.be.eql([0, 2, 1, 0, 0, 2, 0]);
     });
   });
 

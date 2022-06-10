@@ -77,17 +77,19 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
     opened[tokenId] = true;
   }
 
-  function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns(uint256[] memory) {
+  function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns(uint256[] memory, uint256[] memory) {
     uint256 tokenCount = balanceOf(msg.sender);
     if (tokenCount <= _from || _from > _to || tokenCount == 0) {
-      return new uint256[](0);
+      return (new uint256[](0), new uint256[](0));
     }
     uint256 to = (tokenCount - 1 > _to) ? _to : tokenCount - 1;
     uint256[] memory result = new uint256[](to - _from + 1);
+    uint256[] memory resultRarities = new uint256[](to - _from + 1);
     for (uint256 i = _from; i <= to; i++) {
       result[i - _from] = tokenOfOwnerByIndex(msg.sender, i);
+      resultRarities[i - _from] = uint256(rarities[result[i - _from]]);
     }
-    return result;
+    return (result, resultRarities);
   }
 
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
