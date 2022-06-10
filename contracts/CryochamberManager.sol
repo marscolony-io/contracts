@@ -99,6 +99,19 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     return avatarCryo.endTime > 0 && avatarCryo.endTime > uint64(block.timestamp);
   }
 
+   function isInCryoChamber(uint256[] calldata avatarIds) public view returns (bool[] memory) {
+    if (avatarIds.length == 0) {
+      return new bool[](0);
+    } else {
+      bool[] memory result = new bool[](avatarIds.length);
+      for (uint256 i = 0; i < avatarIds.length; i++) {
+        CryoTime memory avatarCryo = cryos[avatarIds[i]];
+        result[i] = isAvatarInCryoChamber(avatarCryo);
+      }
+      return result;
+    }
+  }
+
   function isAvatarCryoFinished(CryoTime memory avatarCryo) public view returns (bool) {
     return avatarCryo.endTime > 0 && uint64(block.timestamp) > avatarCryo.endTime;
   }
