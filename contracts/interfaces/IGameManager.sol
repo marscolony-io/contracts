@@ -11,5 +11,7 @@ interface IGameManager {
     uint8 powerProduction; // 0 or 1, 2, 3 (levels)
   }
 
+  function MCAddress() external view returns (address);
+
   function getAttributesMany(uint256[] calldata tokenIds) external view returns (AttributeData[] memory);
 }
