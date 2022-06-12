@@ -16,7 +16,7 @@ module.exports = async (deployer, network, addresses) => {
   if (network === 'hartest') {
     return; // this file for manual migrations; pass in tests
   }
-  const gm = await GM.deployed();
+  const gm = await GM.at('0xCAFAeD55fEfEd74Ca866fE72D65CfF073eb42797');
 
   await deployer.deploy(
     Poll,
@@ -28,8 +28,11 @@ module.exports = async (deployer, network, addresses) => {
       'Flexible Date: launch Mainnet only after all 21k NFTs will be claimed',
     ],
   );
+  // const poll = await Poll.at('0x59932646a3081f00369a69386809b31F0391aC71');
   const poll = await Poll.deployed();
-  await poll.setGameManager(GM.address);
+  await poll.setGameManager(gm.address);
 
-  // await gm.setPollAddress(Poll.address);
+  await gm.setPollAddress(poll.address);
+
+  await poll.start();
 };

@@ -18,14 +18,18 @@ contract Poll is IPoll, Ownable, GameConnection {
   string[] public items;
 
   mapping (uint256 => uint256) private votedFor;
-  mapping (uint256 => uint256) public override totalVotesFor;
+  mapping (uint256 => uint256) private totalVotesFor_;
 
   struct VotePair {
-    string option;
     uint256 voteCount;
+    string option;
   }
 
   event Vote (address indexed voter, uint256 decision);
+
+  function totalVotesFor(uint8 option) external view returns (uint256) {
+    return totalVotesFor_[uint256(option)];
+  }
 
   constructor (address _DAO, string memory _caption, string memory _description, string[] memory _items) {
     description = _description;
@@ -34,13 +38,9 @@ contract Poll is IPoll, Ownable, GameConnection {
     GameConnection.__GameConnection_init(_DAO);
   }
 
-  function getResults() external view returns (VotePair[] memory) {
-    VotePair[] memory result = new VotePair[](items.length);
-    for (uint256 i = 0; i < items.length; i++) {
-      result[i].option = items[i];
-      result[i].voteCount = totalVotesFor[i];
-    }
-    return result;
+  function getResults(uint256 option) external view returns (VotePair memory result) {
+    result.option = items[option];
+    result.voteCount = totalVotesFor_[option];
   }
 
   function getMC() private view returns (address) {
@@ -68,7 +68,7 @@ contract Poll is IPoll, Ownable, GameConnection {
     return false;
   }
   
-  function vote(address _address, uint256 decision) external override onlyGameManager {
+  function vote(address _address, uint8 decision) external override onlyGameManager {
     require (started, 'not started');
     IERC721Enumerable MC = IERC721Enumerable(getMC());
     uint256 tokenCount = MC.balanceOf(_address);
@@ -76,13 +76,13 @@ contract Poll is IPoll, Ownable, GameConnection {
     for (uint256 i = 0; i < tokenCount; i++) {
       uint256 tokenId = MC.tokenOfOwnerByIndex(_address, i);
       if (!tokenVoted[tokenId]) {
-        votedFor[tokenId] = decision;
-        totalVotesFor[decision]++;
+        votedFor[tokenId] = uint256(decision);
+        totalVotesFor_[uint256(decision)]++;
         voteCount++;
         tokenVoted[tokenId] = true;
       }
     }
-    emit Vote(_address, decision);
+    emit Vote(_address, uint256(decision));
   }
 
   function start() external onlyOwner {
