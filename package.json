@@ -21,6 +21,9 @@
     "truffle-privatekey-provider": "^1.5.0"
   },
   "scripts": {
+    "int-test": "truffle exec scripts/check-integrity.js --network hartest",
+    "int-maxim": "MAXIM=1 truffle exec scripts/check-integrity.js --network hartest",
+    "int-mainnet": "truffle exec scripts/check-integrity.js --network harmain",
     "test": "truffle test"
   }
 }

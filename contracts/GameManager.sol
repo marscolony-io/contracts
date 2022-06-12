@@ -6,13 +6,18 @@ import './interfaces/MintBurnInterface.sol';
 import './interfaces/PauseInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IPoll.sol';
+import './Shares.sol';
+import './interfaces/IMartianColonists.sol';
+import './interfaces/IAvatarManager.sol';
+
 
 
 /**
  * Game logic; upgradable
  */
-contract GameManager is PausableUpgradeable {
-  uint256[50] private ______gm_gap_0;
+contract GameManager is PausableUpgradeable, Shares {
+  // 25 256bit slots in Shares.sol
+  uint256[25] private ______gm_gap_0;
 
   address public DAO; // owner
 
@@ -24,10 +29,11 @@ contract GameManager is PausableUpgradeable {
   address public MCAddress;
   address public avatarAddress;
   address public pollAddress;
-  address public missionManagerReservedSlot;
-  address public martianColonistsReservedSlot;
-  address public backendSignerReservedSlot;
-  mapping (bytes32 => bool) private usedSignaturesReservedSlot;
+
+  address public missionManager;
+  IMartianColonists public martianColonists;
+  address public backendSigner;
+  mapping (bytes32 => bool) private usedSignatures;
 
   bool allowlistOnly;
   mapping (address => bool) private allowlist;
@@ -36,8 +42,8 @@ contract GameManager is PausableUpgradeable {
   uint256[42] private ______gm_gap_1;
 
   struct LandData {
-    uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
-    uint64 lastCLNYCheckout; // (now - lastCLNYCheckout) * 'earning speed' + fixedEarnings = farmed so far
+    uint256 deprecated1;
+    uint64 deprecated2;
     uint8 baseStation; // 0 or 1
     uint8 transport; // 0 or 1, 2, 3 (levels)
     uint8 robotAssembly; // 0 or 1, 2, 3 (levels)
@@ -83,6 +89,7 @@ contract GameManager is PausableUpgradeable {
   // 9914b04dac571a45d7a7b33184088cbd4d62a2ed88e64602a6b8a6a93b3fb0a6
   event BuildPowerProduction (uint256 tokenId, address indexed owner, uint8 level);
   event SetPrice (uint256 price);
+  event MissionReward (uint256 indexed landId, uint256 indexed avatarId, uint256 indexed rewardType, uint256 rewardAmount);
 
   modifier onlyDAO {
     require(msg.sender == DAO, 'Only DAO');
@@ -101,6 +108,11 @@ contract GameManager is PausableUpgradeable {
     locked = false;
   }
 
+  function setClnyPerSecond(uint256 newSpeed) external onlyDAO {
+    updatePool(CLNYAddress);
+    clnyPerSecond = newSpeed;
+  }
+
   function addToAllowlist(address[] calldata _addresses) external {
     // allowlist from one specific address
     require(msg.sender == 0xf4Fb3ac483C339fC48AD095409C958cF93f2A548, 'invalid sender');
@@ -116,14 +128,22 @@ contract GameManager is PausableUpgradeable {
     allowlistOnly = listOn;
   }
 
-  function setMCAddress(address _address) external onlyDAO {
-    MCAddress = _address;
-  }
-
   function saleData() external view returns (bool allowed, uint256 minted, uint256 limit) {
     allowed = !allowlistOnly || allowlist[msg.sender];
     minted = MintBurnInterface(MCAddress).totalSupply();
     limit = allowlistLimit;
+  }
+
+  function setMissionManager(address _address) external onlyDAO {
+    missionManager = _address;
+  }
+
+  function setBackendSigner(address _address) external onlyDAO {
+    backendSigner = _address;
+  }
+
+  function setMartianColonists(address _address) external onlyDAO {
+    martianColonists = IMartianColonists(_address);
   }
 
   function setAvatarAddress(address _avatarAddress) external onlyDAO {
@@ -148,6 +168,124 @@ contract GameManager is PausableUpgradeable {
 
   function vote(uint8 decision) external {
     IPoll(pollAddress).vote(msg.sender, decision);
+  }
+
+  function stringToUint(string memory s) private pure returns (uint256) {
+    bytes memory b = bytes(s);
+    uint result = 0;
+    for (uint i = 0; i < b.length; i++) {
+      if (uint8(b[i]) >= 48 && uint8(b[i]) <= 57) {
+        result = result * 10 + (uint8(b[i]) - 48);
+      }
+    }
+    return result;
+  }
+
+  function _getSignerAddress(
+    string memory message,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) private pure returns (address signer) {
+    string memory header = '\x19Ethereum Signed Message:\n000000';
+    uint256 lengthOffset;
+    uint256 length;
+    assembly {
+      length := mload(message)
+      lengthOffset := add(header, 57)
+    }
+
+    require(length <= 999999);
+
+    uint256 lengthLength = 0;
+    uint256 divisor = 100000;
+
+    while (divisor != 0) {
+      uint256 digit = length / divisor;
+      if (digit == 0) {
+        if (lengthLength == 0) {
+          divisor /= 10;
+          continue;
+        }
+      }
+
+      lengthLength++;
+      length -= digit * divisor;
+      divisor /= 10;
+      digit += 0x30;
+      lengthOffset++;
+
+      assembly {
+        mstore8(lengthOffset, digit)
+      }
+    }
+
+    if (lengthLength == 0) {
+      lengthLength = 1 + 0x19 + 1;
+    } else {
+      lengthLength += 1 + 0x19;
+    }
+
+    assembly {
+      mstore(header, lengthLength)
+    }
+
+    bytes32 check = keccak256(abi.encodePacked(header, message));
+
+    return ecrecover(check, v, r, s);
+  }
+
+  function _substring(string memory str, uint startIndex, uint endIndex) private pure returns (uint256 ) {
+    bytes memory strBytes = bytes(str);
+    bytes memory result = new bytes(endIndex-startIndex);
+    for(uint i = startIndex; i < endIndex; i++) {
+      result[i - startIndex] = strBytes[i];
+    }
+    return stringToUint(string(result));
+  }
+
+  function getAssetsFromFinishMissionMessage(string calldata message) private pure returns (uint256, uint256, uint256) {
+    // 0..<32 - random
+    // 32..<37 - avatar id
+    // 37..<42 - land id
+    // 42..<47 - avatar id (again)
+    // 47..<55 - xp reward like 00000020
+    // 55... and several 8-byte blocks - reserved
+    uint256 _avatar = _substring(message, 32, 37);
+    uint256 _avatar2 = _substring(message, 37, 42);
+    uint256 _land = _substring(message, 42, 47);
+    uint256 _xp = _substring(message, 47, 55);
+    require(_avatar == _avatar2, 'check failed');
+    return (_avatar, _land, _xp);
+  }
+
+  function proceedFinishMissionMessage(string calldata message) private {
+    (uint256 _avatar, uint256 _land, uint256 _xp) = getAssetsFromFinishMissionMessage(message);
+
+    require(_avatar > 0, "AvatarId is not valid");
+    require(_land > 0 && _land <= 21000, "LandId is not valid");
+    require(_xp >= 230 && _xp < 19971800, "XP increment is not valid");
+
+    IAvatarManager(avatarAddress).addXP(_avatar, _xp);
+
+    emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp; one event for every reward type
+  }
+
+  function finishMission(
+    string calldata message,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) external {
+    address signerAddress = _getSignerAddress(message, v, r, s);
+    require(signerAddress == backendSigner, "Signature is not from server");
+
+    bytes32 signatureHashed = keccak256(abi.encodePacked(v, r, s));
+    require (!usedSignatures[signatureHashed], 'signature has been used');
+
+    proceedFinishMissionMessage(message);
+
+    usedSignatures[signatureHashed] = true;
   }
 
   function initialize(
@@ -177,6 +315,7 @@ contract GameManager is PausableUpgradeable {
 
   /**
    * Cost of minting for `tokenCount` tokens
+   * 0xfcee45f4
    */
   function getFee(uint256 tokenCount) public view returns (uint256) {
     return price * tokenCount;
@@ -204,7 +343,7 @@ contract GameManager is PausableUpgradeable {
       require(allowlist[msg.sender], 'you are not in allowlist');
       require(MintBurnInterface(MCAddress).totalSupply() < allowlistLimit, 'Presale limit has ended');
     }
-    tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp > startCLNYDate ? block.timestamp : startCLNYDate);
+    setInitialShare(tokenId);
     MintBurnInterface(MCAddress).mint(_address, tokenId);
   }
 
@@ -214,10 +353,12 @@ contract GameManager is PausableUpgradeable {
   function claim(uint256[] calldata tokenIds) external payable nonReentrant whenNotPaused {
     require (tokenIds.length != 0, "You can't claim 0 tokens");
     require (msg.value == getFee(tokenIds.length), 'Wrong claiming fee');
+    updatePool(CLNYAddress);
     for (uint8 i = 0; i < tokenIds.length; i++) {
       mintLand(msg.sender, tokenIds[i]);
     }
-    (bool success, ) = payable(DAO).call{ value: msg.value }('');
+    // 0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4 - creatorsDAO
+    (bool success, ) = payable(0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4).call{ value: msg.value }('');
     require(success, 'Transfer failed');
   }
 
@@ -254,9 +395,9 @@ contract GameManager is PausableUpgradeable {
   /** these constants (for sure just `_deduct` function) can be changed while upgrading */
   uint256 constant BASE_STATION_COST = 30;
   uint256 constant AVATAR_MINT_COST = 30;
-  uint256 constant LEVEL_1_COST = 120;
-  uint256 constant LEVEL_2_COST = 270;
-  uint256 constant LEVEL_3_COST = 480;
+  uint256 constant LEVEL_1_COST = 60;
+  uint256 constant LEVEL_2_COST = 120;
+  uint256 constant LEVEL_3_COST = 240;
   uint8 constant MINT_AVATAR_LEVEL = 254;
   uint8 constant PLACEMENT_LEVEL = 255;
   uint256 constant PLACEMENT_COST = 5;
@@ -303,21 +444,9 @@ contract GameManager is PausableUpgradeable {
     MintBurnInterface(CLNYAddress).burn(msg.sender, amount, reason);
   }
 
-  function getLastCheckout(uint256 tokenId) public view returns (uint256) {
-    return tokenData[tokenId].lastCLNYCheckout;
-  }
-
-  function getEarned(uint256 tokenId) public view returns (uint256) {
-    if (block.timestamp <= startCLNYDate) {
-      return 0;
-    }
-    return getEarningSpeed(tokenId)
-      * (block.timestamp - getLastCheckout(tokenId)) * 10 ** 18 / (24 * 60 * 60)
-      + tokenData[tokenId].fixedEarnings;
-  }
-
   /**
    * deprecated, use getAttributesMany
+   * 0x08cfe44b
    */
   function getEarningData(uint256[] memory tokenIds) external view returns (uint256, uint256) {
     uint256 result = 0;
@@ -329,27 +458,9 @@ contract GameManager is PausableUpgradeable {
     return (result, speed);
   }
 
-  function getEarningSpeed(uint256 tokenId) public view returns (uint256) {
-    require (MintBurnInterface(MCAddress).ownerOf(tokenId) != address(0)); // reverts itself
-    uint256 speed = 1; // bare land
-    if (tokenData[tokenId].baseStation > 0) {
-      speed = speed + 1; // base station gives +1
-    }
-    if (tokenData[tokenId].transport > 0 && tokenData[tokenId].transport <= 3) {
-      speed = speed + tokenData[tokenId].transport + 1; // others give from +2 to +4
-    }
-    if (tokenData[tokenId].robotAssembly > 0 && tokenData[tokenId].robotAssembly <= 3) {
-      speed = speed + tokenData[tokenId].robotAssembly + 1;
-    }
-    if (tokenData[tokenId].powerProduction > 0 && tokenData[tokenId].powerProduction <= 3) {
-      speed = speed + tokenData[tokenId].powerProduction + 1;
-    }
-    return speed;
-  }
-
-  function fixEarnings(uint256 tokenId) private {
-    tokenData[tokenId].fixedEarnings = getEarned(tokenId);
-    tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp > startCLNYDate ? block.timestamp : startCLNYDate);
+  /* 0xfd5da729 */
+  function getEarningSpeed(uint256 tokenId) public view returns (uint256) { // for polygon it is for shares
+    return landInfo[tokenId].share;
   }
 
   /**
@@ -359,7 +470,7 @@ contract GameManager is PausableUpgradeable {
    */
   function buildBaseStation(uint256 tokenId) public onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].baseStation == 0, 'There is already a base station');
-    fixEarnings(tokenId);
+    addToShare(tokenId, 1, CLNYAddress);
     tokenData[tokenId].baseStation = 1;
     _deduct(BASE_STATION, REASON_UPGRADE);
     emit BuildBaseStation(tokenId, msg.sender);
@@ -401,8 +512,9 @@ contract GameManager is PausableUpgradeable {
    * 0x33e3480f
    */
   function buildTransport(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
+    require(level <= 3, 'wrong level');
     require(tokenData[tokenId].transport == level - 1, 'Can buy only next level');
-    fixEarnings(tokenId);
+    addToShare(tokenId, level == 3 ? 2 : 1, CLNYAddress); // level 3 gives +2 shares
     tokenData[tokenId].transport = level;
     _deduct(level, REASON_UPGRADE);
     emit BuildTransport(tokenId, msg.sender, level);
@@ -444,8 +556,9 @@ contract GameManager is PausableUpgradeable {
    * 0x9a3274c4
    */
   function buildRobotAssembly(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
+    require(level <= 3, 'wrong level');
     require(tokenData[tokenId].robotAssembly == level - 1, 'Can buy only next level');
-    fixEarnings(tokenId);
+    addToShare(tokenId, level == 3 ? 2 : 1, CLNYAddress); // level 3 gives +2 shares
     tokenData[tokenId].robotAssembly = level;
     _deduct(level, REASON_UPGRADE);
     emit BuildRobotAssembly(tokenId, msg.sender, level);
@@ -487,8 +600,9 @@ contract GameManager is PausableUpgradeable {
    * 0xcb6ff6f9
    */
   function buildPowerProduction(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
+    require(level <= 3, 'wrong level');
     require(tokenData[tokenId].powerProduction == level - 1, 'Can buy only next level');
-    fixEarnings(tokenId);
+    addToShare(tokenId, level == 3 ? 2 : 1, CLNYAddress); // level 3 gives +2 shares
     tokenData[tokenId].powerProduction = level;
     _deduct(level, REASON_UPGRADE);
     emit BuildPowerProduction(tokenId, msg.sender, level);
@@ -526,6 +640,7 @@ contract GameManager is PausableUpgradeable {
 
   /**
    * deprecated, use getAttributesMany
+   * 0x5bde71ac
    */
   function getEnhancements(uint256 tokenId) external view returns (uint8, uint8, uint8, uint8) {
     return (
@@ -536,6 +651,7 @@ contract GameManager is PausableUpgradeable {
     );
   }
 
+  /* 0x3eb87111 */
   function getAttributesMany(uint256[] calldata tokenIds) external view returns (AttributeData[] memory) {
     AttributeData[] memory result = new AttributeData[](tokenIds.length);
     for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -560,19 +676,32 @@ contract GameManager is PausableUpgradeable {
   function claimEarned(uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
     require (block.timestamp > startCLNYDate, 'CLNY not started');
     require (tokenIds.length != 0, 'Empty array');
+    updatePool(CLNYAddress);
     for (uint8 i = 0; i < tokenIds.length; i++) {
       require (msg.sender == MintBurnInterface(MCAddress).ownerOf(tokenIds[i]));
-      uint256 earned = getEarned(tokenIds[i]);
-      tokenData[tokenIds[i]].fixedEarnings = 0;
-      tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
-      MintBurnInterface(CLNYAddress).mint(msg.sender, earned, REASON_EARNING);
-      MintBurnInterface(CLNYAddress).mint(treasury, earned * 31 / 49, REASON_TREASURY);
-      MintBurnInterface(CLNYAddress).mint(liquidity, earned * 20 / 49, REASON_LP_POOL);
+      claimClnyWithoutPoolUpdate(tokenIds[i], CLNYAddress);
     }
   }
 
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
+  }
+
+  function setTotalShareFromTotalSupply() external onlyDAO {
+    totalShare = IERC721Enumerable(MCAddress).totalSupply();
+    updatePool(CLNYAddress);
+  }
+
+  function setInitialShareMigrateOne(uint256 tokenId) external onlyDAO {
+    landInfo[tokenId].share = 1;
+    landInfo[tokenId].rewardDebt = accColonyPerShare / 1e12;
+  }
+
+  function setInitialShareMigrate(uint256[] calldata tokenIds) external onlyDAO {
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      landInfo[tokenIds[i]].share = 1;
+      landInfo[tokenIds[i]].rewardDebt = accColonyPerShare / 1e12;
+    }
   }
 }
