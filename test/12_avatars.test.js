@@ -32,11 +32,12 @@ contract('AvatarManager', (accounts) => {
   });
 
   it('Mint avatars', async () => {
+    await avatars.setMaxTokenId(3000);
     const supplyBefore = await clny.totalSupply();
     expect(parseInt(await nft.totalSupply())).to.be.equal(0);
     await gm.mintAvatar({ from: user1 });
     const supplyAfterMint = await clny.totalSupply();
-    expect(Math.round((parseInt(supplyAfterMint) - parseInt(supplyBefore)) * 1e-18 * 10)).to.be.equal(-285);
+    expect(Math.round((parseInt(supplyAfterMint) - parseInt(supplyBefore)) * 1e-18 * 10)).to.be.equal(-291); // 9 = 3% as royalty now
     const royalty1 = parseInt(await clny.balanceOf(ROYALTY1));
     const royalty2 = parseInt(await clny.balanceOf(ROYALTY2));
     expect(royalty1).to.be.equal(0.6 * 1e18);

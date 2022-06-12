@@ -15,7 +15,7 @@ const MC = artifacts.require('MC');
 const CLNY = artifacts.require('CLNY');
 const MartianColonists = artifacts.require('MartianColonists');
 const SalesManager = artifacts.require('SalesManager');
-const ProxyAdmin = artifacts.require('ProxyAdmin');
+// const ProxyAdmin = artifacts.require('ProxyAdmin');
 
 module.exports = async (deployer, network, addresses) => {
   if (network === 'development') {
