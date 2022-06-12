@@ -39,7 +39,7 @@ contract GameManager is PausableUpgradeable, Shares {
   mapping (address => bool) private allowlist;
   uint256 public allowlistLimit;
 
-  uint256[41] private ______gm_gap_1;
+  uint256[42] private ______gm_gap_1;
 
   struct LandData {
     uint256 deprecated1;
