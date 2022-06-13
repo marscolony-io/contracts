@@ -145,7 +145,7 @@ contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber
     uint256[] memory currentXps = avatarManager.getXP(avatarArg);
     uint256 currentXp = currentXps[0];
 
-    return cryoXpAddition(currentXp);
+    return cryoXpAddition(currentXp) * (cryoPeriodLength / 24 * 60 * 60);
 
   }
 
