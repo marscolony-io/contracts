@@ -1,24 +1,28 @@
-const { deployProxy } = require('@openzeppelin/truffle-upgrades');
+const { deployProxy } = require("@openzeppelin/truffle-upgrades");
 
-const MC = artifacts.require('MC');
-const CLNY = artifacts.require('CLNY');
-const GameManager = artifacts.require('GameManager');
+const MC = artifacts.require("MC");
+const CLNY = artifacts.require("CLNY");
+const GameManager = artifacts.require("GameManager");
 
 module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
   console.log({ DAO, treasury, liquidity });
   await deployProxy(CLNY, [DAO], { deployer });
-  await deployProxy(MC, [
-    DAO,
-    network === 'hartest' ? 'https://meta-test.marscolony.io/' : 'https://meta.marscolony.io/',
-  ], { deployer });
-  await deployProxy(GameManager, [
-    DAO,
-    CLNY.address,
-    MC.address,
-    treasury,
-    liquidity,
-  ], { deployer });
-  
+  await deployProxy(
+    MC,
+    [
+      DAO,
+      network === "hartest"
+        ? "https://meta-test.marscolony.io/"
+        : "https://meta.marscolony.io/",
+    ],
+    { deployer }
+  );
+  await deployProxy(
+    GameManager,
+    [DAO, CLNY.address, MC.address, treasury, liquidity],
+    { deployer }
+  );
+
   const _MC = await MC.deployed();
   const _CLNY = await CLNY.deployed();
   await GameManager.deployed();
@@ -29,7 +33,7 @@ module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
   ]);
 
   console.log({
-    GP: GameManager.address,
+    GM: GameManager.address,
     MC: MC.address,
     CLNY: CLNY.address,
   });

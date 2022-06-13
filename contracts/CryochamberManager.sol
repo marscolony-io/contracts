@@ -5,9 +5,6 @@ import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import './GameConnection.sol';
 import './interfaces/IMartianColonists.sol';
 import './interfaces/IAvatarManager.sol';
-import './interfaces/IGameManager.sol';
-import './interfaces/ERC20MintBurnInterface.sol';
-import './interfaces/NFTMintableInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 
@@ -24,7 +21,6 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
   // uint256 cryochambersCounter; 
   
   struct Cryochamber {
-
     uint256 energy; 
     bool isSet;
   }
@@ -37,7 +33,6 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
   mapping (uint256 => CryoTime) public cryos;  // avatarId => array of avatar's cryo periods
   mapping (address => Cryochamber) public cryochambers;
 
-  
   uint256[49] private ______gap;
 
   function initialize(address _DAO, address _collection, address _avatarManager) external initializer {
