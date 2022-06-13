@@ -106,9 +106,10 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     }
   }
 
+
   function putAvatarInCryochamber(uint256 avatarId, address user) private {
     require(avatars.ownerOf(avatarId) == msg.sender, "You are not an avatar owner");
-
+    
     require(!isAvatarInCryoChamber(avatarId), "This avatar is in cryochamber already");
 
     // if last cryoperiod ended, add previous reward to xp

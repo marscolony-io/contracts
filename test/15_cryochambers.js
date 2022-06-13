@@ -29,6 +29,7 @@ contract("CryochamberManager", (accounts) => {
     await gm.claimEarned([100], { from: user1 });
     await gm.mintAvatar({ from: user1 }); // 1
     await gm.mintAvatar({ from: user2 }); // 2
+    await gm.mintAvatar({ from: user1 }); // 3
   });
 
   it("Purchase cryochamber energy before buying cryochabmer fails", async () => {
@@ -74,64 +75,63 @@ contract("CryochamberManager", (accounts) => {
     );
   });
 
-  it("send avatar to cryo success path", async () => {
+  it("send avatars to cryo success path", async () => {
     const cryoPeriodLength = await cryo.cryoPeriodLength();
-    const cryoReward = await cryo.cryoXpAddition();
+    const cryoReward = await cryo.estimateXpAddition(1);
     const cryoEnergyCost = +(await cryo.cryoEnergyCost()).toString();
 
     const cryochamberBefore = await cryo.cryochambers(user1);
     const initialEnergy = +cryochamberBefore.energy.toString();
 
-    await cryo.putAvatarInCryochamber(1, { from: user1 });
+    await cryo.putAvatarsInCryochamber([1], { from: user1 });
 
     const beginTime = await time.latest();
     const avatarCryo = await cryo.cryos(1);
 
-    expect(+avatarCryo.endTime.toString() - beginTime).to.be.equal(
-      +cryoPeriodLength.toString()
+    expect(parseInt(avatarCryo.endTime) - beginTime).to.be.equal(
+      parseInt(cryoPeriodLength)
     );
-    expect(+avatarCryo.reward.toString()).to.be.equal(+cryoReward.toString());
+    expect(parseInt(avatarCryo.reward)).to.be.equal(parseInt(cryoReward));
 
     const cryochamberAfter = await cryo.cryochambers(user1);
-    const reducedEnergy = +cryochamberAfter.energy.toString();
+    const reducedEnergy = parseInt(cryochamberAfter.energy);
 
     expect(initialEnergy - reducedEnergy).to.be.equal(cryoEnergyCost);
   });
 
   it("can not send not your avatar", async () => {
-    const tx = cryo.putAvatarInCryochamber(2, { from: user1 });
+    const tx = cryo.putAvatarsInCryochamber([2], { from: user1 });
     await truffleAssert.reverts(tx, "You are not an avatar owner");
   });
 
   it("can not send avatar when it in cryo already", async () => {
-    const tx = cryo.putAvatarInCryochamber(1, { from: user1 });
+    const tx = cryo.putAvatarsInCryochamber([1], { from: user1 });
     await truffleAssert.reverts(tx, "This avatar is in cryochamber already");
   });
 
   it("adds avatar xp when cryo has been finished", async () => {
     const initialXp = await avatars.getXP([1]);
-    expect(+initialXp[0].toString()).to.be.equal(100);
+    expect(parseInt(initialXp[0])).to.be.equal(100);
 
-    const cryoReward = await cryo.cryoXpAddition();
-
+    const cryoReward = await cryo.estimateXpAddition(1);
     await time.increase(time.duration.days(8)); // wait 8 days
 
     const newXp = await avatars.getXP([1]);
-    expect(+newXp[0].toString()).to.be.equal(
-      +initialXp.toString() + +cryoReward.toString()
+    expect(parseInt(newXp[0])).to.be.equal(
+      parseInt(initialXp) + parseInt(cryoReward)
     );
   });
 
   it("can not send avatar cryochamber energy off", async () => {
-    await cryo.putAvatarInCryochamber(1, { from: user1 });
+    await cryo.putAvatarsInCryochamber([1], { from: user1 });
     await time.increase(time.duration.days(8)); // wait 8 days
-    await cryo.putAvatarInCryochamber(1, { from: user1 });
+    await cryo.putAvatarsInCryochamber([1], { from: user1 });
     await time.increase(time.duration.days(8)); // wait 8 days
-    await cryo.putAvatarInCryochamber(1, { from: user1 });
+    await cryo.putAvatarsInCryochamber([1], { from: user1 });
     await time.increase(time.duration.days(8)); // wait 8 days
-    await cryo.putAvatarInCryochamber(1, { from: user1 });
+    await cryo.putAvatarsInCryochamber([1], { from: user1 });
     await time.increase(time.duration.days(8)); // wait 8 days
-    const tx = cryo.putAvatarInCryochamber(1, { from: user1 });
+    const tx = cryo.putAvatarsInCryochamber([1], { from: user1 });
     await truffleAssert.reverts(
       tx,
       "You have not enough energy in cryochamber, please buy more"
@@ -154,5 +154,19 @@ contract("CryochamberManager", (accounts) => {
 
     expect(energyAfter - energyBefore).to.be.equal(5);
     expect(clnyBalanceBefore - clnyBalanceAfter).to.be.equal(5 * energyPrice);
+  });
+
+  it("send many avatars to cryo success path", async () => {
+    const cryoEnergyCost = parseInt(await cryo.cryoEnergyCost());
+
+    const cryochamberBefore = await cryo.cryochambers(user1);
+    const initialEnergy = parseInt(cryochamberBefore.energy);
+
+    await cryo.putAvatarsInCryochamber([1, 3], { from: user1 });
+
+    const cryochamberAfter = await cryo.cryochambers(user1);
+    const reducedEnergy = parseInt(cryochamberAfter.energy);
+
+    expect(initialEnergy - reducedEnergy).to.be.equal(cryoEnergyCost * 2);
   });
 });

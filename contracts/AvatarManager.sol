@@ -32,7 +32,7 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
 
   function _getXP(uint256 avatarId) private view returns(uint256) {
     uint256 totalAvatarsCount = collection.totalSupply();
-    require(avatarId < totalAvatarsCount, "wrong avatarId requested");
+    require(avatarId <= totalAvatarsCount, "wrong avatarId requested");
     return xp[avatarId] + 100; // 100 is a base for every avatar
   }
 
@@ -45,13 +45,14 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
 
       ICryochamber.CryoTime memory cryo = cryochambers.cryos(avatarIds[i]);
       
-      if (cryochambers.isAvatarCryoFinished(cryo)) {
+      if (cryo.endTime > 0 && uint64(block.timestamp) > cryo.endTime) {
         result[i] += cryo.reward;
       }
       
     }
     return result;
   }
+
 
   function addXP(uint256 avatarId, uint256 increment) external onlyGameManager {
     xp[avatarId] = xp[avatarId] + increment;

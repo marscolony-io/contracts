@@ -80,4 +80,18 @@ contract("AvatarManager", (accounts) => {
       "name is already set"
     );
   });
+
+  it("reverts on trying to getXP of unexisted avatar", async () => {
+    await expectRevert(
+      avatars.getXP([100], { from: user1 }),
+      "wrong avatarId requested"
+    );
+  });
+
+  it("returns default xp for existing avatar", async () => {
+    const xp = await avatars.getXP([1, 2]);
+    expect(Array.isArray(xp)).to.be.true;
+    expect(xp.length).to.be.equal(2);
+    expect(parseInt(xp[0])).to.be.equal(100);
+  });
 });
