@@ -43,7 +43,7 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
       
       result[i] = _getXP(avatarIds[i]);
 
-      ICryochamber.CryoTime memory cryo = cryochambers.getAvatarCryo(avatarIds[i]);
+      ICryochamber.CryoTime memory cryo = cryochambers.getAvatarCryoStatus(avatarIds[i]);
       
       if (cryo.endTime > 0 && uint64(block.timestamp) > cryo.endTime) {
         result[i] += cryo.reward;

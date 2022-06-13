@@ -86,7 +86,7 @@ contract("CryochamberManager", (accounts) => {
     await cryo.putAvatarsInCryochamber([1], { from: user1 });
 
     const beginTime = await time.latest();
-    const avatarCryo = await cryo.getAvatarCryo(1);
+    const avatarCryo = await cryo.getAvatarCryoStatus(1);
 
     expect(parseInt(avatarCryo.endTime) - beginTime).to.be.equal(
       parseInt(cryoPeriodLength)
@@ -168,5 +168,54 @@ contract("CryochamberManager", (accounts) => {
     const reducedEnergy = parseInt(cryochamberAfter.energy);
 
     expect(initialEnergy - reducedEnergy).to.be.equal(cryoEnergyCost * 2);
+  });
+
+  it("returns correct isInCryoChamber result", async () => {
+    const cryoPeriodLength = await cryo.cryoPeriodLength();
+    const isInCryoChamberResultsBefore = await cryo.isInCryoChamber([1, 2, 3]);
+
+    expect(parseInt(isInCryoChamberResultsBefore[0])).to.be.equals(
+      parseInt(cryoPeriodLength)
+    );
+
+    expect(parseInt(isInCryoChamberResultsBefore[1])).to.be.equals(0);
+
+    await time.increase(time.duration.minutes(1));
+
+    const isInCryoChamberResultsAfter = await cryo.isInCryoChamber([1, 2, 3]);
+
+    expect(parseInt(isInCryoChamberResultsAfter[0])).to.be.lte(
+      parseInt(cryoPeriodLength - 60)
+    );
+
+    expect(parseInt(isInCryoChamberResultsAfter[1])).to.be.lte(0);
+  });
+
+  it("cryoXpAddition level 1", async () => {
+    const num = await cryo.cryoXpAddition(100);
+    expect(parseInt(num)).to.be.equal(400);
+  });
+
+  it("cryoXpAddition level 33", async () => {
+    const num = await cryo.cryoXpAddition(748000);
+    expect(parseInt(num)).to.be.equal(18790);
+  });
+
+  // not passed high levels because of high pow()
+  it("cryoXpAddition level 100", async () => {
+    const num = await cryo.cryoXpAddition(11668237637);
+    // console.log(parseInt(num));
+    expect(parseInt(num)).to.be.equal(37286725);
+  });
+
+  it("bulk estimate xp additions", async () => {
+    const xps = await avatars.getXP([1, 2, 3]);
+    // console.log(xps.map((xp) => xp.toString()));
+    const xpAdditions = await cryo.bulkEstimateXpAddition([1, 2, 3]);
+    // console.log(xpAdditions.map((xpAddition) => xpAddition.toString()));
+
+    expect(parseInt(xpAdditions[0])).to.be.equal(17101);
+    expect(parseInt(xpAdditions[1])).to.be.equal(2800);
+    expect(parseInt(xpAdditions[2])).to.be.equal(2800);
   });
 });

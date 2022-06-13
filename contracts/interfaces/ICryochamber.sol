@@ -10,6 +10,7 @@ interface ICryochamber {
   function cryochamberPrice() external returns (uint256);
   function purchaseCryochamberEnergy(address user, uint256 _energyAmount) external;
   function energyPrice() external view returns (uint256);
-  function getAvatarCryo(uint256 avatarId) external view returns (CryoTime memory);
+  function getAvatarCryoStatus(uint256 avatarId) external view returns (CryoTime memory);
   function isAvatarInCryoChamber(uint256 avatarId) external view returns (bool);
+  function timeToStayInCryoChamber(uint256 avatarId) external view returns (uint256);
 }
