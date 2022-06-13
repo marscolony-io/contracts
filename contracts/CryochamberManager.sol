@@ -5,15 +5,16 @@ import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import './GameConnection.sol';
 import './interfaces/IMartianColonists.sol';
 import './interfaces/IAvatarManager.sol';
+import './interfaces/ICryochamber.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 
-contract CryochamberManager is GameConnection, PausableUpgradeable {
+contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber {
   IMartianColonists public avatars;
   IAvatarManager public avatarManager;
 
-  uint256 public cryochamberPrice;
-  uint256 public energyPrice;
+  uint256 public override cryochamberPrice;
+  uint256 public override energyPrice;
   uint256 public initialEnergy;
   uint256 public cryoEnergyCost; // energy decrease amount when avatar goes in cryochamber
   uint64 public cryoPeriodLength;
@@ -25,12 +26,7 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     bool isSet;
   }
 
-  struct CryoTime {
-    uint64 endTime;
-    uint256 reward;
-  }
-
-  mapping (uint256 => CryoTime) public cryos;  // avatarId => array of avatar's cryo periods
+  mapping (uint256 => CryoTime) private cryos;  // avatarId => array of avatar's cryo periods
   mapping (address => Cryochamber) public cryochambers;
 
   uint256[49] private ______gap;
@@ -68,13 +64,13 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     cryoPeriodLength = _time;
   }
 
-  function purchaseCryochamber(address user) external onlyGameManager {
+  function purchaseCryochamber(address user) external override onlyGameManager {
     require(!cryochambers[user].isSet, "you have already purchased the cryochamber");
 
     cryochambers[user] = Cryochamber(initialEnergy, true);
   }
 
-  function purchaseCryochamberEnergy(address user, uint256 _energyAmount) external onlyGameManager hasCryochamber(user) {
+  function purchaseCryochamberEnergy(address user, uint256 _energyAmount) external override onlyGameManager hasCryochamber(user) {
     cryochambers[user].energy += _energyAmount;
   }
 
@@ -84,7 +80,7 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     cryochamber.energy -= _amount;
   }
 
-  function isAvatarInCryoChamber(uint256 avatarId) public view returns (bool) {
+  function isAvatarInCryoChamber(uint256 avatarId) public override view returns (bool) {
     CryoTime memory avatarCryo = cryos[avatarId];
     return avatarCryo.endTime > 0 && avatarCryo.endTime > uint64(block.timestamp);
   }
@@ -167,5 +163,7 @@ contract CryochamberManager is GameConnection, PausableUpgradeable {
     _;
   }
 
-
+  function getAvatarCryo(uint256 avatarId) public override view returns (CryoTime memory) {
+    return cryos[avatarId];
+  }
 }

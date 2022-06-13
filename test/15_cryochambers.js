@@ -86,7 +86,7 @@ contract("CryochamberManager", (accounts) => {
     await cryo.putAvatarsInCryochamber([1], { from: user1 });
 
     const beginTime = await time.latest();
-    const avatarCryo = await cryo.cryos(1);
+    const avatarCryo = await cryo.getAvatarCryo(1);
 
     expect(parseInt(avatarCryo.endTime) - beginTime).to.be.equal(
       parseInt(cryoPeriodLength)
