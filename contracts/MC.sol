@@ -19,7 +19,7 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable {
   string private nftBaseURI;
   ISalesManager public salesManager;
   address public GameManager;
-  bool migrationPhase = true;
+  bool migrationOpen = true;
 
   constructor (string memory _nftBaseURI) ERC721('MarsColony', 'MC') {
     nftBaseURI = _nftBaseURI;
@@ -44,7 +44,7 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable {
 
   // is used manually to migrate tokens to a new contract, then closes onse 'close=true' is send
   function migrationMint(address[] calldata receivers, uint256[] calldata tokenIds, bool close) external onlyOwner {
-    require(migrationPhase, 'Migration finished');
+    require(migrationOpen, 'Migration finished');
     require(receivers.length == tokenIds.length, 'Invalid array sizes');
 
     if (receivers.length > 0) {
@@ -54,7 +54,7 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable {
     }
 
     if (close) {
-      migrationPhase = false;
+      migrationOpen = false;
     }
   }
 
