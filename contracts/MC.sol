@@ -98,6 +98,10 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2
     GameManager = _GameManager;
   }
 
+  function setSalesManager(ISalesManager _address) external onlyOwner {
+    salesManager = _address;
+  }
+
   function _afterTokenTransfer(address from, address to, uint256 tokenId) internal virtual override {
     super._afterTokenTransfer(from, to, tokenId);
     if (address(salesManager) != address(0)) {
@@ -142,10 +146,6 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2
       result[i - _from] = tokenByIndex(i);
     }
     return result;
-  }
-
-  function setSalesManager(ISalesManager _address) external onlyOwner {
-    salesManager = _address;
   }
 
   /** for the in-game marketplace */
