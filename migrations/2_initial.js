@@ -9,7 +9,6 @@ module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
   await deployer.deploy(CLNY, DAO);
   await deployer.deploy(
     MC,
-    DAO,
     {
       hartest: 'https://meta-test.marscolony.io/',
       harmain: 'https://meta.marscolony.io/',
@@ -33,13 +32,4 @@ module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
     _CLNY.setGameManager(GameManager.address),
     _MC.setGameManager(GameManager.address),
   ]);
-
-  console.log({
-    GP: GameManager.address,
-    MC: MC.address,
-    CLNY: CLNY.address,
-  });
-
-  // TODO move DAO to particular addresses for real networks
-  // or not to forget to do it manually
 };

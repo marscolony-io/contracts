@@ -15,9 +15,6 @@ import "./legacy/LibPart.sol";
 import "./legacy/LibRoyaltiesV2.sol";
 
 
-// TODO rarible and other royalties
-
-
 contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2Impl {
   string private nftBaseURI;
   ISalesManager public salesManager;
