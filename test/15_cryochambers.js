@@ -202,9 +202,14 @@ contract("CryochamberManager", (accounts) => {
   });
 
   // not passed high levels because of high pow()
-  it("cryoXpAddition level 100", async () => {
+  it("cryoXpAddition level than 100", async () => {
+    const num = await cryo.cryoXpAddition(11668237635);
+    expect(parseInt(num)).to.be.equal(37286725);
+  });
+
+  it("cryoXpAddition level more than 100", async () => {
     const num = await cryo.cryoXpAddition(11668237637);
-    // console.log(parseInt(num));
+    console.log(parseInt(num));
     expect(parseInt(num)).to.be.equal(37286725);
   });
 
