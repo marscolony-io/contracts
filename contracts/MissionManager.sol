@@ -17,6 +17,7 @@ contract MissionManager is GameConnection, PausableUpgradeable {
 
   struct AccountMissionState {
     bool isAccountPrivate; // don't allow missions on my lands
+    uint8 revshare;
   }
 
   struct LandMissionState {
@@ -45,6 +46,12 @@ contract MissionManager is GameConnection, PausableUpgradeable {
 
   function setAccountPrivacy(bool _isPrivate) external {
     accountMissionState[msg.sender].isAccountPrivate = _isPrivate;
+  }
+  
+  function setAccountRevShare(uint8 _revshare) external {
+    require(_revshare >= 0, "Revshare value is too low, 0 is min");
+    require(_revshare <= 90, "Revshare value is too high, 90 is max");
+    accountMissionState[msg.sender].revshare = _revshare;
   }
 
   function _calculateLandMissionsLimits(uint256 landId) private view returns (uint256 availableMissionCount) {
