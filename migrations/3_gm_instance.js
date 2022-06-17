@@ -17,24 +17,20 @@ module.exports = async (deployer, network, addresses) => {
   if (network === "development") {
     return; // this file for manual migrations; pass in tests
   }
-  const inst = await deployer.deploy(GM);
-  const cm = await deployProxy(
-    CryochamberManager, [
-      addresses[0], '0xDEfafb07765D9D0F897260BE1389743A09802F20', '0xdE165766CC7C48C556c8C20247b322Dd23EB313a'
-    ],
-    { deployer }
-  );
-  console.log('111');
-  const PA = await ProxyAdmin.at('0xc470b22A8D173a0DA50191A4A0E5e2b42f6B6009');
-  console.log('111');
-  await PA.upgrade('0xc65F8BA708814653EDdCe0e9f75827fe309E29aD', GM.address);
-  console.log('111');
-  const gm = await GM.at('0xc65F8BA708814653EDdCe0e9f75827fe309E29aD');
-  console.log('111');
-  await gm.setCryochamberAddress(CryochamberManager.address);
-  console.log('111');
+  // const inst = await deployer.deploy(AM);
+
+  // console.log('111');
+  // const PA = await ProxyAdmin.at('0xBb459C6066331fd3e92A54828DAA696e0661c902');
+  // console.log('111');
+  // await PA.upgrade('0xCc55065afd013CF06f989448cf724fEC4fF29626', AM.address);
+  // console.log('223');
 
 
-  await cm.setGameManager('0xc65F8BA708814653EDdCe0e9f75827fe309E29aD');
+  const am = await AM.at('0xCc55065afd013CF06f989448cf724fEC4fF29626');
+  console.log('212');
+  await am.setCryochamberManager('0x2D2f5349896BF4012EA27Db345fbF8a71775d16f');
+  console.log('222');
 
+  const PA2 = await ProxyAdmin.at('0x07a83B70C5109757bac760a28477Cba2E2536B26');
+  await PA2.changeProxyAdmin('0x2D2f5349896BF4012EA27Db345fbF8a71775d16f', '0xBb459C6066331fd3e92A54828DAA696e0661c902');
 };

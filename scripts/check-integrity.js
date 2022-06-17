@@ -20,6 +20,7 @@ const CONTRACTS = {
     MISSION_MANAGER: '0x0Ef27447c72Fc9809864E1aa3998B76B61c20a8A', // TODO
     OWNER: '0x3A47a5be317DCF439F91D0A45716B64547F21bc1',
     BACKEND_SIGNER: '0xb00b24E974834492A26b34ABCA26b952F1aB35d5',
+    CRYOCHAMBER: '0x2D2f5349896BF4012EA27Db345fbF8a71775d16f',
   },
   hartest: {
     GAME_MANAGER: MAXIM ? '' : '0xc65F8BA708814653EDdCe0e9f75827fe309E29aD',
@@ -30,6 +31,7 @@ const CONTRACTS = {
     MISSION_MANAGER: MAXIM ? '' : '0xC0633bcaB848D1738Ad22A05135C8E9EC9265092',
     OWNER: MAXIM ? '' : '0xD8A6E21AeFa5C8F0b5CAb6b81C08662D710E134e',
     BACKEND_SIGNER: MAXIM ? '' : '',
+    CRYOCHAMBER: '',
   },
   avatest: {
     GAME_MANAGER: '0x0Dd5dDaC089613F736e89F81E16361b09c7d53C6',
@@ -83,6 +85,7 @@ module.exports = async (callback) => {
     expect(await mm.collection()).to.be.equal(mcl.address, 'mm.collection()');
 
     expect(await gm.cryochamberAddress()).to.be.equal(CONTRACT_LIST.CRYOCHAMBER, 'gm.cryochamberAddress()');
+    expect(await am.cryochambers()).to.be.equal(CONTRACT_LIST.CRYOCHAMBER, 'am.cryochambers()');
     expect(await cc.GameManager()).to.be.equal(gm.address, 'cc.GameManager()');
     expect(await cc.avatarManager()).to.be.equal(am.address, 'cc.avatarManager()');
     expect(await cc.avatars()).to.be.equal(mcl.address, 'cc.avatars()');
