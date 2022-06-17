@@ -8,8 +8,8 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IPoll.sol';
 import './interfaces/IMartianColonists.sol';
 import './interfaces/IAvatarManager.sol';
+import './interfaces/ICryochamber.sol';
 import './interfaces/ILootboxes.sol';
-
 
 
 /**
@@ -40,8 +40,10 @@ contract GameManager is PausableUpgradeable {
     uint64 legendary;
   }
   mapping (address => AvailableRarities) public lootBoxesToMint;
+  
+  address public cryochamberAddress;
 
-  uint256[42] private ______gm_gap_1;
+  uint256[41] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
@@ -128,6 +130,10 @@ contract GameManager is PausableUpgradeable {
 
   function setPollAddress(address _address) external onlyDAO {
     pollAddress = _address;
+  }
+
+  function setCryochamberAddress(address _address) external onlyDAO {
+    cryochamberAddress = _address;
   }
 
   function setLootboxesAddress(address _address) external onlyDAO {
@@ -455,6 +461,8 @@ contract GameManager is PausableUpgradeable {
   uint256 constant REASON_PLACE = 2;
   uint256 constant REASON_RENAME_AVATAR = 3;
   uint256 constant REASON_MINT_AVATAR = 4;
+  uint256 constant REASON_PURCHASE_CRYOCHAMBER = 10;
+  uint256 constant REASON_PURCHASE_CRYOCHAMBER_ENERGY = 11;
 
   /**
    * Burn CLNY token for building enhancements
@@ -763,5 +771,21 @@ contract GameManager is PausableUpgradeable {
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
+  }
+
+  function purchaseCryochamber() external {
+    ICryochamber(cryochamberAddress).purchaseCryochamber(msg.sender);
+
+    uint256 cryochamberPrice = ICryochamber(cryochamberAddress).cryochamberPrice();
+    TokenInterface(CLNYAddress).burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
+
+  }
+
+  function purchaseCryochamberEnergy(uint256 amount) external {
+    ICryochamber(cryochamberAddress).purchaseCryochamberEnergy(msg.sender, amount);
+
+    uint256 energyPrice = ICryochamber(cryochamberAddress).energyPrice();
+    TokenInterface(CLNYAddress).burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
+
   }
 }

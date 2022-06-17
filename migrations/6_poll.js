@@ -5,12 +5,12 @@
  * ```
  */
 
-const GM = artifacts.require('GameManager');
-const MC = artifacts.require('MC');
-const CLNY = artifacts.require('CLNY');
-const MartianColonists = artifacts.require('MartianColonists');
-const Poll = artifacts.require('Poll');
-const fs = require('fs');
+const GM = artifacts.require("GameManager");
+const MC = artifacts.require("MC");
+const CLNY = artifacts.require("CLNY");
+const MartianColonists = artifacts.require("MartianColonists");
+const Poll = artifacts.require("Poll");
+const fs = require("fs");
 
 module.exports = async (deployer, network, addresses) => {
   if (network === 'hartest') {
