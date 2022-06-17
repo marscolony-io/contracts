@@ -49,7 +49,7 @@ contract MissionManager is GameConnection, PausableUpgradeable {
   }
   
   function setAccountRevShare(uint8 _revshare) external {
-    require(_revshare >= 0, "Revshare value is too low, 0 is min");
+    require(_revshare >= 1, "Revshare value is too low, 1 is min");
     require(_revshare <= 90, "Revshare value is too high, 90 is max");
     accountMissionState[msg.sender].revshare = _revshare;
   }
@@ -66,6 +66,14 @@ contract MissionManager is GameConnection, PausableUpgradeable {
 
       return 1 + landAttributes.powerProduction;      
   }
+
+  function getRevshare(address _address) view external returns (uint8 revShare) {
+    revShare = accountMissionState[_address].revshare;
+    if (revShare == 0) {
+      revShare = 20;
+    }
+    return revShare;
+  } 
 
   function _getAvailableMissions(uint256 landId) private view returns (LandMissionData memory) {
     address landOwner = MC.ownerOf(landId);

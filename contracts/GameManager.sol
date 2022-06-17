@@ -753,8 +753,7 @@ contract GameManager is PausableUpgradeable {
 
   function fixEarnings(uint256[] calldata tokenIds) external onlyDAO {
     for (uint i = 0; i < tokenIds.length; i++) {
-      tokenData[tokenIds[i]].fixedEarnings = getEarned(tokenIds[i]);
-      tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
+      fixEarnings(tokenIds[i]);
     }
   }
 
