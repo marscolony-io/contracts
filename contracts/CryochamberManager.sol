@@ -121,7 +121,7 @@ contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber
     }
 
     decreaseCryochamberEnergy(user, cryoEnergyCost);
-    cryos[avatarId] = CryoTime(uint64(block.timestamp) + cryoPeriodLength, estimateXpAddition(avatarId));
+    cryos[avatarId] = CryoTime(uint64(block.timestamp) + cryoPeriodLength, estimateXpAddition(avatarId) * cryoPeriodLength  / (24 * 60 * 60));
   }
 
   function putAvatarsInCryochamber(uint256[] calldata avatarIds) external hasCryochamber(msg.sender) {
@@ -173,7 +173,7 @@ contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber
     uint256[] memory currentXps = avatarManager.getXP(avatarArg);
     uint256 currentXp = currentXps[0];
 
-    return cryoXpAddition(currentXp) * cryoPeriodLength / (24 * 60 * 60);
+    return cryoXpAddition(currentXp);
 
   }
 

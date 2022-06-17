@@ -5,6 +5,7 @@ const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
 const GM = artifacts.require("GameManager");
 const CLNY = artifacts.require("CLNY");
 const AvatarManager = artifacts.require("AvatarManager");
+const MCL = artifacts.require("MartianColonists");
 const NFT = artifacts.require("MartianColonists");
 const CryochamberManager = artifacts.require("CryochamberManager");
 
@@ -14,6 +15,7 @@ contract("CryochamberManager", (accounts) => {
   let gm;
   let clny;
   let avatars;
+  let mcl;
   let cryo;
   let nft;
 
@@ -21,6 +23,7 @@ contract("CryochamberManager", (accounts) => {
     gm = await GM.deployed();
     clny = await CLNY.deployed();
     avatars = await AvatarManager.deployed();
+    mcl = await MCL.deployed();
     nft = await NFT.deployed();
     cryo = await CryochamberManager.deployed();
     await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
@@ -77,7 +80,7 @@ contract("CryochamberManager", (accounts) => {
 
   it("send avatars to cryo success path", async () => {
     const cryoPeriodLength = await cryo.cryoPeriodLength();
-    const cryoReward = await cryo.estimateXpAddition(1);
+    const cryoReward = await cryo.estimateXpAddition(1) * 7;
     const cryoEnergyCost = +(await cryo.cryoEnergyCost()).toString();
 
     const cryochamberBefore = await cryo.cryochambers(user1);
@@ -113,7 +116,7 @@ contract("CryochamberManager", (accounts) => {
     const initialXp = await avatars.getXP([1]);
     expect(parseInt(initialXp[0])).to.be.equal(100);
 
-    const cryoReward = await cryo.estimateXpAddition(1);
+    const cryoReward = await cryo.estimateXpAddition(1) * 7;
     await time.increase(time.duration.days(8)); // wait 8 days
 
     const newXp = await avatars.getXP([1]);
@@ -219,8 +222,10 @@ contract("CryochamberManager", (accounts) => {
     const xpAdditions = await cryo.bulkEstimateXpAddition([1, 2, 3]);
     // console.log(xpAdditions.map((xpAddition) => xpAddition.toString()));
 
-    expect(parseInt(xpAdditions[0])).to.be.equal(17101);
-    expect(parseInt(xpAdditions[1])).to.be.equal(2800);
-    expect(parseInt(xpAdditions[2])).to.be.equal(2800);
+    expect(await cryo.estimateXpAddition(1)).to.bignumber.be.equal(new BN('2443'));
+
+    expect(parseInt(xpAdditions[0])).to.be.equal(2443);
+    expect(parseInt(xpAdditions[1])).to.be.equal(400);
+    expect(parseInt(xpAdditions[2])).to.be.equal(400);
   });
 });
