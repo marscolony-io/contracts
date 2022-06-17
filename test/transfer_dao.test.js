@@ -24,9 +24,5 @@ contract('Transfer DAO', (accounts) => {
     await truffleAssert.reverts(gm.transferDAO(user2, { from: DAO }), 'Only DAO');
     await clny.transferDAO(user1, { from: DAO });
     await truffleAssert.reverts(clny.transferDAO(user2, { from: DAO }), 'Only DAO');
-    await mc.transferDAO(user1, { from: DAO });
-    await truffleAssert.reverts(mc.transferDAO(user2, { from: DAO }), 'Only DAO');
   });
-  
-
 });

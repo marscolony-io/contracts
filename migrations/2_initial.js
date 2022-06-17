@@ -4,12 +4,11 @@ const MC = artifacts.require('MC');
 const CLNY = artifacts.require('CLNY');
 const GameManager = artifacts.require('GameManager');
 
-module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
+module.exports = async (deployer, network, [DAO, , , , , , treasury /* [6] */, liquidity /* [7] */]) => {
   console.log({ DAO, treasury, liquidity });
   await deployer.deploy(CLNY, DAO);
   await deployer.deploy(
     MC,
-    DAO,
     {
       hartest: 'https://meta-test.marscolony.io/',
       harmain: 'https://meta.marscolony.io/',
