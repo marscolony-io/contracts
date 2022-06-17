@@ -96,7 +96,42 @@ module.exports = {
       },
       network_id: 43113,
       gasPrice: 30 * 1e9,
-    }
+    },
+    polygon: {
+      provider: () => {
+        return new HDWalletProvider({
+          mnemonic: mnemonic.polygon,
+          providerOrUrl: 'https://polygon-rpc.com',
+          derivationPath: `m/44'/60'/0'/0/`,
+          confirmations: 0,
+          timeoutBlocks: 50,
+          networkCheckTimeout: 200000,
+          skipDryRun: true,
+        });
+      },
+      network_id: 137,
+      gasPrice: 200 * 1e9,
+      maxGasFees: 600 * 1e9,
+      maxPriorityFees: 60 * 1e9,
+      gas: 5000000
+    },
+    mumbai: {
+      provider: () => {
+        return new HDWalletProvider({
+          mnemonic: mnemonic.mumbai,
+          providerOrUrl: 'https://polygon-mumbai.g.alchemy.com/v2/' + mumbai_node_key,
+          derivationPath: `m/44'/60'/0'/0/`,
+          confirmations: 0,
+          timeoutBlocks: 200,
+          networkCheckTimeout: 200000,
+        });
+      },
+      // gas: 500000,
+      network_id: 80001,
+      gasPrice: 20 * 1e9,
+      maxGasFees: 60 * 1e9,
+      maxPriorityFees: 70 * 1e9,
+    },
   },
   compilers: {
     solc: {
