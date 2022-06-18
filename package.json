@@ -25,5 +25,8 @@
     "int-maxim": "MAXIM=1 truffle exec scripts/check-integrity.js --network hartest",
     "int-mainnet": "truffle exec scripts/check-integrity.js --network harmain",
     "backend": "truffle deploy && truffle exec scripts/backend-fill/index.js"
+  },
+  "dependencies": {
+    "@openzeppelin/test-helpers": "^0.5.15"
   }
 }

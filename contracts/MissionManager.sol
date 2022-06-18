@@ -48,7 +48,7 @@ contract MissionManager is GameConnection, PausableUpgradeable {
     accountMissionState[msg.sender].isAccountPrivate = _isPrivate;
   }
   
-  function setAccountRevShare(uint8 _revshare) external {
+  function setAccountRevshare(uint8 _revshare) external {
     require(_revshare >= 1, "Revshare value is too low, 1 is min");
     require(_revshare <= 90, "Revshare value is too high, 90 is max");
     accountMissionState[msg.sender].revshare = _revshare;
