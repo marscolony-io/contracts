@@ -10,16 +10,18 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import './interfaces/ISalesManager.sol';
+import "./legacy/impl/RoyaltiesV2Impl.sol";
+import "./legacy/LibPart.sol";
+import "./legacy/LibRoyaltiesV2.sol";
 
 
-// TODO rarible and other royalties
-
-
-contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable {
+contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2Impl {
   string private nftBaseURI;
   ISalesManager public salesManager;
   address public GameManager;
   bool migrationOpen = true;
+
+  bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a; // royalties
 
   constructor (string memory _nftBaseURI) ERC721('MarsColony', 'MC') {
     nftBaseURI = _nftBaseURI;
@@ -28,6 +30,32 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable {
   modifier onlyGameManager {
     require(msg.sender == GameManager, 'Only GameManager');
     _;
+  }
+
+  function setRoyalties(address payable _royaltiesRecipientAddress, uint96 _percentageBasisPoints) public onlyOwner {
+    LibPart.Part[] memory _royalties = new LibPart.Part[](1);
+    _royalties[0].value = _percentageBasisPoints;
+    _royalties[0].account = _royaltiesRecipientAddress;
+    _saveRoyalties(_royalties);
+  }
+
+  function royaltyInfo(uint256 _tokenId, uint256 _salePrice) external view returns (address receiver, uint256 royaltyAmount) {
+    _tokenId;
+    LibPart.Part[] memory _royalties = royalty;
+    if (_royalties.length > 0) {
+      return (_royalties[0].account, (_salePrice * _royalties[0].value) / 10000);
+    }
+    return (address(0), 0);
+  }
+
+  function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721Enumerable) returns (bool) {
+    if (interfaceId == LibRoyaltiesV2._INTERFACE_ID_ROYALTIES) {
+      return true;
+    }
+    if (interfaceId == _INTERFACE_ID_ERC2981) {
+      return true;
+    }
+    return super.supportsInterface(interfaceId);
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -68,6 +96,10 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable {
 
   function setGameManager(address _GameManager) external onlyOwner {
     GameManager = _GameManager;
+  }
+
+  function setSalesManager(ISalesManager _address) external onlyOwner {
+    salesManager = _address;
   }
 
   function _afterTokenTransfer(address from, address to, uint256 tokenId) internal virtual override {
@@ -114,10 +146,6 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable {
       result[i - _from] = tokenByIndex(i);
     }
     return result;
-  }
-
-  function setSalesManager(ISalesManager _address) external onlyOwner {
-    salesManager = _address;
   }
 
   /** for the in-game marketplace */

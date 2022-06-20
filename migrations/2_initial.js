@@ -32,13 +32,4 @@ module.exports = async (deployer, network, [DAO, , , , , , treasury /* [6] */, l
     _CLNY.setGameManager(GameManager.address),
     _MC.setGameManager(GameManager.address),
   ]);
-
-  console.log({
-    GP: GameManager.address,
-    MC: MC.address,
-    CLNY: CLNY.address,
-  });
-
-  // TODO move DAO to particular addresses for real networks
-  // or not to forget to do it manually
 };

@@ -13,7 +13,6 @@ const Poll = artifacts.require('Poll');
 const fs = require('fs');
 
 module.exports = async (deployer, network, addresses) => {
-  console.log(addresses[0]);
   if (network === 'development') {
     return; // this file for manual migrations; pass in tests
   }
