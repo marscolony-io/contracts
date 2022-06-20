@@ -5,7 +5,7 @@ module.exports = {
   networks: {
     development: {
       host: "127.0.0.1",
-      port: 9545,
+      port: 8545,
       network_id: "*"
     },
     hartest: {
@@ -45,7 +45,7 @@ module.exports = {
       },
       network_id: 137,
       gasPrice: 200 * 1e9,
-      maxGasFees: 600 * 1e9,
+      maxGasFees: 500 * 1e9,
       maxPriorityFees: 60 * 1e9,
       gas: 5000000
     },

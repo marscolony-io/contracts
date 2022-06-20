@@ -17,7 +17,7 @@ contract('MC', (accounts) => {
 
   it('Reverts when setting GM not from DAO', async () => {
     const tx = mc.setGameManager(user1, { from: user1 });
-    await truffleAssert.reverts(tx, 'Only DAO');
+    await truffleAssert.reverts(tx, 'Ownable: caller is not the owner');
   });
 
   it('Reverts when minting directly in mc not from GameManager', async () => {
@@ -72,7 +72,7 @@ contract('MC', (accounts) => {
 
   it('Not DAO cannot change base URI', async () => {
     const tx = mc.setBaseURI('https://google.com/', { from: user1 });
-    await truffleAssert.reverts(tx, 'Only DAO');
+    await truffleAssert.reverts(tx, 'Ownable: caller is not the owner');
   });
 
   it('Check allTokensPaginate view function', async () => {

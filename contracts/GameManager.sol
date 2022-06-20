@@ -35,7 +35,7 @@ contract GameManager is PausableUpgradeable, Shares {
   address public backendSigner;
   mapping (bytes32 => bool) private usedSignatures;
 
-  bool allowlistOnly;
+  bool public allowlistOnly;
   mapping (address => bool) private allowlist;
   uint256 public allowlistLimit;
 
@@ -113,17 +113,13 @@ contract GameManager is PausableUpgradeable, Shares {
     clnyPerSecond = newSpeed;
   }
 
-  function addToAllowlist(address[] calldata _addresses) external {
-    // allowlist from one specific address
-    require(msg.sender == 0xf4Fb3ac483C339fC48AD095409C958cF93f2A548, 'invalid sender');
+  function addToAllowlist(address[] calldata _addresses) external onlyDAO {
     for (uint i = 0; i < _addresses.length; i++) {
       allowlist[_addresses[i]] = true;
     }
   }
 
-  function setAllowListLimit(uint256 limit, bool listOn) external {
-    // allowlist from one specific address
-    require(msg.sender == 0xf4Fb3ac483C339fC48AD095409C958cF93f2A548, 'invalid sender');
+  function setAllowListLimit(uint256 limit, bool listOn) external onlyDAO {
     allowlistLimit = limit;
     allowlistOnly = listOn;
   }
@@ -334,8 +330,6 @@ contract GameManager is PausableUpgradeable, Shares {
     _deduct(MINT_AVATAR_LEVEL, REASON_MINT_AVATAR);
     MintBurnInterface(avatarAddress).mint(msg.sender);
   }
-
-  uint64 constant startCLNYDate = 1664654983; // 1 Oct 2022
 
   function mintLand(address _address, uint256 tokenId) private {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
@@ -679,7 +673,11 @@ contract GameManager is PausableUpgradeable, Shares {
     updatePool(CLNYAddress);
     for (uint8 i = 0; i < tokenIds.length; i++) {
       require (msg.sender == MintBurnInterface(MCAddress).ownerOf(tokenIds[i]));
-      claimClnyWithoutPoolUpdate(tokenIds[i], CLNYAddress);
+      uint256 toUser = claimClnyWithoutPoolUpdate(tokenIds[i], CLNYAddress);
+      uint256 toTreasury = toUser * 31 / 49;
+      uint256 toLiquidity = toUser * 20 / 49;
+      MintBurnInterface(CLNYAddress).mint(treasury, toTreasury, REASON_TREASURY);
+      MintBurnInterface(CLNYAddress).mint(liquidity, toLiquidity, REASON_LP_POOL);
     }
   }
 

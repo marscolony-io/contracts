@@ -15,12 +15,12 @@ contract('Build and set position test', (accounts) => {
   before(async () => {
     gm = await GM.deployed();
     clny = await CLNY.deployed();
-  });
-
-  it('Airdrop plots for testing', async () => {
     await gm.airdrop(user1, 1, { from: DAO });
     await gm.airdrop(user1, 2, { from: DAO });
-    await time.increase(60 * 60 * 24 * 365.25 * 1000); // wait 10 years
+  });
+
+  it('Claim CLNY', async () => {
+    await time.increase(60 * 60 * 24 * 365 * 1); // wait 1 years
     await gm.claimEarned([1], { from: user1 }); // claim 3652.5 clny
   });
 
