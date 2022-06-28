@@ -81,6 +81,16 @@ contract("AvatarManager", (accounts) => {
     );
   });
 
+  it("rename avatar", async () => {
+    await expectRevert(avatars.setNameByGameManager(1, 'test', { from: user1 }), 'Only GameManager');
+    await expectRevert(gm.renameAvatar(1, 'test', { from: user2 }), 'You are not the owner');
+    const clnyBalance = await clny.balanceOf(user1);
+    await gm.renameAvatar(1, 'test', { from: user1 });
+    const clnyBalanceAfter = await clny.balanceOf(user1);
+    expect(clnyBalance - clnyBalanceAfter).to.be.equal(25 * 1e18);
+    await expectRevert(gm.renameAvatar(1, 'test', { from: user1 }), 'same name');
+  });
+
   it("reverts on trying to getXP of unexisted avatar", async () => {
     await expectRevert(
       avatars.getXP([100], { from: user1 }),
