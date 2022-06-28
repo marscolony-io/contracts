@@ -376,14 +376,6 @@ contract GameManager is PausableUpgradeable {
   }
 
   /**
-   * Transfers ownership
-   * 0x7a318866
-   */
-  function transferDAO(address _DAO) external onlyDAO {
-    DAO = _DAO;
-  }
-
-  /**
    * Cost of minting for `tokenCount` tokens
    */
   function getFee(uint256 tokenCount) public view returns (uint256) {
@@ -454,6 +446,7 @@ contract GameManager is PausableUpgradeable {
   uint256 constant LEVEL_1_COST = 120;
   uint256 constant LEVEL_2_COST = 270;
   uint256 constant LEVEL_3_COST = 480;
+  uint256 constant RENAME_AVATAR_COST = 25 * 10 ** 18;
   uint8 constant MINT_AVATAR_LEVEL = 254;
   uint8 constant PLACEMENT_LEVEL = 255;
   uint256 constant PLACEMENT_COST = 5;
@@ -786,6 +779,11 @@ contract GameManager is PausableUpgradeable {
 
     uint256 energyPrice = ICryochamber(cryochamberAddress).energyPrice();
     TokenInterface(CLNYAddress).burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
+  }
 
+  function renameAvatar(uint256 avatarId, string calldata _name) external {
+    require(martianColonists.ownerOf(avatarId) == msg.sender, 'You are not the owner');
+    IAvatarManager(avatarAddress).setNameByGameManager(avatarId, _name);
+    TokenInterface(CLNYAddress).burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
   }
 }

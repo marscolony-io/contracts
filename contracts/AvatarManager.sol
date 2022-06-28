@@ -105,6 +105,12 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
     collection.setName(tokenId, _name);
   }
 
+  function setNameByGameManager(uint256 tokenId, string memory _name) external onlyGameManager {
+    require (bytes(_name).length <= 15, 'name too long');
+    require (keccak256(abi.encodePacked(_name)) != keccak256(abi.encodePacked(collection.names(tokenId))), 'same name');
+    collection.setName(tokenId, _name);
+  }
+
   function getNames(uint256[] calldata tokenIds) external view returns (string[] memory) {
     string[] memory result = new string[](tokenIds.length);
     for (uint256 i = 0; i < tokenIds.length; i++) {
