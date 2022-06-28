@@ -20,7 +20,7 @@ module.exports = async (deployer, network, addresses) => {
     const am = await deployer.deploy(AM);
     const gm = await deployer.deploy(GM);
     const PA = await ProxyAdmin.at('0xBb459C6066331fd3e92A54828DAA696e0661c902');
-    await PA.upgrade('0x0Dd5dDaC089613F736e89F81E16361b09c7d53C6', GM.address)
-    await PA.upgrade('0x0D625029E21540aBdfAFa3BFC6FD44fB4e0A66d0', AM.address)
+    await PA.upgrade('0x0D112a449D23961d03E906572D8ce861C441D6c3', GM.address)
+    await PA.upgrade('0xCc55065afd013CF06f989448cf724fEC4fF29626', AM.address)
   }
 };

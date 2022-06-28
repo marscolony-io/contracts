@@ -23,7 +23,7 @@
   "scripts": {
     "int-test": "truffle exec scripts/check-integrity.js --network hartest",
     "int-maxim": "MAXIM=1 truffle exec scripts/check-integrity.js --network hartest",
-    "int-mainnet": "truffle exec scripts/check-integrity.js --network harmain",
+    "int-mainnet": "truffle exec scripts/check-integrity.js --network harmony",
     "backend": "truffle deploy && truffle exec scripts/backend-fill/index.js"
   }
 }
