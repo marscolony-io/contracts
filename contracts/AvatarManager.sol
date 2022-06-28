@@ -5,6 +5,8 @@ import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import './GameConnection.sol';
 import './interfaces/IMartianColonists.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import './interfaces/ICryochamber.sol';
+
 
 
 contract AvatarManager is GameConnection, PausableUpgradeable {
@@ -13,7 +15,9 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
   IMartianColonists public collection;
   mapping (uint256 => uint256) private xp;
 
-  uint256[49] private ______mc_gap;
+  ICryochamber public cryochambers;
+
+  uint256[48] private ______mc_gap;
 
   function initialize(address _DAO, address _collection) external initializer {
     GameConnection.__GameConnection_init(_DAO);
@@ -22,19 +26,39 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
     collection = IMartianColonists(_collection);
   }
 
+  function setCryochamberManager(address cryochamberManager) external {
+    cryochambers = ICryochamber(cryochamberManager);
+  }
+
   function _getXP(uint256 avatarId) private view returns(uint256) {
+    uint256 totalAvatarsCount = collection.totalSupply();
+    require(avatarId <= totalAvatarsCount, "wrong avatarId requested");
     return xp[avatarId] + 100; // 100 is a base for every avatar
   }
 
   function getXP(uint256[] memory avatarIds) public view returns(uint256[] memory) {
     uint256[] memory result = new uint256[](avatarIds.length);
+
     for (uint256 i = 0; i < avatarIds.length; i++) {
+      
       result[i] = _getXP(avatarIds[i]);
+
+      ICryochamber.CryoTime memory cryo = cryochambers.getAvatarCryoStatus(avatarIds[i]);
+      
+      if (cryo.endTime > 0 && uint64(block.timestamp) > cryo.endTime) {
+        result[i] += cryo.reward;
+      }
+      
     }
     return result;
   }
 
+
   function addXP(uint256 avatarId, uint256 increment) external onlyGameManager {
+    xp[avatarId] = xp[avatarId] + increment;
+  }
+
+  function addXPAfterCryo(uint256 avatarId, uint256 increment) external onlyCryochamberManager {
     xp[avatarId] = xp[avatarId] + increment;
   }
 
@@ -92,5 +116,10 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
+  }
+
+  modifier onlyCryochamberManager {
+    require(msg.sender == address(cryochambers), 'Only CryochamberManager');
+    _;
   }
 }

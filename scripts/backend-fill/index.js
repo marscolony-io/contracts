@@ -5,6 +5,7 @@ const MSN = artifacts.require("MissionManager");
 const CLNY = artifacts.require("CLNY");
 const COLONISTS = artifacts.require("MartianColonists");
 const AvatarManager = artifacts.require("AvatarManager");
+const CryochamberManager = artifacts.require("CryochamberManager");
 
 module.exports = async (callback) => {
   try {
@@ -16,6 +17,7 @@ module.exports = async (callback) => {
     const gm = await GM.deployed();
     const clny = await CLNY.deployed();
     const nft = await COLONISTS.deployed();
+    const cryo = await CryochamberManager.deployed();
     let avatars = await AvatarManager.deployed();
 
     const totalLandsInitialCount = await mc.totalSupply();
@@ -96,7 +98,7 @@ module.exports = async (callback) => {
     const avatarsCountBefore = await nft.totalSupply();
     console.log("avatarsCountBefore", avatarsCountBefore.toString());
 
-    await avatars.setMaxTokenId(10, { from: accounts[0] });
+    await avatars.setMaxTokenId(20, { from: accounts[0] });
 
     for (const account of accounts) {
       console.log("mint avatar for account", account);
@@ -145,6 +147,13 @@ module.exports = async (callback) => {
       }
     }
 
+    // mint avatar for cryocamera
+    await gm.mintAvatar({ from: accounts[1] });
+    const avatarId = await nft.totalSupply();
+    console.log("id of the avatar in cryochamber", parseInt(avatarId));
+    await await gm.purchaseCryochamber({ from: accounts[1] });
+    await cryo.putAvatarsInCryochamber([avatarId], { from: accounts[1] });
+
     /*
     MISSION_MANAGER=0xC0633bcaB848D1738Ad22A05135C8E9EC9265092
     GAME_MANAGER=0xc65F8BA708814653EDdCe0e9f75827fe309E29aD
@@ -152,13 +161,14 @@ module.exports = async (callback) => {
     MC=0xc268D8b64ce7DB6Eb8C29562Ae538005Fded299A
     MCLN=0xDEfafb07765D9D0F897260BE1389743A09802F20
     */
-    console.log(`copy lines below and paste to the backend .test.env
+    console.log(`copy lines below and paste to the backend's .test.env
 
 MISSION_MANAGER=${msn.address}
 GAME_MANAGER=${gm.address}
 AVATAR_MANAGER=${avatars.address}
 MC=${mc.address}
 MCLN=${nft.address}
+CRYO=${cryo.address}
 `);
 
     callback();
