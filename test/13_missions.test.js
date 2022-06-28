@@ -30,6 +30,9 @@ contract("MissionsManager", (accounts) => {
     await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });
     await time.increase(60 * 60 * 24 * 365.25 * 1000); // wait 10 years
     await gm.claimEarned([100], { from: user1 }); // claim 3652.5 clny
+    await gm.mintAvatar({ from: user1 });
+    await gm.mintAvatar({ from: user1 });
+    await gm.mintAvatar({ from: user1 });
   });
 
   describe("getAvailableMissions()", function() {

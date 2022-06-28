@@ -11,7 +11,6 @@ const MC = artifacts.require("MC");
 const CLNY = artifacts.require("CLNY");
 const ProxyAdmin = artifacts.require("ProxyAdmin");
 const CryochamberManager = artifacts.require("CryochamberManager");
-const { deployProxy } = require("@openzeppelin/truffle-upgrades");
 
 module.exports = async (deployer, network, addresses) => {
   if (network === "development") {

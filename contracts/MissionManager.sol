@@ -20,13 +20,7 @@ contract MissionManager is GameConnection, PausableUpgradeable {
     uint8 revshare;
   }
 
-  struct LandMissionState {
-    uint256 missionNonce; // orchestrated by the backend, included in signatures
-  }
-
   mapping (address => AccountMissionState) public accountMissionState;
-  mapping (uint256 => LandMissionState) public landMissionState;
-  // TODO avatarMissionState?
 
   struct LandMissionData { 
     uint256 availableMissionCount;
@@ -34,7 +28,7 @@ contract MissionManager is GameConnection, PausableUpgradeable {
     bool isPrivate;
   }
 
-  uint256[49] private ______gap;
+  uint256[50] private ______gap;
 
   function initialize(address _DAO, address _collection, address _avatarManager, address _MC) external initializer {
     GameConnection.__GameConnection_init(_DAO);
@@ -50,21 +44,21 @@ contract MissionManager is GameConnection, PausableUpgradeable {
   
   function setAccountRevshare(uint8 _revshare) external {
     require(_revshare >= 1, "Revshare value is too low, 1 is min");
-    require(_revshare <= 90, "Revshare value is too high, 90 is max");
+    require(_revshare <= 99, "Revshare value is too high, 99 is max");
     accountMissionState[msg.sender].revshare = _revshare;
   }
 
   function _calculateLandMissionsLimits(uint256 landId) private view returns (uint256 availableMissionCount) {
-      uint256[] memory landIds = new uint256[](1);
-      landIds[0] = landId;
-      IGameManager  gameManager = IGameManager(GameManager);
-      IGameManager.AttributeData memory landAttributes = gameManager.getAttributesMany(landIds)[0];
+    uint256[] memory landIds = new uint256[](1);
+    landIds[0] = landId;
+    IGameManager  gameManager = IGameManager(GameManager);
+    IGameManager.AttributeData memory landAttributes = gameManager.getAttributesMany(landIds)[0];
 
-      if (landAttributes.baseStation == 0) {
-        return 0;
-      }
+    if (landAttributes.baseStation == 0) {
+      return 0;
+    }
 
-      return 1 + landAttributes.powerProduction;      
+    return 1 + landAttributes.powerProduction;      
   }
 
   function getRevshare(address _address) view external returns (uint8 revShare) {
