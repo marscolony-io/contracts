@@ -61,12 +61,20 @@ contract MissionManager is GameConnection, PausableUpgradeable {
     return 1 + landAttributes.powerProduction;      
   }
 
-  function getRevshare(address _address) view external returns (uint8 revShare) {
+  function getRevshare(address _address) view public returns (uint8 revShare) {
     revShare = accountMissionState[_address].revshare;
     if (revShare == 0) {
       revShare = 20;
     }
     return revShare;
+  }
+
+  function getRevshareForLands(uint256[] memory tokenIds) view external returns (uint8[] memory) {
+    uint8[] memory result = new uint8[](tokenIds.length);
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      result[i] = getRevshare(MC.ownerOf(tokenIds[i]));
+    }
+    return result;
   } 
 
   function _getAvailableMissions(uint256 landId) private view returns (LandMissionData memory) {

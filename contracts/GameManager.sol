@@ -754,6 +754,7 @@ contract GameManager is PausableUpgradeable {
 
   function fixEarnings(uint256[] calldata tokenIds) external onlyDAO {
     for (uint i = 0; i < tokenIds.length; i++) {
+      TokenInterface(MCAddress).ownerOf(tokenIds[i]); // reverts if not minted
       fixEarnings(tokenIds[i]);
     }
   }
