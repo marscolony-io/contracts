@@ -78,7 +78,7 @@ contract MissionManager is GameConnection, PausableUpgradeable {
     return result;
   } 
 
-  function _getAvailableMissions(uint256 landId) private view returns (LandData memory) {
+  function _getLandData(uint256 landId) private view returns (LandData memory) {
     address landOwner = MC.ownerOf(landId);
     bool isPrivate = accountMissionState[landOwner].isAccountPrivate;
     uint256 availableMissionCount = _calculateLandMissionsLimits(landId);
@@ -98,7 +98,7 @@ contract MissionManager is GameConnection, PausableUpgradeable {
     } else {
       LandData[] memory result = new LandData[](landId.length);
       for (uint256 i = 0; i < landId.length; i++) {
-        result[i] = _getAvailableMissions(landId[i]);
+        result[i] = _getLandData(landId[i]);
       }
       return result;
     }
