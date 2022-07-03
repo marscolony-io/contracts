@@ -22,10 +22,11 @@ contract MissionManager is GameConnection, PausableUpgradeable {
 
   mapping (address => AccountMissionState) public accountMissionState;
 
-  struct LandMissionData { 
+  struct LandData { 
     uint256 availableMissionCount;
     address owner;
     bool isPrivate;
+    uint8 revshare;
   }
 
   uint256[50] private ______gap;
@@ -77,23 +78,25 @@ contract MissionManager is GameConnection, PausableUpgradeable {
     return result;
   } 
 
-  function _getAvailableMissions(uint256 landId) private view returns (LandMissionData memory) {
+  function _getAvailableMissions(uint256 landId) private view returns (LandData memory) {
     address landOwner = MC.ownerOf(landId);
     bool isPrivate = accountMissionState[landOwner].isAccountPrivate;
     uint256 availableMissionCount = _calculateLandMissionsLimits(landId);
+    uint8 revshare = getRevshare(MC.ownerOf(landId));
 
-    return LandMissionData(
+    return LandData(
       availableMissionCount,
       landOwner,
-      isPrivate 
+      isPrivate,
+      revshare
     );
   }
 
-  function getAvailableMissions(uint256[] memory landId) external view returns (LandMissionData[] memory) {
+  function getLandsData(uint256[] memory landId) external view returns (LandData[] memory) {
     if (landId.length == 0) {
-      return new LandMissionData[](0);
+      return new LandData[](0);
     } else {
-      LandMissionData[] memory result = new LandMissionData[](landId.length);
+      LandData[] memory result = new LandData[](landId.length);
       for (uint256 i = 0; i < landId.length; i++) {
         result[i] = _getAvailableMissions(landId[i]);
       }

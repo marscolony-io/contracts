@@ -35,16 +35,16 @@ contract("MissionsManager", (accounts) => {
     await gm.mintAvatar({ from: user1 });
   });
 
-  describe("getAvailableMissions()", function() {
+  describe("getLandsData()", function() {
     it("Returns empty array if no lands have been sent in function params", async () => {
-      const missions = await msn.getAvailableMissions([]);
+      const missions = await msn.getLandsData([]);
       assert.isTrue(Array.isArray(missions));
       assert.equal(missions.length, 0);
     });
 
     it("Returns lands by lands ids", async () => {
       const lands = await mc.allTokensPaginate(0, 1);
-      const availableLands = await msn.getAvailableMissions(lands);
+      const availableLands = await msn.getLandsData(lands);
       expect(availableLands).to.have.lengthOf(2);
       // expect(availableLands[0].availableMissionCount === "1");
       // expect(availableLands[1].availableMissionCount === "1");
@@ -53,21 +53,22 @@ contract("MissionsManager", (accounts) => {
     it("Returns lands with correct private flags", async () => {
       await msn.setAccountPrivacy(true, { from: user1 });
       const lands = await mc.allTokensPaginate(0, 1);
-      const availableLands = await msn.getAvailableMissions(lands);
+      const availableLands = await msn.getLandsData(lands);
       expect(availableLands[0].isPrivate).to.be.true;
       expect(availableLands[1].isPrivate).to.be.false;
     });
 
-    it("Returns land with limit 0", async () => {
+    it("Returns land with limit 0 and default revshare", async () => {
       const lands = await mc.allTokensPaginate(0, 1);
-      const availableLands = await msn.getAvailableMissions(lands);
+      const availableLands = await msn.getLandsData(lands);
       expect(availableLands[0].availableMissionCount).to.be.equal("0");
+      expect(availableLands[0].revshare).to.be.equal("20");
     });
 
     it("Returns land with limit 1 for base station", async () => {
       const lands = await mc.allTokensPaginate(0, 1);
       await gm.buildBaseStation(100, { from: user1 });
-      const availableLands = await msn.getAvailableMissions(lands);
+      const availableLands = await msn.getLandsData(lands);
       expect(availableLands[0].availableMissionCount).to.be.equal("1");
     });
 
@@ -75,7 +76,7 @@ contract("MissionsManager", (accounts) => {
       const lands = await mc.allTokensPaginate(0, 1);
       await gm.buildPowerProduction(100, 1, { from: user1 });
 
-      const availableLands = await msn.getAvailableMissions(lands);
+      const availableLands = await msn.getLandsData(lands);
       expect(availableLands[0].availableMissionCount).to.be.equal("2");
     });
 
@@ -83,7 +84,7 @@ contract("MissionsManager", (accounts) => {
       const lands = await mc.allTokensPaginate(0, 1);
       await gm.buildPowerProduction(100, 2, { from: user1 });
 
-      const availableLands = await msn.getAvailableMissions(lands);
+      const availableLands = await msn.getLandsData(lands);
       expect(availableLands[0].availableMissionCount).to.be.equal("3");
     });
 
@@ -91,7 +92,7 @@ contract("MissionsManager", (accounts) => {
       const lands = await mc.allTokensPaginate(0, 1);
       await gm.buildPowerProduction(100, 3, { from: user1 });
 
-      const availableLands = await msn.getAvailableMissions(lands);
+      const availableLands = await msn.getLandsData(lands);
       expect(availableLands[0].availableMissionCount).to.be.equal("4");
     });
   });
