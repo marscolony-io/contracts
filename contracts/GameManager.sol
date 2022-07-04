@@ -493,7 +493,7 @@ contract GameManager is PausableUpgradeable {
   }
 
   function getEarned(uint256 tokenId) public view returns (uint256) {
-    return getEarningSpeed(tokenId)
+    return getPassiveEarningSpeed(tokenId)
       * (block.timestamp - getLastCheckout(tokenId)) * 10 ** 18 / (24 * 60 * 60)
       + tokenData[tokenId].fixedEarnings;
   }
@@ -506,7 +506,7 @@ contract GameManager is PausableUpgradeable {
     uint256 speed = 0;
     for (uint256 i = 0; i < tokenIds.length; i++) {
       result = result + getEarned(tokenIds[i]);
-      speed = speed + getEarningSpeed(tokenIds[i]);
+      speed = speed + getPassiveEarningSpeed(tokenIds[i]);
     }
     return (result, speed);
   }
@@ -525,6 +525,21 @@ contract GameManager is PausableUpgradeable {
     }
     if (tokenData[tokenId].powerProduction > 0 && tokenData[tokenId].powerProduction <= 3) {
       speed = speed + tokenData[tokenId].powerProduction + 1;
+    }
+    return speed;
+  }
+
+  function getPassiveEarningSpeed(uint256 tokenId) public view returns (uint256) {
+    require (TokenInterface(MCAddress).ownerOf(tokenId) != address(0)); // reverts itself
+    uint256 speed = 1; // bare land
+    if (tokenData[tokenId].baseStation > 0) {
+      speed = speed + 1; // base station gives +1
+    }
+    if (tokenData[tokenId].transport > 0 && tokenData[tokenId].transport <= 3) {
+      speed = speed + tokenData[tokenId].transport + 1; // others give from +2 to +4
+    }
+    if (tokenData[tokenId].robotAssembly > 0 && tokenData[tokenId].robotAssembly <= 3) {
+      speed = speed + tokenData[tokenId].robotAssembly + 1;
     }
     return speed;
   }
@@ -723,7 +738,7 @@ contract GameManager is PausableUpgradeable {
     for (uint256 i = 0; i < tokenIds.length; i++) {
       uint256 tokenId = tokenIds[i];
       result[i] = AttributeData(
-        getEarningSpeed(tokenId),
+        getPassiveEarningSpeed(tokenId),
         getEarned(tokenId),
         tokenData[tokenId].baseStation,
         tokenData[tokenId].transport,
