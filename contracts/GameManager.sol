@@ -81,7 +81,7 @@ contract GameManager is PausableUpgradeable {
 
   bool internal locked;
 
-  mapping(uint256 => uint256) landMissionEarnings;
+  mapping(uint256 => uint256) public landMissionEarnings;
 
   uint256[44] private ______gm_gap_2;
 
@@ -239,16 +239,16 @@ contract GameManager is PausableUpgradeable {
     // 42..<47 - avatar id (again)
     // 47..<55 - xp reward like 00000020
     // 55..<57 - lootbox
-    // 57..<59 - avatar mission rewards in CLNY * 100 / decimals (e.g. 100 = 1 CLNY)
-    // 59..<61 - avatar mission rewards in CLNY * 100 / decimals (e.g. 100 = 1 CLNY)
-    // 61... and several 8-byte blocks - reserved
+    // 57..<61 - avatar mission rewards in CLNY * 100 / decimals (e.g. 100 = 1 CLNY)
+    // 61..<65 - avatar mission rewards in CLNY * 100 / decimals (e.g. 100 = 1 CLNY)
+    // 65... and several 8-byte blocks - reserved
     uint256 _avatar = _substring(message, 32, 37);
     uint256 _avatar2 = _substring(message, 37, 42);
     uint256 _land = _substring(message, 42, 47);
     uint256 _xp = _substring(message, 47, 55);
     uint256 _lootbox = _substring(message, 55, 57);
-    uint256 _avatarReward = _substring(message, 57, 59);
-    uint256 _landReward = _substring(message, 59, 61);
+    uint256 _avatarReward = _substring(message, 57, 61);
+    uint256 _landReward = _substring(message, 61, 65);
     require(_avatar == _avatar2, 'check failed');
     return (_avatar, _land, _xp, _lootbox, _avatarReward,_landReward );
   }
@@ -290,7 +290,7 @@ contract GameManager is PausableUpgradeable {
     }
 
     landMissionEarnings[_land] += _landReward * 10**18 / 100;
-    TokenInterface(CLNYAddress).mint(msg.sender, _avatarReward * 10**18 / 100);
+    TokenInterface(CLNYAddress).mint(martianColonists.ownerOf(_avatar), _avatarReward * 10**18 / 100);
 
     // one event for every reward type
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp
@@ -515,7 +515,7 @@ contract GameManager is PausableUpgradeable {
     uint256 speed = 0;
     for (uint256 i = 0; i < tokenIds.length; i++) {
       result = result + getEarned(tokenIds[i]);
-      speed = speed + getPassiveEarningSpeed(tokenIds[i]);
+      speed = speed + getEarningSpeed(tokenIds[i]);
     }
     return (result, speed);
   }
