@@ -289,12 +289,18 @@ contract GameManager is PausableUpgradeable {
       lootBoxesToMint[msg.sender].legendary++;
     }
 
-    landMissionEarnings[_land] += _landReward * 10**18 / 100;
-    TokenInterface(CLNYAddress).mint(martianColonists.ownerOf(_avatar), _avatarReward * 10**18 / 100);
+    uint256 landOwnerClnyReward =  _landReward * 10**18 / 100;
+    landMissionEarnings[_land] += landOwnerClnyReward;
+
+    uint256 avatarClnyReward = _avatarReward * 10**18 / 100;
+    TokenInterface(CLNYAddress).mint(martianColonists.ownerOf(_avatar), avatarClnyReward);
 
     // one event for every reward type
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp
     emit MissionReward(_land, _avatar, 100_000 + _lootbox, 1); // 1000xx - lootboxes
+    emit MissionReward(_land, _avatar, 1, avatarClnyReward); // 1 - avatar CLNY reward
+    emit MissionReward(_land, _avatar, 2, landOwnerClnyReward); // 2- land owner CLNY reward
+
   }
 
   function mintLootbox() public {
@@ -750,7 +756,7 @@ contract GameManager is PausableUpgradeable {
     for (uint256 i = 0; i < tokenIds.length; i++) {
       uint256 tokenId = tokenIds[i];
       result[i] = AttributeData(
-        getPassiveEarningSpeed(tokenId),
+        getEarningSpeed(tokenId),
         getEarned(tokenId),
         tokenData[tokenId].baseStation,
         tokenData[tokenId].transport,
@@ -772,6 +778,7 @@ contract GameManager is PausableUpgradeable {
       require (msg.sender == TokenInterface(MCAddress).ownerOf(tokenIds[i]));
       uint256 earned = getEarned(tokenIds[i]);
       tokenData[tokenIds[i]].fixedEarnings = 0;
+      landMissionEarnings[tokenIds[i]] = 0;
       tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
       TokenInterface(CLNYAddress).mint(msg.sender, earned);
       TokenInterface(CLNYAddress).mint(treasury, earned * 31 / 49);

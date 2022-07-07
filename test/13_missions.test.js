@@ -285,6 +285,15 @@ contract("MissionsManager", (accounts) => {
       );
     });
 
+    it("set landMissionEarnings to zero after claim", async () => {
+      const landOwner = await mc.ownerOf(landId);
+      await gm.claimEarned([landId], { from: landOwner });
+
+      const landMissionEarnings = await gm.landMissionEarnings(landId);
+
+      expect(parseInt(landMissionEarnings)).to.be.equal(0);
+    });
+
     it("signature has been used", async () => {
       const message = `11111111111111111111111111111111${avatarId
         .toString()
@@ -313,8 +322,16 @@ contract("MissionsManager", (accounts) => {
     });
 
     it("MissionReward event emitted", async () => {
-      const message =
-        "1111111111111111111111111111111100002000022000010000005001111111111111111111111";
+      const message = `11111111111111111111111111111111${avatarId
+        .toString()
+        .padStart(5, "0")
+        .repeat(2)}${landId
+        .toString()
+        .padStart(5, "0")}1000000502${avatarReward
+        .toString()
+        .padStart(4, "0")}${landReward
+        .toString()
+        .padStart(4, "0")}11111111111111`;
       const signature = await web3.eth.accounts.sign(
         message,
         signer.privateKey
@@ -331,10 +348,37 @@ contract("MissionsManager", (accounts) => {
 
       truffleAssert.eventEmitted(mcTx, "MissionReward", (ev) => {
         return (
-          parseInt(ev.landId) === 20000 &&
-          parseInt(ev.avatarId) === 2 &&
+          parseInt(ev.landId) === landId &&
+          parseInt(ev.avatarId) === avatarId &&
           parseInt(ev.rewardType) === 0 &&
           parseInt(ev.rewardAmount) === 10000005
+        );
+      });
+
+      truffleAssert.eventEmitted(mcTx, "MissionReward", (ev) => {
+        return (
+          parseInt(ev.landId) === landId &&
+          parseInt(ev.avatarId) === avatarId &&
+          parseInt(ev.rewardType) === 100002 &&
+          parseInt(ev.rewardAmount) === 1
+        );
+      });
+
+      truffleAssert.eventEmitted(mcTx, "MissionReward", (ev) => {
+        return (
+          parseInt(ev.landId) === landId &&
+          parseInt(ev.avatarId) === avatarId &&
+          parseInt(ev.rewardType) === 1 &&
+          parseInt(ev.rewardAmount) === (avatarReward * 10 ** 18) / 100
+        );
+      });
+
+      truffleAssert.eventEmitted(mcTx, "MissionReward", (ev) => {
+        return (
+          parseInt(ev.landId) === landId &&
+          parseInt(ev.avatarId) === avatarId &&
+          parseInt(ev.rewardType) === 2 &&
+          parseInt(ev.rewardAmount) === (landReward * 10 ** 18) / 100
         );
       });
     });
