@@ -563,7 +563,7 @@ contract GameManager is PausableUpgradeable {
   }
 
   function fixEarnings(uint256 tokenId) private {
-    tokenData[tokenId].fixedEarnings = getEarned(tokenId);
+    tokenData[tokenId].fixedEarnings = getEarned(tokenId) - landMissionEarnings[tokenId];
     tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp);
   }
 
