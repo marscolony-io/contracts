@@ -285,6 +285,13 @@ contract("MissionsManager", (accounts) => {
       );
     });
 
+    it("getEarned not changed after fixEarnings", async () => {
+      const earnedBefore = await gm.getEarned(landId);
+      await gm.fixEarnings([landId]);
+      const earnedAfter = await gm.getEarned(landId);
+      expect(earnedAfter).to.bignumber.be.equal(earnedBefore);
+    });
+
     it("set landMissionEarnings to zero after claim", async () => {
       const landOwner = await mc.ownerOf(landId);
       await gm.claimEarned([landId], { from: landOwner });
