@@ -17,23 +17,19 @@ contract MissionManager is GameConnection, PausableUpgradeable {
 
   struct AccountMissionState {
     bool isAccountPrivate; // don't allow missions on my lands
-  }
-
-  struct LandMissionState {
-    uint256 missionNonce; // orchestrated by the backend, included in signatures
+    uint8 revshare;
   }
 
   mapping (address => AccountMissionState) public accountMissionState;
-  mapping (uint256 => LandMissionState) public landMissionState;
-  // TODO avatarMissionState?
 
-  struct LandMissionData { 
+  struct LandData { 
     uint256 availableMissionCount;
     address owner;
     bool isPrivate;
+    uint8 revshare;
   }
 
-  uint256[49] private ______gap;
+  uint256[50] private ______gap;
 
   function initialize(address _DAO, address _collection, address _avatarManager, address _MC) external initializer {
     GameConnection.__GameConnection_init(_DAO);
@@ -46,39 +42,63 @@ contract MissionManager is GameConnection, PausableUpgradeable {
   function setAccountPrivacy(bool _isPrivate) external {
     accountMissionState[msg.sender].isAccountPrivate = _isPrivate;
   }
-
-  function _calculateLandMissionsLimits(uint256 landId) private view returns (uint256 availableMissionCount) {
-      uint256[] memory landIds = new uint256[](1);
-      landIds[0] = landId;
-      IGameManager  gameManager = IGameManager(GameManager);
-      IGameManager.AttributeData memory landAttributes = gameManager.getAttributesMany(landIds)[0];
-
-      if (landAttributes.baseStation == 0) {
-        return 0;
-      }
-
-      return 1 + landAttributes.powerProduction;      
+  
+  function setAccountRevshare(uint8 _revshare) external {
+    require(_revshare >= 1, "Revshare value is too low, 1 is min");
+    require(_revshare <= 99, "Revshare value is too high, 99 is max");
+    accountMissionState[msg.sender].revshare = _revshare;
   }
 
-  function _getAvailableMissions(uint256 landId) private view returns (LandMissionData memory) {
+  function _calculateLandMissionsLimits(uint256 landId) private view returns (uint256 availableMissionCount) {
+    uint256[] memory landIds = new uint256[](1);
+    landIds[0] = landId;
+    IGameManager  gameManager = IGameManager(GameManager);
+    IGameManager.AttributeData memory landAttributes = gameManager.getAttributesMany(landIds)[0];
+
+    if (landAttributes.baseStation == 0) {
+      return 0;
+    }
+
+    return 1 + landAttributes.powerProduction;      
+  }
+
+  function getRevshare(address _address) view public returns (uint8 revShare) {
+    revShare = accountMissionState[_address].revshare;
+    if (revShare == 0) {
+      revShare = 20;
+    }
+    return revShare;
+  }
+
+  function getRevshareForLands(uint256[] memory tokenIds) view external returns (uint8[] memory) {
+    uint8[] memory result = new uint8[](tokenIds.length);
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      result[i] = getRevshare(MC.ownerOf(tokenIds[i]));
+    }
+    return result;
+  } 
+
+  function _getLandData(uint256 landId) private view returns (LandData memory) {
     address landOwner = MC.ownerOf(landId);
     bool isPrivate = accountMissionState[landOwner].isAccountPrivate;
     uint256 availableMissionCount = _calculateLandMissionsLimits(landId);
+    uint8 revshare = getRevshare(MC.ownerOf(landId));
 
-    return LandMissionData(
+    return LandData(
       availableMissionCount,
       landOwner,
-      isPrivate 
+      isPrivate,
+      revshare
     );
   }
 
-  function getAvailableMissions(uint256[] memory landId) external view returns (LandMissionData[] memory) {
+  function getLandsData(uint256[] memory landId) external view returns (LandData[] memory) {
     if (landId.length == 0) {
-      return new LandMissionData[](0);
+      return new LandData[](0);
     } else {
-      LandMissionData[] memory result = new LandMissionData[](landId.length);
+      LandData[] memory result = new LandData[](landId.length);
       for (uint256 i = 0; i < landId.length; i++) {
-        result[i] = _getAvailableMissions(landId[i]);
+        result[i] = _getLandData(landId[i]);
       }
       return result;
     }

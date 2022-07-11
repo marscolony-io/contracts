@@ -81,7 +81,9 @@ contract GameManager is PausableUpgradeable {
 
   bool internal locked;
 
-  uint256[45] private ______gm_gap_2;
+  mapping(uint256 => uint256) public landMissionEarnings;
+
+  uint256[44] private ______gm_gap_2;
 
   event Airdrop (address indexed receiver, uint256 indexed tokenId);
   // f9917faa5009c58ed8bd6a1c70b79e1fbefc8afe3e7142ba8b854ccb887fb262
@@ -230,21 +232,25 @@ contract GameManager is PausableUpgradeable {
     return stringToUint(string(result));
   }
 
-  function getAssetsFromFinishMissionMessage(string calldata message) private pure returns (uint256, uint256, uint256, uint256) {
+  function getAssetsFromFinishMissionMessage(string calldata message) private pure returns (uint256, uint256, uint256, uint256, uint256, uint256) {
     // 0..<32 - random
     // 32..<37 - avatar id
     // 37..<42 - land id
     // 42..<47 - avatar id (again)
     // 47..<55 - xp reward like 00000020
-    // 55..<58 - lootbox
-    // 58... and several 8-byte blocks - reserved
+    // 55..<57 - lootbox
+    // 57..<61 - avatar mission rewards in CLNY * 100 / decimals (e.g. 100 = 1 CLNY)
+    // 61..<65 - avatar mission rewards in CLNY * 100 / decimals (e.g. 100 = 1 CLNY)
+    // 65... and several 8-byte blocks - reserved
     uint256 _avatar = _substring(message, 32, 37);
     uint256 _avatar2 = _substring(message, 37, 42);
     uint256 _land = _substring(message, 42, 47);
     uint256 _xp = _substring(message, 47, 55);
     uint256 _lootbox = _substring(message, 55, 57);
+    uint256 _avatarReward = _substring(message, 57, 61);
+    uint256 _landReward = _substring(message, 61, 65);
     require(_avatar == _avatar2, 'check failed');
-    return (_avatar, _land, _xp, _lootbox);
+    return (_avatar, _land, _xp, _lootbox, _avatarReward,_landReward );
   }
 
   function getLootboxRarity(uint256 _lootbox) private pure returns (ILootboxes.Rarity rarity) {
@@ -254,7 +260,7 @@ contract GameManager is PausableUpgradeable {
   }
 
   function proceedFinishMissionMessage(string calldata message) private {
-    (uint256 _avatar, uint256 _land, uint256 _xp, uint256 _lootbox) = getAssetsFromFinishMissionMessage(message);
+    (uint256 _avatar, uint256 _land, uint256 _xp, uint256 _lootbox, uint256 _avatarReward, uint256 _landReward) = getAssetsFromFinishMissionMessage(message);
 
     require(_avatar > 0, "AvatarId is not valid");
     require(_land > 0 && _land <= 21000, "LandId is not valid");
@@ -283,9 +289,18 @@ contract GameManager is PausableUpgradeable {
       lootBoxesToMint[msg.sender].legendary++;
     }
 
+    uint256 landOwnerClnyReward =  _landReward * 10**18 / 100;
+    landMissionEarnings[_land] += landOwnerClnyReward;
+
+    uint256 avatarClnyReward = _avatarReward * 10**18 / 100;
+    TokenInterface(CLNYAddress).mint(martianColonists.ownerOf(_avatar), avatarClnyReward);
+
     // one event for every reward type
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp
     emit MissionReward(_land, _avatar, 100_000 + _lootbox, 1); // 1000xx - lootboxes
+    emit MissionReward(_land, _avatar, 1, avatarClnyReward); // 1 - avatar CLNY reward
+    emit MissionReward(_land, _avatar, 2, landOwnerClnyReward); // 2- land owner CLNY reward
+
   }
 
   function mintLootbox() public {
@@ -493,9 +508,9 @@ contract GameManager is PausableUpgradeable {
   }
 
   function getEarned(uint256 tokenId) public view returns (uint256) {
-    return getEarningSpeed(tokenId)
+    return getPassiveEarningSpeed(tokenId)
       * (block.timestamp - getLastCheckout(tokenId)) * 10 ** 18 / (24 * 60 * 60)
-      + tokenData[tokenId].fixedEarnings;
+      + tokenData[tokenId].fixedEarnings + landMissionEarnings[tokenId];
   }
 
   /**
@@ -529,8 +544,24 @@ contract GameManager is PausableUpgradeable {
     return speed;
   }
 
+  function getPassiveEarningSpeed(uint256 tokenId) public view returns (uint256) {
+    require (TokenInterface(MCAddress).ownerOf(tokenId) != address(0)); // reverts itself
+    uint256 speed = 1; // bare land
+    if (tokenData[tokenId].baseStation > 0) {
+      speed = speed + 1; // base station gives +1
+    }
+    if (tokenData[tokenId].transport > 0 && tokenData[tokenId].transport <= 3) {
+      speed = speed + tokenData[tokenId].transport + 1; // others give from +2 to +4
+    }
+    if (tokenData[tokenId].robotAssembly > 0 && tokenData[tokenId].robotAssembly <= 3) {
+      speed = speed + tokenData[tokenId].robotAssembly + 1;
+    }
+    // no Power Production here
+    return speed;
+  }
+
   function fixEarnings(uint256 tokenId) private {
-    tokenData[tokenId].fixedEarnings = getEarned(tokenId);
+    tokenData[tokenId].fixedEarnings = getEarned(tokenId) - landMissionEarnings[tokenId];
     tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp);
   }
 
@@ -745,10 +776,18 @@ contract GameManager is PausableUpgradeable {
       require (msg.sender == TokenInterface(MCAddress).ownerOf(tokenIds[i]));
       uint256 earned = getEarned(tokenIds[i]);
       tokenData[tokenIds[i]].fixedEarnings = 0;
+      landMissionEarnings[tokenIds[i]] = 0;
       tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
       TokenInterface(CLNYAddress).mint(msg.sender, earned);
       TokenInterface(CLNYAddress).mint(treasury, earned * 31 / 49);
       TokenInterface(CLNYAddress).mint(liquidity, earned * 20 / 49);
+    }
+  }
+
+  function fixEarnings(uint256[] calldata tokenIds) external onlyDAO {
+    for (uint i = 0; i < tokenIds.length; i++) {
+      TokenInterface(MCAddress).ownerOf(tokenIds[i]); // reverts if not minted
+      fixEarnings(tokenIds[i]);
     }
   }
 

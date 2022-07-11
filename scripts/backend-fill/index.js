@@ -32,11 +32,13 @@ module.exports = async (callback) => {
     const claimedLands = new Set();
     const userLandsMap = new Map();
     const landUserMap = new Map();
+    let privateUsers = new Set();
 
     for (let userId = 0; userId < 10; userId++) {
       const userLandsIds = [];
 
-      const userLandsCount = Math.floor(Math.random() * 10);
+      //user 4 has 2 lands not private and with max revshares
+      const userLandsCount = userId === 4 ? 2 : Math.floor(Math.random() * 10);
       console.log(`claim ${userLandsCount} lands for user `, userId);
 
       while (userLandsIds.length < userLandsCount) {
@@ -65,11 +67,12 @@ module.exports = async (callback) => {
         });
       }
 
-      // set some acounts private
+      // set some acounts private except user 4
 
-      if (Math.random() < 0.5) {
+      if (Math.random() < 0.5 && userId !== 4) {
         console.log(`set user ${userId} private`);
         await msn.setAccountPrivacy(true, { from: accounts[userId] });
+        privateUsers.add(accounts[userId]);
       }
     }
 
@@ -153,6 +156,10 @@ module.exports = async (callback) => {
     console.log("id of the avatar in cryochamber", parseInt(avatarId));
     await await gm.purchaseCryochamber({ from: accounts[1] });
     await cryo.putAvatarsInCryochamber([avatarId], { from: accounts[1] });
+
+    // set max revshares for two users
+    console.log("set revshare 90 for user4");
+    await msn.setAccountRevshare(90, { from: accounts[4] });
 
     /*
     MISSION_MANAGER=0xC0633bcaB848D1738Ad22A05135C8E9EC9265092

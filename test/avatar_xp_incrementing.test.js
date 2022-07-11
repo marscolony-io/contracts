@@ -11,6 +11,7 @@ const MC = artifacts.require("MC");
 
 contract("AvatarManager", (accounts) => {
   const [user0, user1, user2] = accounts;
+  const DAO = user0;
 
   let gm;
   let avatarManager;
@@ -18,6 +19,16 @@ contract("AvatarManager", (accounts) => {
   before(async () => {
     gm = await GM.deployed();
     avatarManager = await AvatarManager.deployed();
+
+    avatars = await AvatarManager.deployed();
+    await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
+    await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
+    await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });
+    await time.increase(60 * 60 * 24 * 365.25 * 1000); // wait 10 years
+    await gm.claimEarned([100], { from: user1 }); // claim 3652.5 clny
+    await gm.mintAvatar({ from: user1 });
+    await gm.mintAvatar({ from: user1 });
+    await gm.mintAvatar({ from: user1 });
   });
 
   describe("AvatarManager xp increase", function() {

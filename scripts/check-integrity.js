@@ -11,7 +11,7 @@ const CC = artifacts.require("CryochamberManager");
 const MAXIM = Boolean(process.env.MAXIM);
 
 const CONTRACTS = {
-  harmain: {
+  harmony: {
     GAME_MANAGER: '0x0D112a449D23961d03E906572D8ce861C441D6c3',
     MC_ERC721: '0x0bC0cdFDd36fc411C83221A348230Da5D3DfA89e',
     CLNY_ERC20: '0x0D625029E21540aBdfAFa3BFC6FD44fB4e0A66d0',
@@ -33,7 +33,7 @@ const CONTRACTS = {
     BACKEND_SIGNER: MAXIM ? '' : '',
     CRYOCHAMBER: '',
   },
-  avatest: {
+  fuji: {
     GAME_MANAGER: '0x0Dd5dDaC089613F736e89F81E16361b09c7d53C6',
     MC_ERC721: '0x031D6A8eD3d5ad28b026FF2098Fc2a1d0DB9DcF2',
     CLNY_ERC20: '0xC6C5b8a181Bbb8AB5cB88dBF424892ee278f6BBc',
