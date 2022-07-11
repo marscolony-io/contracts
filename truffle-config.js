@@ -1,19 +1,19 @@
-const { mnemonic, mumbai_node_key } = require('./secrets.json');
-const HDWalletProvider = require('@truffle/hdwallet-provider');
+const { mnemonic, mumbai_node_key } = require("./secrets.json");
+const HDWalletProvider = require("@truffle/hdwallet-provider");
 
 module.exports = {
   networks: {
     development: {
       host: "127.0.0.1",
-      port: 8545,
-      network_id: "*"
+      port: 9545,
+      network_id: "*",
     },
     hartest: {
       provider: () => {
         return new HDWalletProvider({
           mnemonic: mnemonic.hart,
-          providerOrUrl: 'https://api.s0.b.hmny.io',
-          derivationPath: `m/44'/1023'/0'/0/`
+          providerOrUrl: "https://api.s0.b.hmny.io",
+          derivationPath: `m/44'/1023'/0'/0/`,
         });
       },
       network_id: 1666700000,
@@ -22,7 +22,7 @@ module.exports = {
       provider: () => {
         return new HDWalletProvider({
           mnemonic: mnemonic.harmain,
-          providerOrUrl: 'https://harmony-0-rpc.gateway.pokt.network', // 'https://api.harmony.one',
+          providerOrUrl: "https://harmony-0-rpc.gateway.pokt.network", // 'https://api.harmony.one',
           derivationPath: `m/44'/60'/0'/0/`,
           confirmations: 0,
           timeoutBlocks: 200,
@@ -35,7 +35,7 @@ module.exports = {
       provider: () => {
         return new HDWalletProvider({
           mnemonic: mnemonic.polygon,
-          providerOrUrl: 'https://polygon-rpc.com',
+          providerOrUrl: "https://polygon-rpc.com",
           derivationPath: `m/44'/60'/0'/0/`,
           confirmations: 0,
           timeoutBlocks: 50,
@@ -47,14 +47,15 @@ module.exports = {
       gasPrice: 200 * 1e9,
       maxGasFees: 500 * 1e9,
       maxPriorityFees: 60 * 1e9,
-      gas: 5000000
+      gas: 5000000,
     },
     mumbai: {
       provider: () => {
         return new HDWalletProvider({
           mnemonic: mnemonic.mumbai,
           // providerOrUrl: 'https://matic-mumbai.chainstacklabs.com',
-          providerOrUrl: 'https://polygon-mumbai.g.alchemy.com/v2/' + mumbai_node_key,
+          providerOrUrl:
+            "https://polygon-mumbai.g.alchemy.com/v2/" + mumbai_node_key,
           derivationPath: `m/44'/60'/0'/0/`,
           confirmations: 0,
           timeoutBlocks: 200,
@@ -70,7 +71,7 @@ module.exports = {
   },
   compilers: {
     solc: {
-      version: '0.8.13',
+      version: "0.8.13",
       settings: {
         optimizer: {
           enabled: true,
@@ -79,7 +80,5 @@ module.exports = {
       },
     },
   },
-  plugins: [
-    'solidity-coverage',
-  ],
+  plugins: ["solidity-coverage"],
 };
