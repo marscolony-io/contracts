@@ -556,9 +556,7 @@ contract GameManager is PausableUpgradeable {
     if (tokenData[tokenId].robotAssembly > 0 && tokenData[tokenId].robotAssembly <= 3) {
       speed = speed + tokenData[tokenId].robotAssembly + 1;
     }
-    if (tokenData[tokenId].powerProduction > 0 && tokenData[tokenId].powerProduction <= 3) {
-      speed = speed + tokenData[tokenId].powerProduction + 1;
-    }
+    // no Power Production here
     return speed;
   }
 
