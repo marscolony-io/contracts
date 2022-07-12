@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.13;
 
-import './interfaces/MintBurnInterface.sol';
+import './interfaces/TokenInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 abstract contract Shares {
@@ -39,7 +39,7 @@ abstract contract Shares {
     uint256 clnyReward = (block.timestamp - getLastRewardTime()) * clnyPerSecond;
     accColonyPerShare = accColonyPerShare + clnyReward * 1e12 / totalShare;
     lastRewardTime = block.timestamp;
-    MintBurnInterface(CLNYAddress).mint(address(this), clnyReward, 100); // TODO 100 to const
+    TokenInterface(CLNYAddress).mint(address(this), clnyReward, 100); // TODO 100 to const
   }
 
   function setInitialShare(uint256 tokenId) internal {
