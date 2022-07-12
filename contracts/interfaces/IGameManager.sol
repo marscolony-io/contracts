@@ -17,6 +17,9 @@ interface IGameManager {
     uint32 rotate; // for future versions
   }
 
+  function maxLandShares() external view returns (uint256);
+  function totalShare() external view returns (uint256);
+  function clnyPerSecond() external view returns (uint256);
   function baseStationsPlacement(uint256 tokenId) external view returns (PlaceOnLand memory);
   function transportPlacement(uint256 tokenId) external view returns (PlaceOnLand memory);
   function robotAssemblyPlacement(uint256 tokenId) external view returns (PlaceOnLand memory);

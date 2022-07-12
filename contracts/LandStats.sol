@@ -26,6 +26,8 @@ contract LandStats {
   struct ClnyStat {
     uint256 burned;
     uint256 minted;
+    uint256 avg;
+    uint256 max;
   }
 
   IMartianColonists public MC;
@@ -72,11 +74,19 @@ contract LandStats {
   }
 
   function gelClnyStat() external view returns (ClnyStat memory result) {
+
+    uint256 colonyDaySupply = GameManager.clnyPerSecond() * 24 * 60 * 60;
+    uint256 landsClaimed = MC.totalSupply();
+    uint256 totalShare = GameManager.totalShare();
+    uint256 maxLandShares = GameManager.maxLandShares();
+
     for (uint256 reason = 0; reason <= 99; reason++) {
       result.burned += CLNY.burnedStats(reason);
       result.minted += CLNY.mintedStats(reason);
     }
-
+    
+    result.avg = colonyDaySupply / landsClaimed;
+    result.max = ( colonyDaySupply / totalShare ) * maxLandShares;
     return result;
   }
 }
