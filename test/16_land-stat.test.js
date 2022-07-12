@@ -53,7 +53,10 @@ contract("LandStats", (accounts) => {
 
     it("should set maxLandShare", async function() {
       const maxLandSharesBefore = await gm.maxLandShares();
-      // console.log("maxLandSharesBefore", maxLandSharesBefore.toString());
+      console.log("maxLandSharesBefore", maxLandSharesBefore.toString());
+
+      const balance = await clny.balanceOf(user1);
+      console.log({ balance: balance.toString() });
 
       await gm.buildBaseStation(100, { from: user1 });
 

@@ -18,6 +18,8 @@ interface IGameManager {
   }
 
   function maxLandShares() external view returns (uint256);
+  function MCAddress() external view returns (address);
+  function CLNYAddress() external view returns (address);
   function totalShare() external view returns (uint256);
   function clnyPerSecond() external view returns (uint256);
   function baseStationsPlacement(uint256 tokenId) external view returns (PlaceOnLand memory);
