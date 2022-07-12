@@ -9,4 +9,5 @@ interface IMartianColonists is IERC721Enumerable {
   function mint(address receiver) external;
   function setName(uint256 tokenId, string memory _name) external;
   function names(uint256) external view returns (string memory);
+  function ownerOf(uint256 tokenId) external view returns (address);
 }
