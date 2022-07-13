@@ -5,6 +5,7 @@ const MSN = artifacts.require("MissionManager");
 const CLNY = artifacts.require("CLNY");
 const COLONISTS = artifacts.require("MartianColonists");
 const AvatarManager = artifacts.require("AvatarManager");
+const LandStats = artifacts.require("LandStats");
 // const CryochamberManager = artifacts.require("CryochamberManager");
 
 module.exports = async (callback) => {
@@ -17,6 +18,7 @@ module.exports = async (callback) => {
     const nft = await COLONISTS.deployed();
     // const cryo = await CryochamberManager.deployed();
     let avatars = await AvatarManager.deployed();
+    let ls = await LandStats.deployed();
 
     console.log(`
 MISSION_MANAGER=${msn.address}
@@ -25,6 +27,7 @@ AVATAR_MANAGER=${avatars.address}
 MC=${mc.address}
 MCLN=${nft.address}
 CLNY=${clny.address}
+LANDSTATS=${ls.address}
 `);
 
     callback();
