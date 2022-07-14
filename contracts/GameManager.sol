@@ -50,7 +50,7 @@ contract GameManager is PausableUpgradeable, Shares {
   mapping (address => ReferrerSettings) public referrerSettings;
   mapping (address => address) public referrers;
 
-  uint256[38] private ______gm_gap_1;
+  uint256[37] private ______gm_gap_1;
 
   struct LandData {
     uint256 deprecated1;
