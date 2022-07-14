@@ -398,8 +398,8 @@ contract GameManager is PausableUpgradeable, Shares {
     uint64 referrerReward = referrerSettings[referrer].reward;
     if (referrerReward == 0) referrerReward = 20; // 20% referal reward by default
 
-    uint256 daoValueShare = msg.value * (100 - referrerReward) / 100;
     uint256 referrerValueShare = msg.value * (referrerReward) / 100;
+    uint256 daoValueShare = msg.value - referrerValueShare;
 
     // 0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4 - creatorsDAO
     (bool success, ) = payable(0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4).call{ value: daoValueShare }('');
