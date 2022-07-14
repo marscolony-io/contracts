@@ -761,7 +761,7 @@ contract GameManager is PausableUpgradeable, Shares {
 
   // referrers
 
-  function setReferrerSettings(address referrer, uint64 discount, uint64 reward) public onlyDAO {
+  function setReferrerSettings(address referrer, uint64 discount, uint64 reward) external onlyDAO {
     referrerSettings[referrer] = ReferrerSettings({discount: discount, reward: reward});
   }
 
