@@ -39,7 +39,18 @@ contract GameManager is PausableUpgradeable, Shares {
   mapping (address => bool) private allowlist;
   uint256 public allowlistLimit;
 
-  uint256[42] private ______gm_gap_1;
+  struct ReferrerSettings {
+    uint64 discount;
+    uint64 reward;
+  }
+
+  mapping (address => mapping (address => bool)) referrals;
+  mapping (address => uint256) public referralsCount;
+  mapping (address => uint256) public referrerEarned;
+  mapping (address => ReferrerSettings) public referrerSettings;
+  mapping (address => address) public referrers;
+
+  uint256[38] private ______gm_gap_1;
 
   struct LandData {
     uint256 deprecated1;
@@ -313,8 +324,23 @@ contract GameManager is PausableUpgradeable, Shares {
    * Cost of minting for `tokenCount` tokens
    * 0xfcee45f4
    */
-  function getFee(uint256 tokenCount) public view returns (uint256) {
-    return price * tokenCount;
+  function getFee(uint256 tokenCount, address referrer) public view returns (uint256) {
+    uint256 fee = price * tokenCount;
+
+    if (referrer == address(0)) {
+      referrer = referrers[msg.sender];
+    }
+
+    // no referrer in function args and no referrer stored in past
+    if (referrer == address(0)) {
+      return fee;
+    }
+
+    uint64 discount = referrerSettings[referrer].discount;
+    if (discount == 0) discount = 10; // default value 
+    
+    uint256 feeWithDiscount = fee - fee * discount /100;
+    return feeWithDiscount;
   }
 
   /**
@@ -344,16 +370,45 @@ contract GameManager is PausableUpgradeable, Shares {
   /**
    * Mints several tokens
    */
-  function claim(uint256[] calldata tokenIds) external payable nonReentrant whenNotPaused {
+  function claim(uint256[] calldata tokenIds, address referrer) external payable nonReentrant whenNotPaused {
     require (tokenIds.length != 0, "You can't claim 0 tokens");
-    require (msg.value == getFee(tokenIds.length), 'Wrong claiming fee');
+
+    if (referrer != address(0)) {
+      setReferrer(referrer);
+    } else if (referrers[msg.sender] != address(0)) {
+      referrer = referrers[msg.sender];
+    }
+    
+    uint256 fee = getFee(tokenIds.length, referrer);
+
+    require (msg.value == fee, 'Wrong claiming fee');
     updatePool(CLNYAddress);
     for (uint8 i = 0; i < tokenIds.length; i++) {
       mintLand(msg.sender, tokenIds[i]);
     }
+
+    if (referrer == address(0)) {
+      // 0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4 - creatorsDAO
+      (bool success, ) = payable(0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4).call{ value: msg.value }('');
+      require(success, 'Transfer failed');
+      return;
+    }
+    
+    // we have a referrer, pay shares to dao and to referrer
+    uint64 referrerReward = referrerSettings[referrer].reward;
+    if (referrerReward == 0) referrerReward = 20; // 20% referal reward by default
+
+    uint256 daoValueShare = msg.value * (100 - referrerReward) / 100;
+    uint256 referrerValueShare = msg.value * (referrerReward) / 100;
+
     // 0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4 - creatorsDAO
-    (bool success, ) = payable(0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4).call{ value: msg.value }('');
+    (bool success, ) = payable(0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4).call{ value: daoValueShare }('');
     require(success, 'Transfer failed');
+
+    (success, ) = payable(referrer).call{ value: referrerValueShare }('');
+    require(success, 'Transfer failed');
+
+    referrerEarned[referrer] += referrerValueShare;
   }
 
   /**
@@ -671,6 +726,7 @@ contract GameManager is PausableUpgradeable, Shares {
     require (block.timestamp > startCLNYDate, 'CLNY not started');
     require (tokenIds.length != 0, 'Empty array');
     updatePool(CLNYAddress);
+
     for (uint8 i = 0; i < tokenIds.length; i++) {
       require (msg.sender == MintBurnInterface(MCAddress).ownerOf(tokenIds[i]));
       uint256 toUser = claimClnyWithoutPoolUpdate(tokenIds[i], CLNYAddress);
@@ -702,4 +758,18 @@ contract GameManager is PausableUpgradeable, Shares {
       landInfo[tokenIds[i]].rewardDebt = accColonyPerShare / 1e12;
     }
   }
+
+  // referrers
+
+  function setReferrerSettings(address referrer, uint64 discount, uint64 reward) public onlyDAO {
+    referrerSettings[referrer] = ReferrerSettings({discount: discount, reward: reward});
+  }
+
+  function setReferrer(address referrer) private {
+    require(referrer != address(0), "referrer can not be 0");
+    referrers[msg.sender] = referrer;
+    referrals[referrer][msg.sender] = true;
+    referralsCount[referrer]++;
+  }
+
 }
