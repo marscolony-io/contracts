@@ -5,15 +5,24 @@ import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import './GameConnection.sol';
 import './interfaces/IMartianColonists.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import './interfaces/ICryochamber.sol';
+import './interfaces/IAvatarManager.sol';
 
 
-contract AvatarManager is GameConnection, PausableUpgradeable {
+contract AvatarManager is IAvatarManager, GameConnection, PausableUpgradeable {
   uint256 public maxTokenId;
 
   IMartianColonists public collection;
   mapping (uint256 => uint256) private xp;
 
-  uint256[49] private ______mc_gap;
+  ICryochamber public cryochambers;
+
+  uint256[48] private ______mc_gap;
+
+  modifier onlyCryochamberManager {
+    require(msg.sender == address(cryochambers), 'Only CryochamberManager');
+    _;
+  }
 
   function initialize(address _DAO, address _collection) external initializer {
     GameConnection.__GameConnection_init(_DAO);
@@ -22,19 +31,38 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
     collection = IMartianColonists(_collection);
   }
 
+  function setCryochamberManager(address cryochamberManager) external {
+    cryochambers = ICryochamber(cryochamberManager);
+  }
+
   function _getXP(uint256 avatarId) private view returns(uint256) {
+    uint256 totalAvatarsCount = collection.totalSupply();
+    require(avatarId <= totalAvatarsCount, "wrong avatarId requested");
     return xp[avatarId] + 100; // 100 is a base for every avatar
   }
 
   function getXP(uint256[] memory avatarIds) public view returns(uint256[] memory) {
     uint256[] memory result = new uint256[](avatarIds.length);
+
     for (uint256 i = 0; i < avatarIds.length; i++) {
+      
       result[i] = _getXP(avatarIds[i]);
+
+      ICryochamber.CryoTime memory cryo = cryochambers.getAvatarCryoStatus(avatarIds[i]);
+      
+      if (cryo.endTime > 0 && uint64(block.timestamp) > cryo.endTime) {
+        result[i] += cryo.reward;
+      }
+      
     }
     return result;
   }
 
   function addXP(uint256 avatarId, uint256 increment) external onlyGameManager {
+    xp[avatarId] = xp[avatarId] + increment;
+  }
+
+  function addXPAfterCryo(uint256 avatarId, uint256 increment) external onlyCryochamberManager {
     xp[avatarId] = xp[avatarId] + increment;
   }
 
@@ -78,6 +106,12 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
     require (bytes(_name).length > 0, 'empty name');
     require (bytes(_name).length <= 15, 'name too long');
     require (bytes(collection.names(tokenId)).length == 0, 'name is already set');
+    collection.setName(tokenId, _name);
+  }
+
+  function setNameByGameManager(uint256 tokenId, string memory _name) external onlyGameManager {
+    require (bytes(_name).length <= 15, 'name too long');
+    require (keccak256(abi.encodePacked(_name)) != keccak256(abi.encodePacked(collection.names(tokenId))), 'same name');
     collection.setName(tokenId, _name);
   }
 

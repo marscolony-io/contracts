@@ -18,3 +18,5 @@ landlords.txt
 landlords-testnet.txt
 
 contracts-addresses.txt
+
+.DS_Store

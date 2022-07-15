@@ -6,14 +6,14 @@ import './GameConnection.sol';
 import './interfaces/IMartianColonists.sol';
 import './interfaces/IAvatarManager.sol';
 import './interfaces/IGameManager.sol';
-import './interfaces/MintBurnInterface.sol';
+import './interfaces/TokenInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 
 contract MissionManager is GameConnection, PausableUpgradeable {
   IMartianColonists public collection;
   IAvatarManager public avatarManager;
-  MintBurnInterface public MC;
+  TokenInterface public MC;
 
   struct AccountMissionState {
     bool isAccountPrivate; // don't allow missions on my lands
@@ -35,12 +35,12 @@ contract MissionManager is GameConnection, PausableUpgradeable {
 
   uint256[49] private ______gap;
 
-  function initialize(address _DAO, address _collection, address _avatarManager, address _MC) external initializer {
+  function initialize(address _DAO, IMartianColonists _collection, IAvatarManager _avatarManager, TokenInterface _MC) external initializer {
     GameConnection.__GameConnection_init(_DAO);
     PausableUpgradeable.__Pausable_init();
-    collection = IMartianColonists(_collection);
-    avatarManager = IAvatarManager(_avatarManager);
-    MC = MintBurnInterface(_MC);
+    collection = _collection;
+    avatarManager = _avatarManager;
+    MC = _MC;
   }
 
   function setAccountPrivacy(bool _isPrivate) external {
