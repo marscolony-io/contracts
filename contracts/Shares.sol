@@ -6,8 +6,9 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 abstract contract Shares {
   uint64 constant startCLNYDate = 1655391600; // 16 Jun 2022 14:30UTC - public launch
+  uint256 public maxLandShares; // shares of land with max shares
 
-  uint256[20] private ______gap;
+  uint256[19] private ______gap;
   struct LandInfo {
     uint256 share;
     uint256 rewardDebt;
@@ -60,6 +61,7 @@ abstract contract Shares {
     updatePool(CLNYAddress);
     land.share = land.share + _share;
     land.rewardDebt = land.share * accColonyPerShare / 1e12 - earned;
+    if (land.share > maxLandShares) maxLandShares = land.share;
   }
 
   function getShare(uint256 tokenId) external view returns (uint256) {
