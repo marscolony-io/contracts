@@ -324,7 +324,7 @@ contract GameManager is PausableUpgradeable, Shares {
    * Cost of minting for `tokenCount` tokens
    * 0xfcee45f4
    */
-  function getFee(uint256 tokenCount, address referrer) public view returns (uint256) {
+  function _getFee(uint256 tokenCount, address referrer) private view returns (uint256) {
     uint256 fee = price * tokenCount;
 
     if (referrer == address(0)) {
@@ -341,6 +341,14 @@ contract GameManager is PausableUpgradeable, Shares {
     
     uint256 feeWithDiscount = fee - fee * discount /100;
     return feeWithDiscount;
+  }
+
+  function getFee(uint256 tokenCount) public view returns (uint256) {
+    return _getFee(tokenCount, address(0));
+  }
+
+  function getFee(uint256 tokenCount, address referrer) public view returns (uint256) {
+    return _getFee(tokenCount, referrer);
   }
 
   /**
@@ -367,10 +375,11 @@ contract GameManager is PausableUpgradeable, Shares {
     MintBurnInterface(MCAddress).mint(_address, tokenId);
   }
 
+
   /**
    * Mints several tokens
    */
-  function claim(uint256[] calldata tokenIds, address referrer) external payable nonReentrant whenNotPaused {
+  function _claim(uint256[] calldata tokenIds, address referrer) internal whenNotPaused {
     require (tokenIds.length != 0, "You can't claim 0 tokens");
 
     if (referrer != address(0)) {
@@ -409,6 +418,16 @@ contract GameManager is PausableUpgradeable, Shares {
     require(success, 'Transfer failed');
 
     referrerEarned[referrer] += referrerValueShare;
+  }
+
+
+  function claim(uint256[] calldata tokenIds) external payable nonReentrant whenNotPaused {
+    _claim(tokenIds, address(0));
+  }
+
+
+  function claim(uint256[] calldata tokenIds, address referrer) external payable nonReentrant whenNotPaused {
+    _claim(tokenIds, referrer);
   }
 
   /**
