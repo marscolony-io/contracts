@@ -19,18 +19,18 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
 
   uint256 constant ROYALTY_MULTIPLIER = 100;
 
-  function initialize (address _DAO, address _MC) public initializer {
+  function initialize (address _MC) public initializer {
     __Pausable_init();
     __Ownable_init();
     __ReentrancyGuard_init();
-    GameConnection.__GameConnection_init(_DAO);
+    GameConnection.__GameConnection_init(msg.sender);
     MC = _MC;
   }
 
   struct TokenData {
     address owner;
-    uint price;
-    uint time;
+    uint256 price;
+    uint256 time;
     bool receivesClny;
   }
 
@@ -46,7 +46,6 @@ contract SalesManager is ReentrancyGuardUpgradeable, OwnableUpgradeable, Pausabl
 
   function placeToken (uint price, uint _days, uint256 tokenId, bool receivesClny) public {
     require(IERC721(MC).ownerOf(tokenId) == msg.sender, "You're not an owner of this token");
-    // require(IERC721(MC).getApproved(tokenId) == address(this), "NFT must be approved to market");
     require(price > 0, "Price is too low");
     require(_days <= 30, "Too long period of time");
     require(_days > 0, "Time period too short");
