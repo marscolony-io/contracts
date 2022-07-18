@@ -6,11 +6,12 @@ const CLNY = artifacts.require("CLNY");
 const AM = artifacts.require("AvatarManager");
 const MCL = artifacts.require("MartianColonists");
 const MM = artifacts.require("MissionManager");
+const CC = artifacts.require("CryochamberManager");
 
 const MAXIM = Boolean(process.env.MAXIM);
 
 const CONTRACTS = {
-  harmain: {
+  harmony: {
     GAME_MANAGER: '0x0D112a449D23961d03E906572D8ce861C441D6c3',
     MC_ERC721: '0x0bC0cdFDd36fc411C83221A348230Da5D3DfA89e',
     CLNY_ERC20: '0x0D625029E21540aBdfAFa3BFC6FD44fB4e0A66d0',
@@ -19,6 +20,7 @@ const CONTRACTS = {
     MISSION_MANAGER: '0x0Ef27447c72Fc9809864E1aa3998B76B61c20a8A', // TODO
     OWNER: '0x3A47a5be317DCF439F91D0A45716B64547F21bc1',
     BACKEND_SIGNER: '0xb00b24E974834492A26b34ABCA26b952F1aB35d5',
+    CRYOCHAMBER: '0x2D2f5349896BF4012EA27Db345fbF8a71775d16f',
   },
   hartest: {
     GAME_MANAGER: MAXIM ? '' : '0xc65F8BA708814653EDdCe0e9f75827fe309E29aD',
@@ -29,6 +31,18 @@ const CONTRACTS = {
     MISSION_MANAGER: MAXIM ? '' : '0xC0633bcaB848D1738Ad22A05135C8E9EC9265092',
     OWNER: MAXIM ? '' : '0xD8A6E21AeFa5C8F0b5CAb6b81C08662D710E134e',
     BACKEND_SIGNER: MAXIM ? '' : '',
+    CRYOCHAMBER: '',
+  },
+  fuji: {
+    GAME_MANAGER: '0x0Dd5dDaC089613F736e89F81E16361b09c7d53C6',
+    MC_ERC721: '0x031D6A8eD3d5ad28b026FF2098Fc2a1d0DB9DcF2',
+    CLNY_ERC20: '0xC6C5b8a181Bbb8AB5cB88dBF424892ee278f6BBc',
+    AVATAR_MANAGER: '0x0D625029E21540aBdfAFa3BFC6FD44fB4e0A66d0',
+    MARTIAN_COLONISTS_ERC721: '0x30D378d6dF8d574d25874056483189df1341214B',
+    MISSION_MANAGER: '0xf3f2f703b7BaAfD09f7a1C41b06e2D04B0Fad09C',
+    OWNER: '0x3A47a5be317DCF439F91D0A45716B64547F21bc1',
+    BACKEND_SIGNER: '0xeA81c9035b98A68A0Ef55aB3FC7503bAFC28ff52',
+    CRYOCHAMBER: '0x9166461379cF2fd6633e13A115B367DE46c29101',
   }
 }
 
@@ -46,6 +60,7 @@ module.exports = async (callback) => {
     const am = await AM.at(CONTRACT_LIST.AVATAR_MANAGER);
     const mcl = await MCL.at(CONTRACT_LIST.MARTIAN_COLONISTS_ERC721);
     const mm = await MM.at(CONTRACT_LIST.MISSION_MANAGER);
+    const cc = await CC.at(CONTRACT_LIST.CRYOCHAMBER);
 
     expect(await gm.CLNYAddress()).to.be.equal(clny.address, 'gm.CLNYAddress()');
     expect(await gm.MCAddress()).to.be.equal(mc.address, 'gm.MCAddress()');
@@ -53,6 +68,7 @@ module.exports = async (callback) => {
     expect(await gm.missionManager()).to.be.equal(mm.address, 'gm.missionManager()');
     expect(await gm.martianColonists()).to.be.equal(mcl.address, 'gm.martianColonists()');
     expect(await gm.DAO()).to.be.equal(CONTRACT_LIST.OWNER, 'gm.DAO()');
+    expect(await gm.backendSigner()).to.be.equal(CONTRACT_LIST.BACKEND_SIGNER, 'gm.backendSigner()');
 
     expect(await mc.GameManager()).to.be.equal(gm.address, 'mc.GameManager()');
     expect(await mc.DAO()).to.be.equal(CONTRACT_LIST.OWNER, 'mc.DAO()');
@@ -69,6 +85,11 @@ module.exports = async (callback) => {
     expect(await mm.MC()).to.be.equal(mc.address, 'mm.MC()');
     expect(await mm.collection()).to.be.equal(mcl.address, 'mm.collection()');
 
+    expect(await gm.cryochamberAddress()).to.be.equal(CONTRACT_LIST.CRYOCHAMBER, 'gm.cryochamberAddress()');
+    expect(await am.cryochambers()).to.be.equal(CONTRACT_LIST.CRYOCHAMBER, 'am.cryochambers()');
+    expect(await cc.GameManager()).to.be.equal(gm.address, 'cc.GameManager()');
+    expect(await cc.avatarManager()).to.be.equal(am.address, 'cc.avatarManager()');
+    expect(await cc.avatars()).to.be.equal(mcl.address, 'cc.avatars()');
 
     console.log('test passed');
   } catch (error) {

@@ -2,7 +2,9 @@ node_modules/
 
 secrets.json
 
-build/*
+/build/contracts/*
+!/build/contracts/ProxyAdmin.json
+
 .openzeppelin/*
 test/.openzeppelin/*
 
@@ -17,3 +19,5 @@ landlords.txt
 landlords-testnet.txt
 
 contracts-addresses.txt
+
+.DS_Store
