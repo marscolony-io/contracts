@@ -348,6 +348,9 @@ contract GameManager is PausableUpgradeable, Shares {
   }
 
   function getFee(uint256 tokenCount, address referrer) public view returns (uint256) {
+    if (referrer == msg.sender) {
+      return getFee(tokenCount);
+    }
     return _getFee(tokenCount, referrer);
   }
 
@@ -427,6 +430,10 @@ contract GameManager is PausableUpgradeable, Shares {
 
 
   function claim(uint256[] calldata tokenIds, address referrer) external payable nonReentrant whenNotPaused {
+    if (referrer == msg.sender) {
+      _claim(tokenIds, address(0));
+      return;
+    }
     _claim(tokenIds, referrer);
   }
 
