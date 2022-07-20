@@ -34,6 +34,13 @@ contract("MissionsManager", (accounts) => {
       expect(landPrice).to.bignumber.be.equal(web3.utils.toWei("0.1"));
     });
 
+    it("Gets default fee with self referrer ", async () => {
+      const landPrice = await gm.methods["getFee(uint256,address)"](1, user1, {
+        from: user1,
+      });
+      expect(landPrice).to.bignumber.be.equal(web3.utils.toWei("0.1"));
+    });
+
     it("Gets fee with 10% discount for referrer that doesn't exist", async () => {
       const landPrice = await gm.methods["getFee(uint256,address)"](
         1,
@@ -63,6 +70,34 @@ contract("MissionsManager", (accounts) => {
 
       expect(daoBalanceAfter.sub(daoBalanceBefore)).to.bignumber.be.equal(
         landPrice
+      );
+    });
+
+    it("Claims land with self referrer", async () => {
+      let daoBalanceBefore = web3.utils.toBN(
+        await web3.eth.getBalance("0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4")
+      );
+
+      const landPrice = await gm.methods["getFee(uint256,address)"](1, user2, {
+        from: user2,
+      });
+
+      await gm.methods["claim(uint256[],address)"]([106], user2, {
+        value: landPrice,
+        from: user2,
+      });
+
+      let daoBalanceAfter = web3.utils.toBN(
+        await web3.eth.getBalance("0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4")
+      );
+
+      expect(daoBalanceAfter.sub(daoBalanceBefore)).to.bignumber.be.equal(
+        landPrice
+      );
+
+      const referrer = await gm.referrers(user2);
+      expect(referrer).to.be.equal(
+        "0x0000000000000000000000000000000000000000"
       );
     });
 
