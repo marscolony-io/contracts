@@ -26,18 +26,10 @@ module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
   const _MC = await MC.deployed();
   const _CLNY = await CLNY.deployed();
   await GameManager.deployed();
+  // await _MC.setSalesManager(SalesManager.address);
 
   await Promise.all([
     _CLNY.setGameManager(GameManager.address),
     _MC.setGameManager(GameManager.address),
   ]);
-
-  console.log({
-    GM: GameManager.address,
-    MC: MC.address,
-    CLNY: CLNY.address,
-  });
-
-  // TODO move DAO to particular addresses for real networks
-  // or not to forget to do it manually
 };
