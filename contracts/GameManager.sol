@@ -2,14 +2,14 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
-import './interfaces/MintBurnInterface.sol';
+import './interfaces/TokenInterface.sol';
 import './interfaces/PauseInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IPoll.sol';
 import './Shares.sol';
 import './interfaces/IMartianColonists.sol';
 import './interfaces/IAvatarManager.sol';
-
+import './interfaces/ICryochamber.sol';
 
 
 /**
@@ -50,7 +50,11 @@ contract GameManager is PausableUpgradeable, Shares {
   mapping (address => ReferrerSettings) public referrerSettings;
   mapping (address => address) public referrers;
 
-  uint256[37] private ______gm_gap_1;
+  address public lootboxesAddress; // reserved
+  uint256 public lootBoxesToMint; // reserved for a mapping
+  address public cryochamberAddress;
+
+  uint256[34] private ______gm_gap_1;
 
   struct LandData {
     uint256 deprecated1;
@@ -88,7 +92,9 @@ contract GameManager is PausableUpgradeable, Shares {
 
   bool internal locked;
 
-  uint256[45] private ______gm_gap_2;
+  mapping(uint256 => uint256) public landMissionEarnings; // reserved
+
+  uint256[44] private ______gm_gap_2;
 
   event Airdrop (address indexed receiver, uint256 indexed tokenId);
   // f9917faa5009c58ed8bd6a1c70b79e1fbefc8afe3e7142ba8b854ccb887fb262
@@ -108,7 +114,7 @@ contract GameManager is PausableUpgradeable, Shares {
   }
 
   modifier onlyTokenOwner(uint256 tokenId) {
-    require(MintBurnInterface(MCAddress).ownerOf(tokenId) == msg.sender, "You aren't the token owner");
+    require(TokenInterface(MCAddress).ownerOf(tokenId) == msg.sender, "You aren't the token owner");
     _;
   }
 
@@ -137,7 +143,7 @@ contract GameManager is PausableUpgradeable, Shares {
 
   function saleData() external view returns (bool allowed, uint256 minted, uint256 limit) {
     allowed = !allowlistOnly || allowlist[msg.sender];
-    minted = MintBurnInterface(MCAddress).totalSupply();
+    minted = TokenInterface(MCAddress).totalSupply();
     limit = allowlistLimit;
   }
 
@@ -159,6 +165,14 @@ contract GameManager is PausableUpgradeable, Shares {
 
   function setPollAddress(address _address) external onlyDAO {
     pollAddress = _address;
+  }
+
+  function setCryochamberAddress(address _address) external onlyDAO {
+    cryochamberAddress = _address;
+  }
+
+  function setLootboxesAddress(address _address) external onlyDAO {
+    lootboxesAddress = _address;
   }
 
   function getPollData() external view returns (string memory, string memory, string[] memory, uint256[] memory, bool) {
@@ -365,17 +379,17 @@ contract GameManager is PausableUpgradeable, Shares {
 
   function mintAvatar() external nonReentrant {
     _deduct(MINT_AVATAR_LEVEL, REASON_MINT_AVATAR);
-    MintBurnInterface(avatarAddress).mint(msg.sender);
+    TokenInterface(avatarAddress).mint(msg.sender);
   }
 
   function mintLand(address _address, uint256 tokenId) private {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
     if (allowlistOnly) {
       require(allowlist[msg.sender], 'you are not in allowlist');
-      require(MintBurnInterface(MCAddress).totalSupply() < allowlistLimit, 'Presale limit has ended');
+      require(TokenInterface(MCAddress).totalSupply() < allowlistLimit, 'Presale limit has ended');
     }
     setInitialShare(tokenId);
-    MintBurnInterface(MCAddress).mint(_address, tokenId);
+    TokenInterface(MCAddress).mint(_address, tokenId);
   }
 
 
@@ -473,6 +487,7 @@ contract GameManager is PausableUpgradeable, Shares {
   uint256 constant LEVEL_1_COST = 60;
   uint256 constant LEVEL_2_COST = 120;
   uint256 constant LEVEL_3_COST = 240;
+  uint256 constant RENAME_AVATAR_COST = 25 * 10 ** 18;
   uint8 constant MINT_AVATAR_LEVEL = 254;
   uint8 constant PLACEMENT_LEVEL = 255;
   uint256 constant PLACEMENT_COST = 5;
@@ -484,6 +499,8 @@ contract GameManager is PausableUpgradeable, Shares {
   uint256 constant REASON_EARNING = 6;
   uint256 constant REASON_TREASURY = 7;
   uint256 constant REASON_LP_POOL = 8;
+  uint256 constant REASON_PURCHASE_CRYOCHAMBER = 10;
+  uint256 constant REASON_PURCHASE_CRYOCHAMBER_ENERGY = 11;
 
   /**
    * Burn CLNY token for building enhancements
@@ -509,14 +526,14 @@ contract GameManager is PausableUpgradeable, Shares {
     if (level == MINT_AVATAR_LEVEL) {
       amount = AVATAR_MINT_COST * 10 ** 18;
       // artist and team minting royalties
-      MintBurnInterface(CLNYAddress).mint(
+      TokenInterface(CLNYAddress).mint(
         0x2581A6C674D84dAD92A81E8d3072C9561c21B935,
         AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
         REASON_ROYALTY
       );
     }
     require (amount > 0, 'Wrong level');
-    MintBurnInterface(CLNYAddress).burn(msg.sender, amount, reason);
+    TokenInterface(CLNYAddress).burn(msg.sender, amount, reason);
   }
 
   /**
@@ -754,12 +771,12 @@ contract GameManager is PausableUpgradeable, Shares {
     updatePool(CLNYAddress);
 
     for (uint8 i = 0; i < tokenIds.length; i++) {
-      require (msg.sender == MintBurnInterface(MCAddress).ownerOf(tokenIds[i]));
+      require (msg.sender == TokenInterface(MCAddress).ownerOf(tokenIds[i]));
       uint256 toUser = claimClnyWithoutPoolUpdate(tokenIds[i], CLNYAddress);
       uint256 toTreasury = toUser * 31 / 49;
       uint256 toLiquidity = toUser * 20 / 49;
-      MintBurnInterface(CLNYAddress).mint(treasury, toTreasury, REASON_TREASURY);
-      MintBurnInterface(CLNYAddress).mint(liquidity, toLiquidity, REASON_LP_POOL);
+      TokenInterface(CLNYAddress).mint(treasury, toTreasury, REASON_TREASURY);
+      TokenInterface(CLNYAddress).mint(liquidity, toLiquidity, REASON_LP_POOL);
     }
   }
 
@@ -798,4 +815,24 @@ contract GameManager is PausableUpgradeable, Shares {
     referralsCount[referrer]++;
   }
 
+  function purchaseCryochamber() external {
+    ICryochamber(cryochamberAddress).purchaseCryochamber(msg.sender);
+
+    uint256 cryochamberPrice = ICryochamber(cryochamberAddress).cryochamberPrice();
+    TokenInterface(CLNYAddress).burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
+
+  }
+
+  function purchaseCryochamberEnergy(uint256 amount) external {
+    ICryochamber(cryochamberAddress).purchaseCryochamberEnergy(msg.sender, amount);
+
+    uint256 energyPrice = ICryochamber(cryochamberAddress).energyPrice();
+    TokenInterface(CLNYAddress).burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
+  }
+
+  function renameAvatar(uint256 avatarId, string calldata _name) external {
+    require(martianColonists.ownerOf(avatarId) == msg.sender, 'You are not the owner');
+    IAvatarManager(avatarAddress).setNameByGameManager(avatarId, _name);
+    TokenInterface(CLNYAddress).burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
+  }
 }
