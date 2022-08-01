@@ -20,8 +20,9 @@ contract CLNY is ERC20Upgradeable, GameConnection, PausableUpgradeable {
   }
 
   mapping (uint256 => uint256) public burnedStats;
+  mapping (uint256 => uint256) public mintedStats;
 
-  uint256[49] private ______clny_gap;
+  uint256[48] private ______clny_gap;
 
   function burn(address _address, uint256 _amount) external onlyGameManager whenNotPaused {
     _burn(_address, _amount);
@@ -39,6 +40,11 @@ contract CLNY is ERC20Upgradeable, GameConnection, PausableUpgradeable {
 
   function mint(address _address, uint256 _amount) external onlyGameManager whenNotPaused {
     _mint(_address, _amount);
+  }
+
+  function mint(address _address, uint256 _amount, uint256 reason) external onlyGameManager whenNotPaused {
+    _mint(_address, _amount);
+    mintedStats[reason] += _amount;
   }
 
   function pause() external onlyGameManager {
