@@ -402,6 +402,11 @@ contract GameManager is PausableUpgradeable {
     return price * tokenCount;
   }
 
+  function getFee(uint256 tokenCount, address referrer) public view returns (uint256) {
+    return getFee(tokenCount);
+    referrer;
+  }
+
   /**
    * Sets the cost of minting for 1 token
    */
