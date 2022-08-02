@@ -402,9 +402,10 @@ contract GameManager is PausableUpgradeable {
     return price * tokenCount;
   }
 
+  // no referral program on master yet; for abi compatibility with Polygon version
   function getFee(uint256 tokenCount, address referrer) public view returns (uint256) {
-    return getFee(tokenCount);
     referrer;
+    return getFee(tokenCount);
   }
 
   /**
