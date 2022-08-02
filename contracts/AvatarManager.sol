@@ -22,7 +22,7 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
   function initialize(address _DAO, address _collection) external initializer {
     GameConnection.__GameConnection_init(_DAO);
     PausableUpgradeable.__Pausable_init();
-    maxTokenId = 5;
+    maxTokenId = 0;
     collection = IMartianColonists(_collection);
   }
 

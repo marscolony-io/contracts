@@ -114,6 +114,11 @@ contract GameManager is PausableUpgradeable {
     locked = false;
   }
 
+  // for compatibility with Polygon version
+  function saleData() external pure returns (bool allowed, uint256 minted, uint256 limit) {
+    return (true, 0, 0);
+  }
+
   function setMissionManager(address _address) external onlyDAO {
     missionManager = _address;
   }
@@ -397,11 +402,17 @@ contract GameManager is PausableUpgradeable {
     return price * tokenCount;
   }
 
+  // no referral program on master yet; for abi compatibility with Polygon version
+  function getFee(uint256 tokenCount, address referrer) public view returns (uint256) {
+    referrer;
+    return getFee(tokenCount);
+  }
+
   /**
    * Sets the cost of minting for 1 token
    */
   function setPrice(uint256 _price) external onlyDAO {
-    require(_price >= 0.1 ether && _price <= 10000 ether, 'New price is out of bounds');
+    require(_price >= 0.01 ether && _price <= 10000 ether, 'New price is out of bounds');
     price = _price;
     emit SetPrice(_price);
   }
@@ -411,7 +422,7 @@ contract GameManager is PausableUpgradeable {
     TokenInterface(avatarAddress).mint(msg.sender);
   }
 
-  function mintNFT(address _address, uint256 tokenId) private {
+  function mintLand(address _address, uint256 tokenId) private {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
     tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp);
     TokenInterface(MCAddress).mint(_address, tokenId);
@@ -421,12 +432,18 @@ contract GameManager is PausableUpgradeable {
    * Mints several tokens
    * Pls check gas limits to get max possible count
    */
-  function claim(uint256[] calldata tokenIds) external payable whenNotPaused {
+  function claim(uint256[] calldata tokenIds) public payable whenNotPaused {
     require (tokenIds.length != 0, "You can't claim 0 tokens");
     require (msg.value == getFee(tokenIds.length), 'Wrong claiming fee');
     for (uint8 i = 0; i < tokenIds.length; i++) {
-      mintNFT(msg.sender, tokenIds[i]);
+      mintLand(msg.sender, tokenIds[i]);
     }
+  }
+
+  // no referral program on master yet; for abi compatibility with Polygon version
+  function claim(uint256[] calldata tokenIds, address referrer) external payable nonReentrant whenNotPaused {
+    claim(tokenIds);
+    referrer;
   }
 
   /**
@@ -436,7 +453,9 @@ contract GameManager is PausableUpgradeable {
     _pause();
     PauseInterface(CLNYAddress).pause();
     PauseInterface(MCAddress).pause();
-    PauseInterface(avatarAddress).pause();
+    if (avatarAddress != address(0)) {
+      PauseInterface(avatarAddress).pause();
+    }
   }
 
   /**
@@ -446,11 +465,13 @@ contract GameManager is PausableUpgradeable {
     _unpause();
     PauseInterface(CLNYAddress).unpause();
     PauseInterface(MCAddress).unpause();
-    PauseInterface(avatarAddress).unpause();
+    if (avatarAddress != address(0)) {
+      PauseInterface(avatarAddress).unpause();
+    }
   }
 
   function airdrop(address receiver, uint256 tokenId) external whenNotPaused onlyDAO {
-    mintNFT(receiver, tokenId);
+    mintLand(receiver, tokenId);
     emit Airdrop(receiver, tokenId);
   }
 
@@ -469,6 +490,10 @@ contract GameManager is PausableUpgradeable {
   uint256 constant REASON_PLACE = 2;
   uint256 constant REASON_RENAME_AVATAR = 3;
   uint256 constant REASON_MINT_AVATAR = 4;
+  uint256 constant REASON_ROYALTY = 5;
+  uint256 constant REASON_EARNING = 6;
+  uint256 constant REASON_TREASURY = 7;
+  uint256 constant REASON_LP_POOL = 8;
   uint256 constant REASON_PURCHASE_CRYOCHAMBER = 10;
   uint256 constant REASON_PURCHASE_CRYOCHAMBER_ENERGY = 11;
 
@@ -495,9 +520,12 @@ contract GameManager is PausableUpgradeable {
     }
     if (level == MINT_AVATAR_LEVEL) {
       amount = AVATAR_MINT_COST * 10 ** 18;
-      // atrist and team minting royalties
-      TokenInterface(CLNYAddress).mint(0x352c478CD91BA54615Cc1eDFbA4A3E7EC9f60EE1, AVATAR_MINT_COST * 10 ** 18 * 2 / 100);
-      TokenInterface(CLNYAddress).mint(0x2581A6C674D84dAD92A81E8d3072C9561c21B935, AVATAR_MINT_COST * 10 ** 18 * 3 / 100);
+      // artist and team minting royalties
+      TokenInterface(CLNYAddress).mint(
+        0x2581A6C674D84dAD92A81E8d3072C9561c21B935,
+        AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
+        REASON_ROYALTY
+      );
     }
     require (amount > 0, 'Wrong level');
     TokenInterface(CLNYAddress).burn(msg.sender, amount, reason);
@@ -824,5 +852,18 @@ contract GameManager is PausableUpgradeable {
     require(martianColonists.ownerOf(avatarId) == msg.sender, 'You are not the owner');
     IAvatarManager(avatarAddress).setNameByGameManager(avatarId, _name);
     TokenInterface(CLNYAddress).burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
+  }
+
+  // for compatibility with Polygon
+  function maxLandShares() external pure returns (uint256) {
+    return 0;
+  }
+
+  function clnyPerSecond() external pure returns (uint256) {
+    return 0;
+  }
+
+  function totalShare() external pure returns (uint256) {
+    return 0;
   }
 }
