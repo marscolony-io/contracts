@@ -6,24 +6,35 @@
 pragma solidity >=0.8.0 <0.9.0;
 import '@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol';
 import './GameConnection.sol';
+import './interfaces/ISalesManager.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 
 contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable {
   string private nftBaseURI;
-  mapping (uint256 => string) public names; // token owner can set a name for their NFT
+  uint256 private reserved0; // previous: token owner can set a name for their NFT; deleted
 
-  bool lockMint;
+  // 32 bytes slot start
+  bool lock;
+  bool migrationOpen; // false; for Polygon legacy compatibility
+  ISalesManager public salesManager;
+  // 10 more possible bytes
+  // 32 bytes slot end
 
   uint256[49] private ______mc_gap;
 
-  function initialize(address _DAO, string memory _nftBaseURI) public initializer {
+  function initialize(string memory _nftBaseURI) public initializer {
     ERC721EnumerableUpgradeable.__ERC721Enumerable_init();
     __ERC721_init('MarsColony', 'MC');
-    GameConnection.__GameConnection_init(_DAO);
+    GameConnection.__GameConnection_init(msg.sender);
     PausableUpgradeable.__Pausable_init();
     nftBaseURI = _nftBaseURI;
+  }
+
+  // for compatibility with Polygon
+  function owner() external view returns (address) {
+    return DAO;
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -35,10 +46,10 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
   }
 
   function mint(address receiver, uint256 tokenId) external onlyGameManager whenNotPaused {
-    require(!lockMint, 'locked');
-    lockMint = true;
+    require(!lock, 'locked');
+    lock = true;
     _safeMint(receiver, tokenId);
-    lockMint = false;
+    lock = false;
   }
 
   function pause() external onlyGameManager {
@@ -62,6 +73,19 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
     }
   }
 
+  function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns(uint256[] memory) {
+    uint256 tokenCount = balanceOf(msg.sender);
+    if (tokenCount <= _from || _from > _to || tokenCount == 0) {
+      return new uint256[](0);
+    }
+    uint256 to = (tokenCount - 1 > _to) ? _to : tokenCount - 1;
+    uint256[] memory result = new uint256[](to - _from + 1);
+    for (uint256 i = _from; i <= to; i++) {
+      result[i - _from] = tokenOfOwnerByIndex(msg.sender, i);
+    }
+    return result;
+  }
+
   function allTokensPaginate(uint256 _from, uint256 _to) external view returns(uint256[] memory) {
     uint256 tokenCount = ERC721EnumerableUpgradeable.totalSupply();
     if (tokenCount <= _from || _from > _to || tokenCount == 0) {
@@ -75,13 +99,17 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
     return result;
   }
 
-  function setName(uint256 tokenId, string memory _name) external {
-    require (ownerOf(tokenId) == msg.sender, 'Not your token');
-    names[tokenId] = _name;
+  function setSalesManager(ISalesManager _address) external onlyDAO {
+    salesManager = _address;
   }
 
-  function getName(uint256 tokenId) external view returns (string memory) {
-    return names[tokenId];
+  /** for the in-game marketplace */
+  function trade(address _from, address _to, uint256 _tokenId) external whenNotPaused {
+    require (msg.sender == address(salesManager), 'only SalesManager');
+    require(!lock, 'locked');
+    lock = true;
+    _safeTransfer(_from, _to, _tokenId, '');
+    lock = false;
   }
 
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {

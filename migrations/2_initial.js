@@ -9,7 +9,6 @@ module.exports = async (deployer, network, [owner, treasury, liquidity]) => {
   await deployProxy(
     MC,
     [
-      owner,
       network === "hartest"
         ? "https://meta-test.marscolony.io/"
         : "https://meta.marscolony.io/",
