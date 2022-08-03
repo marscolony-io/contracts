@@ -50,7 +50,7 @@ contract('Withdraw tokens', (accounts) => {
     await expectRevert(clny.withdrawToken(clny.address, user2, web3.utils.toWei('1'), { from: user1 }), 'Only DAO');
     await clny.withdrawToken(clny.address, user2, web3.utils.toWei('1'), { from: DAO });
 
-    await expectRevert(mc.withdrawToken(clny.address, user2, web3.utils.toWei('1'), { from: user1 }), 'Only DAO');
+    await expectRevert(mc.withdrawToken(clny.address, user2, web3.utils.toWei('1'), { from: user1 }), 'Ownable: caller is not the owner');
     await mc.withdrawToken(clny.address, user2, web3.utils.toWei('1'), { from: DAO });
 
     await expectRevert(gm.withdrawToken(clny.address, user2, web3.utils.toWei('1'), { from: user1 }), 'Only DAO');
