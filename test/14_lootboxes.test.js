@@ -5,6 +5,7 @@ const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
 const GM = artifacts.require("GameManager");
 const LBX = artifacts.require("Lootboxes");
 const AVATARS = artifacts.require("MartianColonists");
+const AM = artifacts.require("AvatarManager");
 const MC = artifacts.require("MC");
 
 contract("Lootboxes", (accounts) => {
@@ -12,6 +13,8 @@ contract("Lootboxes", (accounts) => {
 
   let gm;
   let lbx;
+  let avatars;
+  let am;
   let mc;
 
   const baseUri = "baseuri.test/";
@@ -20,8 +23,10 @@ contract("Lootboxes", (accounts) => {
     gm = await GM.deployed();
     lbx = await LBX.deployed();
     avatars = await AVATARS.deployed();
+    am = await AM.deployed();
     mc = await MC.deployed();
 
+    await am.setMaxTokenId(5);
     await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
     await gm.claim([1], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });

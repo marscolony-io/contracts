@@ -10,12 +10,13 @@ import './interfaces/IMartianColonists.sol';
 import './interfaces/IAvatarManager.sol';
 import './interfaces/ICryochamber.sol';
 import './interfaces/ILootboxes.sol';
+import './Constants.sol';
 
 
 /**
  * Game logic; upgradable
  */
-contract GameManager is PausableUpgradeable {
+contract GameManager is PausableUpgradeable, Constants {
   uint256[50] private ______gm_gap_0;
 
   address public DAO; // owner
@@ -298,7 +299,7 @@ contract GameManager is PausableUpgradeable {
     landMissionEarnings[_land] += landOwnerClnyReward;
 
     uint256 avatarClnyReward = _avatarReward * 10**18 / 100;
-    TokenInterface(CLNYAddress).mint(martianColonists.ownerOf(_avatar), avatarClnyReward);
+    TokenInterface(CLNYAddress).mint(martianColonists.ownerOf(_avatar), avatarClnyReward, REASON_MISSION_REWARD);
 
     // one event for every reward type
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp
@@ -379,14 +380,13 @@ contract GameManager is PausableUpgradeable {
   }
 
   function initialize(
-    address _DAO,
     address _CLNYAddress,
     address _MCAddress,
     address _treasury,
     address _liquidity
   ) public initializer {
     __Pausable_init();
-    DAO = _DAO;
+    DAO = msg.sender;
     CLNYAddress = _CLNYAddress;
     MCAddress = _MCAddress;
     maxTokenId = 21000;
@@ -486,16 +486,6 @@ contract GameManager is PausableUpgradeable {
   uint8 constant MINT_AVATAR_LEVEL = 254;
   uint8 constant PLACEMENT_LEVEL = 255;
   uint256 constant PLACEMENT_COST = 5;
-  uint256 constant REASON_UPGRADE = 1;
-  uint256 constant REASON_PLACE = 2;
-  uint256 constant REASON_RENAME_AVATAR = 3;
-  uint256 constant REASON_MINT_AVATAR = 4;
-  uint256 constant REASON_ROYALTY = 5;
-  uint256 constant REASON_EARNING = 6;
-  uint256 constant REASON_TREASURY = 7;
-  uint256 constant REASON_LP_POOL = 8;
-  uint256 constant REASON_PURCHASE_CRYOCHAMBER = 10;
-  uint256 constant REASON_PURCHASE_CRYOCHAMBER_ENERGY = 11;
 
   /**
    * Burn CLNY token for building enhancements
@@ -806,9 +796,9 @@ contract GameManager is PausableUpgradeable {
       tokenData[tokenIds[i]].fixedEarnings = 0;
       landMissionEarnings[tokenIds[i]] = 0;
       tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
-      TokenInterface(CLNYAddress).mint(msg.sender, earned);
-      TokenInterface(CLNYAddress).mint(treasury, earned * 31 / 49);
-      TokenInterface(CLNYAddress).mint(liquidity, earned * 20 / 49);
+      TokenInterface(CLNYAddress).mint(msg.sender, earned, REASON_EARNING);
+      TokenInterface(CLNYAddress).mint(treasury, earned * 31 / 49, REASON_TREASURY);
+      TokenInterface(CLNYAddress).mint(liquidity, earned * 20 / 49, REASON_LP_POOL);
     }
   }
 

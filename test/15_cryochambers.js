@@ -26,6 +26,7 @@ contract("CryochamberManager", (accounts) => {
     mcl = await MCL.deployed();
     nft = await NFT.deployed();
     cryo = await CryochamberManager.deployed();
+    await avatars.setMaxTokenId(5);
     await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
     await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
     await time.increase(time.duration.years(1));

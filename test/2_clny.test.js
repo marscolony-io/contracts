@@ -24,12 +24,12 @@ contract('CLNY', (accounts) => {
   });
 
   it('Reverts when minting directly in mc not from GameManager', async () => {
-    const tx = clny.mint(user1, 100, { from: user1 });
+    const tx = clny.mint(user1, 100, 1, { from: user1 });
     await truffleAssert.reverts(tx, 'Only GameManager');
   });
 
   it('Mints from GM', async () => {
-    await clny.mint(user1, 100, { from: GM });
+    await clny.mint(user1, 100, 1, { from: GM });
   });
 
   it('Cannot pause not from DAO', async () => {
@@ -44,7 +44,7 @@ contract('CLNY', (accounts) => {
   // Paused from here
 
   it('Reverts when mints from GM while paused', async () => {
-    const tx = clny.mint(user1, 100, { from: GM });
+    const tx = clny.mint(user1, 100, 1, { from: GM });
     await truffleAssert.reverts(tx, 'Pausable: paused');
   });
 
@@ -52,7 +52,7 @@ contract('CLNY', (accounts) => {
     const tx = clny.unpause({ from: user1 });
     await truffleAssert.reverts(tx, 'Only GameManager');
     await clny.unpause({ from: DAO });
-    await clny.mint(user1, 100, { from: GM });
+    await clny.mint(user1, 100, 1, { from: GM });
   });
 
   // Already unpaused below

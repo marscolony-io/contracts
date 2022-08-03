@@ -1,6 +1,5 @@
-const { assert, expect } = require('chai');
+const { expect } = require('chai');
 const { time, expectRevert } = require('openzeppelin-test-helpers');
-const { BN } = require('bn.js');
 
 const GM = artifacts.require('GameManager');
 const MC = artifacts.require('MC');

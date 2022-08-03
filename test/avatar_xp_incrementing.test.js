@@ -20,7 +20,7 @@ contract("AvatarManager", (accounts) => {
     gm = await GM.deployed();
     avatarManager = await AvatarManager.deployed();
 
-    avatars = await AvatarManager.deployed();
+    await avatarManager.setMaxTokenId(5);
     await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
     await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });

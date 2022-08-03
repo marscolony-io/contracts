@@ -27,7 +27,7 @@ contract('Price', (accounts) => {
   });
 
   it('Set price out of bounds', async () => {
-    const tx = gm.setPrice(web3.utils.toWei('0.01'), { from: DAO });
+    const tx = gm.setPrice(web3.utils.toWei('0.001'), { from: DAO });
     await truffleAssert.reverts(tx, 'New price is out of bounds');
     const tx2 = gm.setPrice(web3.utils.toWei('1000000'), { from: DAO });
     await truffleAssert.reverts(tx2, 'New price is out of bounds');

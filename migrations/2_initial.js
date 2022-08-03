@@ -4,13 +4,12 @@ const MC = artifacts.require("MC");
 const CLNY = artifacts.require("CLNY");
 const GameManager = artifacts.require("GameManager");
 
-module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
-  console.log({ DAO, treasury, liquidity });
-  await deployProxy(CLNY, [DAO], { deployer });
+module.exports = async (deployer, network, [owner, treasury, liquidity]) => {
+  await deployer.deploy(CLNY, 'CLNY');
   await deployProxy(
     MC,
     [
-      DAO,
+      owner,
       network === "hartest"
         ? "https://meta-test.marscolony.io/"
         : "https://meta.marscolony.io/",
@@ -19,25 +18,16 @@ module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
   );
   await deployProxy(
     GameManager,
-    [DAO, CLNY.address, MC.address, treasury, liquidity],
+    [CLNY.address, MC.address, treasury, liquidity],
     { deployer }
   );
 
   const _MC = await MC.deployed();
   const _CLNY = await CLNY.deployed();
-  await GameManager.deployed();
 
-  await Promise.all([
-    _CLNY.setGameManager(GameManager.address),
-    _MC.setGameManager(GameManager.address),
-  ]);
+  await _CLNY.setGameManager(GameManager.address);
+  await _MC.setGameManager(GameManager.address);
 
-  console.log({
-    GM: GameManager.address,
-    MC: MC.address,
-    CLNY: CLNY.address,
-  });
-
-  // TODO move DAO to particular addresses for real networks
-  // or not to forget to do it manually
+  // only for polygon share economy
+  // ??? await _CLNY.approve(GameManager.address, '115792089237316195423570985008687907853269984665640564039457584007913129639935');
 };
