@@ -8,15 +8,18 @@ import '@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721Enumer
 import './GameConnection.sol';
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import "./interfaces/ISalesManager.sol";
 
 
 contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable {
   string private nftBaseURI;
   mapping (uint256 => string) public names; // token owner can set a name for their NFT
 
-  bool lockMint;
+  bool lock;
 
-  uint256[49] private ______mc_gap;
+  ISalesManager public salesManager;
+
+  uint256[48] private ______mc_gap;
 
   function initialize(address _DAO, string memory _nftBaseURI) public initializer {
     ERC721EnumerableUpgradeable.__ERC721Enumerable_init();
@@ -24,6 +27,17 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
     GameConnection.__GameConnection_init(_DAO);
     PausableUpgradeable.__Pausable_init();
     nftBaseURI = _nftBaseURI;
+  }
+
+  function _afterTokenTransfer(address from, address to, uint256 tokenId) internal virtual override {
+    super._afterTokenTransfer(from, to, tokenId);
+    if (address(salesManager) != address(0)) {
+      salesManager.removeTokenAfterTransfer(tokenId);
+    }
+  }
+
+  function setSalesManager(ISalesManager _address) external onlyDAO {
+    salesManager = _address;
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -35,10 +49,10 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
   }
 
   function mint(address receiver, uint256 tokenId) external onlyGameManager whenNotPaused {
-    require(!lockMint, 'locked');
-    lockMint = true;
+    require(!lock, "locked");
+    lock = true;
     _safeMint(receiver, tokenId);
-    lockMint = false;
+    lock = false;
   }
 
   function pause() external onlyGameManager {
@@ -82,6 +96,14 @@ contract MC is ERC721EnumerableUpgradeable, GameConnection, PausableUpgradeable 
 
   function getName(uint256 tokenId) external view returns (string memory) {
     return names[tokenId];
+  }
+
+  function trade(address _from, address _to, uint256 _tokenId) external whenNotPaused {
+    require (msg.sender == address(salesManager), 'only SalesManager');
+    require(!lock, "locked");
+    lock = true;
+    _safeTransfer(_from, _to, _tokenId, '');
+    lock = false;
   }
 
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {

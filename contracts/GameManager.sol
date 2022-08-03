@@ -8,6 +8,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IPoll.sol';
 import './interfaces/IMartianColonists.sol';
 import './interfaces/IAvatarManager.sol';
+import './interfaces/ISalesManager.sol';
 import './interfaces/ICryochamber.sol';
 import './interfaces/ILootboxes.sol';
 
@@ -43,7 +44,10 @@ contract GameManager is PausableUpgradeable {
   
   address public cryochamberAddress;
 
-  uint256[41] private ______gm_gap_1;
+  uint256 public tradeBurnAmount;
+  ISalesManager public salesManager;
+
+  uint256[39] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
@@ -139,6 +143,14 @@ contract GameManager is PausableUpgradeable {
     pollAddress = _address;
   }
 
+  function setTradeBurnAmount(uint256 _tradeBurnAmount) external onlyDAO {
+    tradeBurnAmount = _tradeBurnAmount;
+  }
+
+  function setSalesManager(address _address) external onlyDAO {
+    salesManager = ISalesManager(_address);
+  }
+  
   function setCryochamberAddress(address _address) external onlyDAO {
     cryochamberAddress = _address;
   }
@@ -482,6 +494,7 @@ contract GameManager is PausableUpgradeable {
   uint256 constant LEVEL_1_COST = 120;
   uint256 constant LEVEL_2_COST = 270;
   uint256 constant LEVEL_3_COST = 480;
+  uint8 constant BUY_LAND_LEVEL = 253;
   uint256 constant RENAME_AVATAR_COST = 25 * 10 ** 18;
   uint8 constant MINT_AVATAR_LEVEL = 254;
   uint8 constant PLACEMENT_LEVEL = 255;
@@ -496,6 +509,7 @@ contract GameManager is PausableUpgradeable {
   uint256 constant REASON_LP_POOL = 8;
   uint256 constant REASON_PURCHASE_CRYOCHAMBER = 10;
   uint256 constant REASON_PURCHASE_CRYOCHAMBER_ENERGY = 11;
+  uint256 constant REASON_BUY_LAND = 15;
 
   /**
    * Burn CLNY token for building enhancements
@@ -526,6 +540,9 @@ contract GameManager is PausableUpgradeable {
         AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
         REASON_ROYALTY
       );
+    }
+    if (level == BUY_LAND_LEVEL) {
+      amount = tradeBurnAmount;
     }
     require (amount > 0, 'Wrong level');
     TokenInterface(CLNYAddress).burn(msg.sender, amount, reason);
@@ -817,6 +834,12 @@ contract GameManager is PausableUpgradeable {
       TokenInterface(MCAddress).ownerOf(tokenIds[i]); // reverts if not minted
       fixEarnings(tokenIds[i]);
     }
+  }
+
+  function buyLand(uint256 tokenId) external payable {
+    require(address(salesManager) != address(0), "SalesManager address not set");
+    salesManager.buyToken{value: msg.value}(tokenId, msg.sender);
+    _deduct(BUY_LAND_LEVEL, REASON_BUY_LAND);
   }
 
   /**
