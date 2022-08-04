@@ -6,10 +6,10 @@ import './GameConnection.sol';
 import './interfaces/IMartianColonists.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/ICryochamber.sol';
+import './interfaces/IAvatarManager.sol';
 
 
-
-contract AvatarManager is GameConnection, PausableUpgradeable {
+contract AvatarManager is IAvatarManager, GameConnection, PausableUpgradeable {
   uint256 public maxTokenId;
 
   IMartianColonists public collection;
@@ -18,6 +18,11 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
   ICryochamber public cryochambers;
 
   uint256[48] private ______mc_gap;
+
+  modifier onlyCryochamberManager {
+    require(msg.sender == address(cryochambers), 'Only CryochamberManager');
+    _;
+  }
 
   function initialize(address _collection) external initializer {
     GameConnection.__GameConnection_init(msg.sender);
@@ -122,10 +127,5 @@ contract AvatarManager is GameConnection, PausableUpgradeable {
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
-  }
-
-  modifier onlyCryochamberManager {
-    require(msg.sender == address(cryochambers), 'Only CryochamberManager');
-    _;
   }
 }

@@ -31,12 +31,12 @@ contract MissionManager is GameConnection, PausableUpgradeable {
 
   uint256[50] private ______gap;
 
-  function initialize(address _DAO, address _collection, address _avatarManager, address _MC) external initializer {
-    GameConnection.__GameConnection_init(_DAO);
+  function initialize(IMartianColonists _collection, IAvatarManager _avatarManager, TokenInterface _MC) external initializer {
+    GameConnection.__GameConnection_init(msg.sender);
     PausableUpgradeable.__Pausable_init();
-    collection = IMartianColonists(_collection);
-    avatarManager = IAvatarManager(_avatarManager);
-    MC = TokenInterface(_MC);
+    collection = _collection;
+    avatarManager = _avatarManager;
+    MC = _MC;
   }
 
   function setAccountPrivacy(bool _isPrivate) external {

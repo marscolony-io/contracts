@@ -31,7 +31,7 @@ module.exports = async (deployer, network, [DAO]) => {
   }
   await deployProxy(
     MissionManager,
-    [DAO, _MCL.address, _AvMgr.address, _MC.address],
+    [_MCL.address, _AvMgr.address, _MC.address],
     { deployer }
   );
 
