@@ -40,7 +40,4 @@ module.exports = async (deployer, network, [, , , , , , treasury, liquidity]) =>
       await mc.setGameManager(GameManagerShares.address);
     }
   }
-
-  // only for polygon share economy
-  // ??? await _CLNY.approve(GameManager.address, '115792089237316195423570985008687907853269984665640564039457584007913129639935');
 };
