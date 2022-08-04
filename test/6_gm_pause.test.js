@@ -1,7 +1,7 @@
 const { assert } = require('chai');
 const truffleAssert = require('truffle-assertions');
 
-const GM = artifacts.require('GameManager');
+const GameManagerFixed = artifacts.require('GameManagerFixed');
 const MC = artifacts.require('MC');
 const CLNY = artifacts.require('CLNY');
 
@@ -13,7 +13,7 @@ contract('Pause', (accounts) => {
   let clny;
 
   before(async () => {
-    gm = await GM.deployed();
+    gm = await GameManagerFixed.deployed();
     mc = await MC.deployed();
     clny = await CLNY.deployed();
     await gm.setPrice(web3.utils.toWei('0.1'));

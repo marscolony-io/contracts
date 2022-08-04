@@ -2,27 +2,44 @@ const { deployProxy } = require("@openzeppelin/truffle-upgrades");
 
 const MC = artifacts.require("MC");
 const CLNY = artifacts.require("CLNY");
-const GameManager = artifacts.require("GameManager");
+const GameManagerFixed = artifacts.require("GameManagerFixed");
+const GameManagerShares = artifacts.require("GameManagerShares");
 
-module.exports = async (deployer, network, [owner, treasury, liquidity]) => {
+module.exports = async (deployer, network, [, , , , , , treasury, liquidity]) => {
   await deployer.deploy(CLNY, 'CLNY');
   await deployer.deploy(
     MC,
-    network === "hartest"
-      ? "https://meta-test.marscolony.io/"
-      : "https://meta.marscolony.io/"
-  );
-  await deployProxy(
-    GameManager,
-    [CLNY.address, MC.address, treasury, liquidity],
-    { deployer }
+    {
+      fuji: 'https://meta-test.marscolony.io/',
+      harmain: 'https://meta.marscolony.io/',
+      polygon: 'https://meta-polygon.marscolony.io/',
+      development: 'https://meta.marscolony.io/'
+    }[network] ?? '',
   );
 
-  const _MC = await MC.deployed();
-  const _CLNY = await CLNY.deployed();
+  const mc = await MC.deployed();
+  const clny = await CLNY.deployed();
 
-  await _CLNY.setGameManager(GameManager.address);
-  await _MC.setGameManager(GameManager.address);
+  if (['development', 'fuji', 'harmony'].includes(network)) {
+    await deployProxy(
+      GameManagerFixed,
+      [CLNY.address, MC.address, treasury, liquidity],
+      { deployer }
+    );
+    await clny.setGameManager(GameManagerFixed.address);
+    await mc.setGameManager(GameManagerFixed.address);
+  }
+  if (['development', 'fuji', 'harmony'].includes(network)) {
+    await deployProxy(
+      GameManagerShares,
+      [CLNY.address, MC.address, treasury, liquidity],
+      { deployer }
+    );
+    if (network !== 'development') {
+      await clny.setGameManager(GameManagerShares.address);
+      await mc.setGameManager(GameManagerShares.address);
+    }
+  }
 
   // only for polygon share economy
   // ??? await _CLNY.approve(GameManager.address, '115792089237316195423570985008687907853269984665640564039457584007913129639935');

@@ -3,7 +3,7 @@ const { expectRevert } = require('openzeppelin-test-helpers');
 
 
 const MSN = artifacts.require("MissionManager");
-const GM = artifacts.require("GameManager");
+const GameManagerFixed = artifacts.require("GameManagerFixed");
 
 contract("MissionsManager", (accounts) => {
     const [DAO, user1, user2] = accounts;
@@ -12,7 +12,7 @@ contract("MissionsManager", (accounts) => {
 
     before(async () => {
         msn = await MSN.deployed();
-        gm = await GM.deployed();
+        gm = await GameManagerFixed.deployed();
         await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
         await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
         await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });

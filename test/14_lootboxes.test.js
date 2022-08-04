@@ -2,7 +2,7 @@ const { assert, expect } = require("chai");
 const truffleAssert = require("truffle-assertions");
 const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
 
-const GM = artifacts.require("GameManager");
+const GameManagerFixed = artifacts.require("GameManagerFixed");
 const LBX = artifacts.require("Lootboxes");
 const AVATARS = artifacts.require("MartianColonists");
 const AM = artifacts.require("AvatarManager");
@@ -20,7 +20,7 @@ contract("Lootboxes", (accounts) => {
   const baseUri = "baseuri.test/";
 
   before(async () => {
-    gm = await GM.deployed();
+    gm = await GameManagerFixed.deployed();
     lbx = await LBX.deployed();
     avatars = await AVATARS.deployed();
     am = await AM.deployed();

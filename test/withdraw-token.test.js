@@ -1,8 +1,7 @@
-const { assert, expect } = require('chai');
-const truffleAssert = require('truffle-assertions');
-const { time, BN, expectRevert } = require('openzeppelin-test-helpers');
+const { expect } = require('chai');
+const { time, expectRevert } = require('openzeppelin-test-helpers');
 
-const GM = artifacts.require('GameManager');
+const GameManagerFixed = artifacts.require('GameManagerFixed');
 const MC = artifacts.require('MC');
 const AM = artifacts.require('AvatarManager');
 const MCL = artifacts.require('MartianColonists');
@@ -18,7 +17,7 @@ contract('Withdraw tokens', (accounts) => {
   let mcl;
 
   before(async () => {
-    gm = await GM.deployed();
+    gm = await GameManagerFixed.deployed();
     mc = await MC.deployed();
     clny = await CLNY.deployed();
     am = await AM.deployed();

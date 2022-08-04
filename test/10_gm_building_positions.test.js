@@ -1,18 +1,17 @@
 const { expect } = require('chai');
 const { time, expectRevert } = require('openzeppelin-test-helpers');
 
-const GM = artifacts.require('GameManager');
-const MC = artifacts.require('MC');
+const GameManagerFixed = artifacts.require('GameManagerFixed');
 const CLNY = artifacts.require('CLNY');
 
 contract('Build and set position test', (accounts) => {
-  const [DAO, treasury, liquidity, user1, user2] = accounts;
+  const [DAO, , , user1, user2] = accounts;
 
   let gm;
   let clny;
 
   before(async () => {
-    gm = await GM.deployed();
+    gm = await GameManagerFixed.deployed();
     clny = await CLNY.deployed();
   });
 

@@ -1,8 +1,7 @@
-const { assert, expect } = require("chai");
-const truffleAssert = require("truffle-assertions");
-const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
+const { expect } = require("chai");
+const { time, expectRevert } = require("openzeppelin-test-helpers");
 
-const GM = artifacts.require("GameManager");
+const GameManagerFixed = artifacts.require("GameManagerFixed");
 const CLNY = artifacts.require("CLNY");
 const AvatarManager = artifacts.require("AvatarManager");
 const NFT = artifacts.require("MartianColonists");
@@ -19,7 +18,7 @@ contract("AvatarManager", (accounts) => {
   const ROYALTY2 = "0x2581A6C674D84dAD92A81E8d3072C9561c21B935";
 
   before(async () => {
-    gm = await GM.deployed();
+    gm = await GameManagerFixed.deployed();
     clny = await CLNY.deployed();
     avatars = await AvatarManager.deployed();
     nft = await NFT.deployed();

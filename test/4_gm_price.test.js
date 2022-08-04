@@ -1,7 +1,7 @@
 const { assert } = require('chai');
 const truffleAssert = require('truffle-assertions');
 
-const GM = artifacts.require('GameManager');
+const GameManagerFixed = artifacts.require('GameManagerFixed');
 
 contract('Price', (accounts) => {
   const [DAO, user1] = accounts;
@@ -9,7 +9,7 @@ contract('Price', (accounts) => {
   let gm;
 
   before(async () => {
-    gm = await GM.deployed();
+    gm = await GameManagerFixed.deployed();
   });
 
   it('Get initial price', async () => {

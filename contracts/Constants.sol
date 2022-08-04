@@ -14,4 +14,6 @@ abstract contract Constants {
   uint256 constant REASON_MISSION_REWARD = 9;
   uint256 constant REASON_PURCHASE_CRYOCHAMBER = 10;
   uint256 constant REASON_PURCHASE_CRYOCHAMBER_ENERGY = 11;
+
+  uint256 constant REASON_SHARES_PREPARE_CLNY = 100;
 }

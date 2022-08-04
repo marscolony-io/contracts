@@ -34,8 +34,8 @@ contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber
 
   uint256[49] private ______gap;
 
-  function initialize(address _DAO, address _collection, address _avatarManager) external initializer {
-    GameConnection.__GameConnection_init(_DAO);
+  function initialize(address _collection, address _avatarManager) external initializer {
+    GameConnection.__GameConnection_init(msg.sender);
     PausableUpgradeable.__Pausable_init();
     avatars = IMartianColonists(_collection);
     avatarManager = IAvatarManager(_avatarManager);

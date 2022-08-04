@@ -2,7 +2,7 @@ const { assert, expect } = require("chai");
 const truffleAssert = require("truffle-assertions");
 const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
 
-const GM = artifacts.require("GameManager");
+const GameManagerFixed = artifacts.require("GameManagerFixed");
 const CLNY = artifacts.require("CLNY");
 const AvatarManager = artifacts.require("AvatarManager");
 const MCL = artifacts.require("MartianColonists");
@@ -20,7 +20,7 @@ contract("CryochamberManager", (accounts) => {
   let nft;
 
   before(async () => {
-    gm = await GM.deployed();
+    gm = await GameManagerFixed.deployed();
     clny = await CLNY.deployed();
     avatars = await AvatarManager.deployed();
     mcl = await MCL.deployed();
@@ -29,8 +29,10 @@ contract("CryochamberManager", (accounts) => {
     await avatars.setMaxTokenId(5);
     await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
     await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
+    await gm.claim([101], { value: web3.utils.toWei("0.1"), from: user2 });
     await time.increase(time.duration.years(1));
     await gm.claimEarned([100], { from: user1 });
+    await gm.claimEarned([101], { from: user2 });
     await gm.mintAvatar({ from: user1 }); // 1
     await gm.mintAvatar({ from: user2 }); // 2
     await gm.mintAvatar({ from: user1 }); // 3
