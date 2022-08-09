@@ -5,4 +5,5 @@ interface ILootboxes {
   enum Rarity{ COMMON, RARE, LEGENDARY }
   function mint(address user, Rarity rarity) external;
   function setBaseURI(string memory newURI) external;
+  function opened(uint256 tokenId) external returns (bool);
 }
