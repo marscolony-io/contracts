@@ -1,7 +1,7 @@
 const { assert } = require('chai');
 const truffleAssert = require('truffle-assertions');
 
-const GM = artifacts.require('GameManager');
+const GameManagerFixed = artifacts.require('GameManagerFixed');
 
 contract('Price', (accounts) => {
   const [DAO, user1] = accounts;
@@ -9,7 +9,7 @@ contract('Price', (accounts) => {
   let gm;
 
   before(async () => {
-    gm = await GM.deployed();
+    gm = await GameManagerFixed.deployed();
   });
 
   it('Get initial price', async () => {
@@ -27,7 +27,7 @@ contract('Price', (accounts) => {
   });
 
   it('Set price out of bounds', async () => {
-    const tx = gm.setPrice(web3.utils.toWei('0.01'), { from: DAO });
+    const tx = gm.setPrice(web3.utils.toWei('0.001'), { from: DAO });
     await truffleAssert.reverts(tx, 'New price is out of bounds');
     const tx2 = gm.setPrice(web3.utils.toWei('1000000'), { from: DAO });
     await truffleAssert.reverts(tx2, 'New price is out of bounds');

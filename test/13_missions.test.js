@@ -2,7 +2,7 @@ const { assert, expect } = require("chai");
 const truffleAssert = require("truffle-assertions");
 const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
 
-const GM = artifacts.require("GameManager");
+const GameManagerFixed = artifacts.require("GameManagerFixed");
 const CLNY = artifacts.require("CLNY");
 const AvatarManager = artifacts.require("AvatarManager");
 const NFT = artifacts.require("MartianColonists");
@@ -17,14 +17,16 @@ contract("MissionsManager", (accounts) => {
   let avatars;
   let nft;
   let msn;
+  let mc;
 
   before(async () => {
-    gm = await GM.deployed();
+    gm = await GameManagerFixed.deployed();
     clny = await CLNY.deployed();
     avatars = await AvatarManager.deployed();
     nft = await NFT.deployed();
     msn = await MSN.deployed();
     mc = await MC.deployed();
+    await avatars.setMaxTokenId(5);
     await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
     await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });
@@ -289,7 +291,7 @@ contract("MissionsManager", (accounts) => {
       const earnedBefore = await gm.getEarned(landId);
       await gm.fixEarnings([landId]);
       const earnedAfter = await gm.getEarned(landId);
-      expect(earnedAfter).to.bignumber.be.equal(earnedBefore);
+      expect(earnedAfter / 1_000_000).to.be.approximately(earnedBefore / 1_000_000, 50_000_000);
     });
 
     it("set landMissionEarnings to zero after claim", async () => {

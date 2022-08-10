@@ -2,42 +2,42 @@ const { deployProxy } = require("@openzeppelin/truffle-upgrades");
 
 const MC = artifacts.require("MC");
 const CLNY = artifacts.require("CLNY");
-const GameManager = artifacts.require("GameManager");
+const GameManagerFixed = artifacts.require("GameManagerFixed");
+const GameManagerShares = artifacts.require("GameManagerShares");
 
-module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
-  console.log({ DAO, treasury, liquidity });
-  await deployProxy(CLNY, [DAO], { deployer });
-  await deployProxy(
+module.exports = async (deployer, network, [, , , , , , treasury, liquidity]) => {
+  await deployer.deploy(CLNY, 'CLNY');
+  await deployer.deploy(
     MC,
-    [
-      DAO,
-      network === "hartest"
-        ? "https://meta-test.marscolony.io/"
-        : "https://meta.marscolony.io/",
-    ],
-    { deployer }
-  );
-  await deployProxy(
-    GameManager,
-    [DAO, CLNY.address, MC.address, treasury, liquidity],
-    { deployer }
+    {
+      fuji: 'https://meta-test.marscolony.io/',
+      harmain: 'https://meta.marscolony.io/',
+      polygon: 'https://meta-polygon.marscolony.io/',
+      development: 'https://meta.marscolony.io/'
+    }[network] ?? '',
   );
 
-  const _MC = await MC.deployed();
-  const _CLNY = await CLNY.deployed();
-  await GameManager.deployed();
+  const mc = await MC.deployed();
+  const clny = await CLNY.deployed();
 
-  await Promise.all([
-    _CLNY.setGameManager(GameManager.address),
-    _MC.setGameManager(GameManager.address),
-  ]);
-
-  console.log({
-    GM: GameManager.address,
-    MC: MC.address,
-    CLNY: CLNY.address,
-  });
-
-  // TODO move DAO to particular addresses for real networks
-  // or not to forget to do it manually
+  if (['development', 'fuji', 'harmony'].includes(network)) {
+    await deployProxy(
+      GameManagerFixed,
+      [CLNY.address, MC.address, treasury, liquidity],
+      { deployer }
+    );
+    await clny.setGameManager(GameManagerFixed.address);
+    await mc.setGameManager(GameManagerFixed.address);
+  }
+  if (['development', 'fuji', 'harmony'].includes(network)) {
+    await deployProxy(
+      GameManagerShares,
+      [CLNY.address, MC.address, treasury, liquidity],
+      { deployer }
+    );
+    if (network !== 'development') {
+      await clny.setGameManager(GameManagerShares.address);
+      await mc.setGameManager(GameManagerShares.address);
+    }
+  }
 };

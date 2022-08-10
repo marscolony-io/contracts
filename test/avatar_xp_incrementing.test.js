@@ -1,13 +1,8 @@
-const { assert, expect } = require("chai");
-const truffleAssert = require("truffle-assertions");
-const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
+const { expect } = require("chai");
+const { time, expectRevert } = require("openzeppelin-test-helpers");
 
-const GM = artifacts.require("GameManager");
-const CLNY = artifacts.require("CLNY");
+const GameManagerFixed = artifacts.require("GameManagerFixed");
 const AvatarManager = artifacts.require("AvatarManager");
-const NFT = artifacts.require("MartianColonists");
-const MSN = artifacts.require("MissionManager");
-const MC = artifacts.require("MC");
 
 contract("AvatarManager", (accounts) => {
   const [user0, user1, user2] = accounts;
@@ -17,10 +12,10 @@ contract("AvatarManager", (accounts) => {
   let avatarManager;
 
   before(async () => {
-    gm = await GM.deployed();
+    gm = await GameManagerFixed.deployed();
     avatarManager = await AvatarManager.deployed();
 
-    avatars = await AvatarManager.deployed();
+    await avatarManager.setMaxTokenId(5);
     await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
     await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });

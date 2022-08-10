@@ -1,23 +1,12 @@
-/**
- * Empty migration used to deploy instances to upgrade manually
- * ```
- * truffle deploy --network hartest -f 3 --to 3
- * ```
- */
-
-const GM = artifacts.require("GameManager");
-const MC = artifacts.require("MC");
-const CLNY = artifacts.require("CLNY");
-const MartianColonists = artifacts.require("MartianColonists");
+const GameManagerFixed = artifacts.require("GameManagerFixed");
 const Poll = artifacts.require("Poll");
-const fs = require("fs");
 
 module.exports = async (deployer, network, addresses) => {
   let gm;
   if (network === 'development') {
-    gm = await GM.deployed();
+    gm = await GameManagerFixed.deployed();
   } else {
-    gm = await GM.at('0xCAFAeD55fEfEd74Ca866fE72D65CfF073eb42797');
+    gm = await GameManagerFixed.at('0xCAFAeD55fEfEd74Ca866fE72D65CfF073eb42797');
     // TODO different for other networks
   }
 
@@ -35,6 +24,4 @@ module.exports = async (deployer, network, addresses) => {
   await poll.setGameManager(gm.address);
 
   await gm.setPollAddress(poll.address);
-
-  // await poll.start();
 };

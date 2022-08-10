@@ -4,15 +4,15 @@ const AvatarManager = artifacts.require("AvatarManager");
 const CryochamberManager = artifacts.require("CryochamberManager");
 
 const MCL = artifacts.require("MartianColonists");
-const GM = artifacts.require("GameManager");
+const GM = artifacts.require("GameManagerFixed");
 
-module.exports = async (deployer, network, [DAO, treasury, liquidity]) => {
+module.exports = async (deployer, network) => {
   const _MCL = await MCL.deployed();
   const _AvatarManager = await AvatarManager.deployed();
 
   await deployProxy(
     CryochamberManager,
-    [DAO, _MCL.address, _AvatarManager.address],
+    [_MCL.address, _AvatarManager.address],
     {
       deployer,
     }

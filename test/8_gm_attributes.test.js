@@ -1,10 +1,7 @@
 const { assert } = require('chai');
-const truffleAssert = require('truffle-assertions');
 const { time } = require('openzeppelin-test-helpers');
 
-const GM = artifacts.require('GameManager');
-const MC = artifacts.require('MC');
-const CLNY = artifacts.require('CLNY');
+const GameManagerFixed = artifacts.require('GameManagerFixed');
 
 contract('Attributes', (accounts) => {
   const [DAO, user1] = accounts;
@@ -13,7 +10,7 @@ contract('Attributes', (accounts) => {
   let mc;
 
   before(async () => {
-    gm = await GM.deployed();
+    gm = await GameManagerFixed.deployed();
   });
 
   it('Initial speed and earnings', async () => {
