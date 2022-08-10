@@ -18,6 +18,8 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
   mapping (address => uint256) private lastTokenMinted;
   bool lock;
 
+  uint256 nextIdToMint = 1;
+
   modifier onlyGameManager {
     require(msg.sender == gameManager, 'only game manager');
     _;
@@ -62,10 +64,10 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
   function mint(address receiver, Rarity _rarity) external override onlyGameManager {
     require(!lock, 'locked');
     lock = true;
-    uint256 tokenId = ERC721Enumerable.totalSupply() + 1;
-    rarities[tokenId] = _rarity;
-    lastTokenMinted[receiver] = tokenId;
-    _safeMint(receiver, tokenId); // +1 because we emit 0 and start with 1
+    rarities[nextIdToMint] = _rarity;
+    lastTokenMinted[receiver] = nextIdToMint;
+    _safeMint(receiver, nextIdToMint); // +1 because we emit 0 and start with 1
+    nextIdToMint++;
     lock = false;
   }
 

@@ -11,11 +11,12 @@ import './interfaces/IMartianColonists.sol';
 import './interfaces/ILootboxes.sol';
 import './interfaces/ICryochamber.sol';
 import './interfaces/IAvatarManager.sol';
+import './interfaces/IGameManager.sol';
 
 /**
  * Game logic; upgradable
  */
-contract GameManagerShares is PausableUpgradeable, Shares {
+contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   // 25 256bit slots in Shares.sol
   uint256[25] private ______gm_gap_0;
 
@@ -66,24 +67,6 @@ contract GameManagerShares is PausableUpgradeable, Shares {
   struct LandData {
     uint256 deprecated1;
     uint64 deprecated2;
-    uint8 baseStation; // 0 or 1
-    uint8 transport; // 0 or 1, 2, 3 (levels)
-    uint8 robotAssembly; // 0 or 1, 2, 3 (levels)
-    uint8 powerProduction; // 0 or 1, 2, 3 (levels)
-  }
-
-  struct PlaceOnLand {
-    uint32 x;
-    uint32 y;
-    uint32 rotate; // for future versions
-  }
-
-  /**
-   * Data to output
-   */
-  struct AttributeData {
-    uint256 speed; // CLNY earning speed
-    uint256 earned;
     uint8 baseStation; // 0 or 1
     uint8 transport; // 0 or 1, 2, 3 (levels)
     uint8 robotAssembly; // 0 or 1, 2, 3 (levels)
@@ -467,9 +450,10 @@ contract GameManagerShares is PausableUpgradeable, Shares {
       mintLand(msg.sender, tokenIds[i]);
     }
 
+    bool success;
     if (referrer == address(0)) {
       // 0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4 - creatorsDAO
-      (bool success, ) = payable(0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4).call{ value: msg.value }('');
+      (success, ) = payable(0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4).call{ value: msg.value }('');
       require(success, 'Transfer failed');
       return;
     }
@@ -482,7 +466,7 @@ contract GameManagerShares is PausableUpgradeable, Shares {
     uint256 daoValueShare = msg.value - referrerValueShare;
 
     // 0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4 - creatorsDAO
-    (bool success, ) = payable(0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4).call{ value: daoValueShare }('');
+    (success, ) = payable(0x7162DF6d2c1be22E61b19973Fe4E7D086a2DA6A4).call{ value: daoValueShare }('');
     require(success, 'Transfer failed');
 
     (success, ) = payable(referrer).call{ value: referrerValueShare }('');

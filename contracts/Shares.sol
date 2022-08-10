@@ -4,8 +4,9 @@ pragma solidity =0.8.13;
 import './interfaces/TokenInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './Constants.sol';
+import './interfaces/IShares.sol';
 
-abstract contract Shares is Constants {
+abstract contract Shares is IShares, Constants {
   uint64 constant startCLNYDate = 1655391600; // 16 Jun 2022 14:30UTC - public launch
   uint256 public maxLandShares; // shares of land with max shares
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity =0.8.13;
 
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import './interfaces/TokenInterface.sol';
@@ -10,13 +10,14 @@ import './interfaces/IMartianColonists.sol';
 import './interfaces/IAvatarManager.sol';
 import './interfaces/ICryochamber.sol';
 import './interfaces/ILootboxes.sol';
+import './interfaces/IGameManager.sol';
 import './Constants.sol';
 
 
 /**
  * Game Manager; fixed (harmony-like economy)
  */
-contract GameManagerFixed is PausableUpgradeable, Constants {
+contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   uint256[50] private ______gm_gap_0;
 
   address public DAO; // owner
@@ -49,24 +50,6 @@ contract GameManagerFixed is PausableUpgradeable, Constants {
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet
     uint64 lastCLNYCheckout; // (now - lastCLNYCheckout) * 'earning speed' + fixedEarnings = farmed so far
-    uint8 baseStation; // 0 or 1
-    uint8 transport; // 0 or 1, 2, 3 (levels)
-    uint8 robotAssembly; // 0 or 1, 2, 3 (levels)
-    uint8 powerProduction; // 0 or 1, 2, 3 (levels)
-  }
-
-  struct PlaceOnLand {
-    uint32 x;
-    uint32 y;
-    uint32 rotate; // for future versions
-  }
-
-  /**
-   * Data to output
-   */
-  struct AttributeData {
-    uint256 speed; // CLNY earning speed
-    uint256 earned;
     uint8 baseStation; // 0 or 1
     uint8 transport; // 0 or 1, 2, 3 (levels)
     uint8 robotAssembly; // 0 or 1, 2, 3 (levels)
