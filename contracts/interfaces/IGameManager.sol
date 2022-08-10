@@ -11,7 +11,21 @@ interface IGameManager {
     uint8 powerProduction; // 0 or 1, 2, 3 (levels)
   }
 
+  struct PlaceOnLand {
+    uint32 x;
+    uint32 y;
+    uint32 rotate; // for future versions
+  }
+
+  // function maxLandShares() external view returns (uint256);
   function MCAddress() external view returns (address);
+  function CLNYAddress() external view returns (address);
+  // function totalShare() external view returns (uint256);
+  // function clnyPerSecond() external view returns (uint256);
+  function baseStationsPlacement(uint256 tokenId) external view returns (uint32, uint32, uint32);
+  function transportPlacement(uint256 tokenId) external view returns (uint32, uint32, uint32);
+  function robotAssemblyPlacement(uint256 tokenId) external view returns (uint32, uint32, uint32);
+  function powerProductionPlacement(uint256 tokenId) external view returns (uint32, uint32, uint32);
 
   function getAttributesMany(uint256[] calldata tokenIds) external view returns (AttributeData[] memory);
 }

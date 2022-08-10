@@ -5,7 +5,7 @@
  * ```
  */
 
-const GM = artifacts.require("GameManager");
+const GM = artifacts.require("GameManagerFixed");
 const AM = artifacts.require("AvatarManager");
 const MM = artifacts.require("MissionManager");
 const MC = artifacts.require("MC");
