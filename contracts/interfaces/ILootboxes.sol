@@ -6,4 +6,6 @@ interface ILootboxes {
   function mint(address user, Rarity rarity) external;
   function setBaseURI(string memory newURI) external;
   function opened(uint256 tokenId) external returns (bool);
+  function open(uint256 tokenId) external;
+  function rarities(uint256 tokenId) external returns (Rarity);
 }

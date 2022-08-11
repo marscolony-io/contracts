@@ -10,6 +10,7 @@ import './interfaces/IMartianColonists.sol';
 import './interfaces/IAvatarManager.sol';
 import './interfaces/ICryochamber.sol';
 import './interfaces/ILootboxes.sol';
+import './interfaces/IGears.sol';
 import './Constants.sol';
 
 
@@ -34,6 +35,8 @@ contract GameManagerFixed is PausableUpgradeable, Constants {
   address public backendSigner;
   mapping (bytes32 => bool) private usedSignatures;
   address public lootboxesAddress;
+  address public gearsAddress;
+
 
   struct AvailableRarities {
     uint64 common;
@@ -146,6 +149,10 @@ contract GameManagerFixed is PausableUpgradeable, Constants {
 
   function setLootboxesAddress(address _address) external onlyDAO {
     lootboxesAddress = _address;
+  }
+
+  function setGearsAddress(address _address) external onlyDAO {
+    gearsAddress = _address;
   }
 
   function getPollData() external view returns (string memory, string memory, string[] memory, uint256[] memory, bool) {
@@ -842,6 +849,20 @@ contract GameManagerFixed is PausableUpgradeable, Constants {
     require(martianColonists.ownerOf(avatarId) == msg.sender, 'You are not the owner');
     IAvatarManager(avatarAddress).setNameByGameManager(avatarId, _name);
     TokenInterface(CLNYAddress).burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
+  }
+
+
+  // gears
+  function openLootbox(uint256 tokenId) public onlyTokenOwner(tokenId) whenNotPaused {
+    require(!ILootboxes(lootboxesAddress).opened(tokenId), "This lootbox has been already opened");
+
+    ILootboxes.Rarity rarity = ILootboxes(lootboxesAddress).rarities(tokenId);
+    uint256 openPrice = rarity == ILootboxes.Rarity.COMMON ? 20 * 10e18 : rarity == ILootboxes.Rarity.RARE ? 45 * 10e18 : 70 * 10e18;
+
+    TokenInterface(CLNYAddress).burn(msg.sender, openPrice, REASON_OPEN_LOOTBOX);
+    ILootboxes(lootboxesAddress).open(tokenId);
+
+    IGears(gearsAddress).mint(msg.sender, rarity);
   }
 
   // for compatibility with Polygon

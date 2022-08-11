@@ -100,7 +100,7 @@ contract("Gears", (accounts) => {
     });
   });
 
-  describe("Mint", function() {
+  describe("Randomized mint", function() {
     it("getRandomizedGearFromCommonLootbox", async () => {
       const raritiesMap = new Map();
       raritiesMap.set("common", 0);
@@ -314,241 +314,93 @@ contract("Gears", (accounts) => {
     });
   });
 
-  // describe("TokenURI", function() {
-  //   it("Returns correct URI with rarity part", async () => {
-  //     const uri1 = await lbx.tokenURI(1);
-  //     const uri2 = await lbx.tokenURI(2);
-  //     const [base1, id1, rarity1] = uri1.split("/");
-  //     expect(baseUri.startsWith(base1)).to.be.true;
-  //     expect(id1).to.be.equal("1");
-  //     expect(rarity1).to.be.equal("0");
+  describe("TokenURI", function() {
+    it("Returns correct URI with gearType part", async () => {
+      const uri = await gears.tokenURI(1);
 
-  //     const [base2, id2, rarity2] = uri2.split("/");
-  //     expect(baseUri.startsWith(base2)).to.be.true;
-  //     expect(id2).to.be.equal("2");
-  //     expect(rarity2).to.be.equal("1");
-  //   });
-  // });
+      const gear = await gears.gears(1);
 
-  // describe("Open", function() {
-  //   it("Reverts if open called not by game manager", async () => {
-  //     await lbx.setGameManager(user1);
-  //     const tx = lbx.open(1);
-  //     await truffleAssert.reverts(tx, "only game manager");
-  //   });
+      const [base1, id1, gearType] = uri.split("/");
+      expect(baseUri.startsWith(base1)).to.be.true;
+      expect(id1).to.be.equal("1");
+      expect(gearType).to.be.equal(gear.gearType.toString());
+    });
+  });
 
-  //   it("Open lootbox", async () => {
-  //     await lbx.setGameManager(DAO);
-  //     await lbx.open(1);
-  //     const isOpened = await lbx.opened(1);
-  //     expect(isOpened).to.be.equal(true);
+  describe("lockGear", function() {
+    it("Reverts if lock called not by owner", async () => {
+      const tx = gears.lockGear(1);
+      await truffleAssert.reverts(tx, "only token owner");
+    });
 
-  //     const isNotOpened = await lbx.opened(2);
-  //     expect(isNotOpened).to.be.equal(false);
-  //   });
-  // });
+    it("lockGear by owner", async () => {
+      await gears.lockGear(1, { from: user1 });
+      const isLocked = await gears.locks(1);
+      expect(isLocked).to.be.equal(true);
 
-  // describe("Finish Mission", function() {
-  //   const signer = {
-  //     privateKey:
-  //       "4028ea385a848c51ff76c0d968305e273d415335ccd06854630a8465b67a9eef",
-  //     address: "0x5a636D26070A8a132E4731743CA12964CBB1950b",
-  //   };
+      const isNotLocked = await gears.locks(2);
+      expect(isNotLocked).to.be.equal(false);
+    });
 
-  //   it("Set message sender to backend sender", async () => {
-  //     await gm.setBackendSigner(signer.address);
-  //   });
+    it("Reverts if unlock called not by owner", async () => {
+      const tx = gears.unlockGear(1);
+      await truffleAssert.reverts(tx, "only token owner");
+    });
 
-  //   it("Mint avatar owner lootbox with common rarity ", async () => {
-  //     await lbx.setGameManager(gm.address);
-  //     const totalSupplyBefore = await lbx.totalSupply();
+    it("unlockGear by owner", async () => {
+      await gears.unlockGear(1, { from: user1 });
+      const isLocked = await gears.locks(1);
+      expect(isLocked).to.be.equal(false);
+    });
+  });
 
-  //     const rarity = "01";
+  describe("All My Tokens Paginate", async () => {
+    it("Checks the function", async () => {
+      const hundredTokens = await gears.allMyTokensPaginate(0, 99, {
+        from: user1,
+      });
 
-  //     const message = `1111111111111111111111111111111100002000022100010000000${rarity}1111111111111111111111`;
-  //     const signature = await web3.eth.accounts.sign(
-  //       message,
-  //       signer.privateKey
-  //     );
+      console.log(
+        "token0",
+        hundredTokens[0].map((value) => +value)
+      );
 
-  //     const ownerOfAvatar = await avatars.ownerOf(1);
+      expect(Array.isArray(hundredTokens[0])).to.be.equal(true);
+      // expect(Array.isArray(hundredTokens[99])).to.be.equal(true);
+      expect(typeof hundredTokens[100]).to.be.equal("undefined");
 
-  //     await gm.finishMission(message, signature.v, signature.r, signature.s);
+      // expect(twoFirstTokens[0].map((value) => +value)).to.be.eql([1, 3]);
+      // expect(twoFirstTokens[1].map((value) => +value)).to.be.eql([0, 2]);
+    });
+  });
 
-  //     const totalSupplyAfter = await lbx.totalSupply();
-  //     expect((totalSupplyAfter - totalSupplyBefore).toString()).to.be.equal(
-  //       "1"
-  //     );
+  describe("Transfer lock", async () => {
+    it("Can not be transferred while locked", async () => {
+      await gears.lockGear(1, { from: user1 });
+      await expectRevert(
+        gears.safeTransferFrom(user1, user2, 1, { from: user1 }),
+        "This gear is locked by owner and can not be transferred"
+      );
+    });
+    it("Can be transferred while unlocked", async () => {
+      await gears.unlockGear(1, { from: user1 });
+      await gears.safeTransferFrom(user1, user2, 1, { from: user1 });
+      const newOwner = await gears.ownerOf(1);
+      expect(newOwner.toString()).to.be.equal(user2);
+    });
+  });
 
-  //     const lootBoxOwner = await lbx.ownerOf(totalSupplyAfter);
-  //     expect(lootBoxOwner).to.be.equal(ownerOfAvatar);
-
-  //     const lootboxRarity = await lbx.rarities(totalSupplyAfter);
-  //     // console.log({ lootboxRarity });
-  //     expect(lootboxRarity.toString()).to.be.equal("0");
-  //   });
-
-  //   it("Mint avatar owner lootbox with legendary rarity ", async () => {
-  //     await lbx.setGameManager(gm.address);
-
-  //     const rarity = "03";
-
-  //     const message = `1111111111111111111111111111111100002000022100010000000${rarity}1111111111111111111111`;
-  //     const signature = await web3.eth.accounts.sign(
-  //       message,
-  //       signer.privateKey
-  //     );
-
-  //     await gm.finishMission(message, signature.v, signature.r, signature.s);
-
-  //     const totalSupplyAfter = await lbx.totalSupply();
-  //     const lootboxRarity = await lbx.rarities(totalSupplyAfter);
-  //     expect(lootboxRarity.toString()).to.be.equal("2");
-  //   });
-
-  //   it("Doesn't mint avatar for land owner", async () => {
-  //     const totalSupplyBefore = await lbx.totalSupply();
-  //     const rarity = "00";
-  //     const message = `1111111111111111111111111111111100002000020000110000000${rarity}1111111111111111111111`;
-  //     const signature = await web3.eth.accounts.sign(
-  //       message,
-  //       signer.privateKey
-  //     );
-
-  //     await gm.finishMission(message, signature.v, signature.r, signature.s);
-
-  //     const totalSupplyAfter = await lbx.totalSupply();
-
-  //     expect(totalSupplyAfter - totalSupplyBefore).to.be.equal(0);
-  //   });
-
-  //   it("Increases lootBoxesToMint common field for land owner", async () => {
-  //     const rarity = "23";
-  //     const message = `1111111111111111111111111111111100002000020020010000000${rarity}1111111111111111111111`;
-  //     const signature = await web3.eth.accounts.sign(
-  //       message,
-  //       signer.privateKey
-  //     );
-
-  //     await gm.finishMission(message, signature.v, signature.r, signature.s, {
-  //       from: user2,
-  //     });
-
-  //     const landOwner = await mc.ownerOf(200);
-
-  //     const lootBoxesToMintAfter = await gm.lootBoxesToMint(landOwner);
-
-  //     expect(lootBoxesToMintAfter.common.toString()).to.be.equal("1");
-  //   });
-
-  //   it("Increases lootBoxesToMint legendary field for land owner", async () => {
-  //     const rarity = "25";
-  //     const message = `1111111111111111111111111111111100002000020020010000000${rarity}1111111111111111111111`;
-  //     const signature = await web3.eth.accounts.sign(
-  //       message,
-  //       signer.privateKey
-  //     );
-
-  //     await gm.finishMission(message, signature.v, signature.r, signature.s, {
-  //       from: user2,
-  //     });
-
-  //     const landOwner = await mc.ownerOf(200);
-
-  //     const lootBoxesToMintAfter = await gm.lootBoxesToMint(landOwner);
-
-  //     expect(lootBoxesToMintAfter.legendary.toString()).to.be.equal("1");
-  //   });
-
-  //   it("Mint legendary first", async () => {
-  //     await gm.mintLootbox({ from: user2 });
-  //     const totalSupply = await lbx.totalSupply();
-  //     const lootBoxOwner = await lbx.ownerOf(totalSupply);
-
-  //     const lootBoxesToMintAfter = await gm.lootBoxesToMint(lootBoxOwner);
-  //     expect(lootBoxesToMintAfter.legendary.toString()).to.be.equal("0");
-
-  //     const rarity = await lbx.rarities(totalSupply);
-  //     expect(rarity.toString()).to.be.equal("2");
-  //   });
-
-  //   it("Mint common last", async () => {
-  //     await gm.mintLootbox({ from: user2 });
-  //     const totalSupply = await lbx.totalSupply();
-  //     const lootBoxOwner = await lbx.ownerOf(totalSupply);
-
-  //     const lootBoxesToMintAfter = await gm.lootBoxesToMint(lootBoxOwner);
-  //     expect(lootBoxesToMintAfter.common.toString()).to.be.equal("0");
-
-  //     const rarity = await lbx.rarities(totalSupply);
-  //     expect(rarity.toString()).to.be.equal("0");
-  //   });
-
-  //   it("Reverts if no lootboxes to mint more", async () => {
-  //     const tx = gm.mintLootbox({ from: user2 });
-  //     await truffleAssert.reverts(tx, "you cannot mint lootbox");
-  //   });
-  // });
-
-  // describe("Last owned token URI", async () => {
-  //   it("Checks the function", async () => {
-  //     await lbx.setGameManager(DAO);
-  //     await lbx.mint(user1, 0);
-  //     const balanceOf = +(await lbx.balanceOf(user1));
-  //     const token = +(await lbx.tokenOfOwnerByIndex(user1, balanceOf - 1));
-  //     const lastUriClassic = await lbx.tokenURI(token);
-  //     await expectRevert(
-  //       lbx.lastOwnedTokenURI(),
-  //       "User hasn't minted any token"
-  //     );
-  //     const lastUri = await lbx.lastOwnedTokenURI({ from: user1 });
-  //     expect(lastUri).to.be.equal(lastUriClassic);
-  //     expect(lastUri).to.be.equal(baseUri + "10/0/");
-  //   });
-  // });
-
-  // describe("All My Tokens Paginate", async () => {
-  //   it("Checks the function", async () => {
-  //     const twoFirstTokens = await lbx.allMyTokensPaginate(0, 1, {
-  //       from: user1,
-  //     });
-  //     expect(twoFirstTokens[0].map((value) => +value)).to.be.eql([1, 3]);
-  //     expect(twoFirstTokens[1].map((value) => +value)).to.be.eql([0, 2]);
-  //     const upTo100FirstTokens = await lbx.allMyTokensPaginate(0, 99, {
-  //       from: user1,
-  //     });
-  //     expect(upTo100FirstTokens[0].map((value) => +value)).to.be.eql([
-  //       1,
-  //       3,
-  //       4,
-  //       5,
-  //       6,
-  //       7,
-  //       10,
-  //     ]);
-  //     expect(upTo100FirstTokens[1].map((value) => +value)).to.be.eql([
-  //       0,
-  //       2,
-  //       1,
-  //       0,
-  //       0,
-  //       2,
-  //       0,
-  //     ]);
-  //   });
-  // });
-
-  // describe("GameManager burns a token", async () => {
-  //   it("Not a GameManager can't burn", async () => {
-  //     await expectRevert(lbx.burn(1, { from: user1 }), "only game manager");
-  //   });
-  //   it("GameManager can burn", async () => {
-  //     // DAO is GM
-  //     await lbx.burn(1, { from: DAO });
-  //     await expectRevert(
-  //       lbx.ownerOf(1),
-  //       "ERC721: owner query for nonexistent token"
-  //     );
-  //   });
-  // });
+  describe("GameManager burns a token", async () => {
+    it("Not a GameManager can't burn token", async () => {
+      await expectRevert(gears.burn(1, { from: user1 }), "only game manager");
+    });
+    it("GameManager can burn even locked token", async () => {
+      await gears.lockGear(1, { from: user2 });
+      await gears.burn(1, { from: DAO });
+      await expectRevert(
+        gears.ownerOf(1),
+        "ERC721: owner query for nonexistent token"
+      );
+    });
+  });
 });
