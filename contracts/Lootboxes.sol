@@ -72,6 +72,7 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
 
   function burn(uint256 tokenId) external onlyGameManager {
     _burn(tokenId);
+    rarities[tokenId] = Rarity.COMMON;
   }
 
   function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns(uint256[] memory, uint256[] memory) {
