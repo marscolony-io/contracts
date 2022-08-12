@@ -19,6 +19,8 @@ contract("Lootboxes", (accounts) => {
 
   const baseUri = "baseuri.test/";
 
+  let nextToMint = 1;
+
   before(async () => {
     gm = await GameManagerFixed.deployed();
     lbx = await LBX.deployed();
@@ -40,15 +42,16 @@ contract("Lootboxes", (accounts) => {
 
   describe("Mint", function() {
     it("Reverts if mint called not by mission manager", async () => {
-      const tx = lbx.mint(user2, 1);
-      await truffleAssert.reverts(tx, "only game manager");
+      await truffleAssert.reverts(lbx.mint(user2, 1), "only game manager");
     });
 
     it("Mints if called by mission manager", async () => {
       await lbx.setGameManager(DAO);
       await lbx.setBaseURI(baseUri);
       await lbx.mint(user1, 0);
+      nextToMint++;
       await lbx.mint(user2, 1);
+      nextToMint++;
       const supplyAfterMint = await lbx.totalSupply();
       expect(Number(supplyAfterMint.toString())).to.be.equal(2);
       const ownerOf1 = await lbx.ownerOf(1);
@@ -60,14 +63,15 @@ contract("Lootboxes", (accounts) => {
 
   describe("Rarity", function() {
     it("Returns correct rarity from struct", async () => {
-      let lastTokenId = await lbx.totalSupply();
       await lbx.mint(user1, 2);
+      const rarity1 = await lbx.rarities(nextToMint);
+      nextToMint++;
       await lbx.mint(user1, 1);
+      const rarity2 = await lbx.rarities(nextToMint);
+      nextToMint++;
       await lbx.mint(user1, 0);
-
-      const rarity1 = await lbx.rarities(++lastTokenId);
-      const rarity2 = await lbx.rarities(++lastTokenId);
-      const rarity3 = await lbx.rarities(++lastTokenId);
+      const rarity3 = await lbx.rarities(nextToMint);
+      nextToMint++;
 
       expect(rarity1.toString()).to.be.equal("2");
       expect(rarity2.toString()).to.be.equal("1");
@@ -91,21 +95,17 @@ contract("Lootboxes", (accounts) => {
     });
   });
 
-  describe("Open", function() {
-    it("Reverts if open called not by game manager", async () => {
+  describe("Burn", function() {
+    it("Reverts if burn called not by game manager", async () => {
       await lbx.setGameManager(user1);
-      const tx = lbx.open(1);
-      await truffleAssert.reverts(tx, "only game manager");
+      await truffleAssert.reverts(lbx.burn(1), "only game manager");
     });
 
-    it("Open lootbox", async () => {
+    it("Burn lootbox", async () => {
       await lbx.setGameManager(DAO);
-      await lbx.open(1);
-      const isOpened = await lbx.opened(1);
-      expect(isOpened).to.be.equal(true);
-
-      const isNotOpened = await lbx.opened(2);
-      expect(isNotOpened).to.be.equal(false);
+      expect(await lbx.totalSupply()).to.be.a.bignumber.that.equals(new BN('5'));
+      await lbx.burn(1);
+      expect(await lbx.totalSupply()).to.be.a.bignumber.that.equals(new BN('4'));
     });
   });
 
@@ -141,12 +141,13 @@ contract("Lootboxes", (accounts) => {
         "1"
       );
 
-      const lootBoxOwner = await lbx.ownerOf(totalSupplyAfter);
+      const lootBoxOwner = await lbx.ownerOf(nextToMint);
       expect(lootBoxOwner).to.be.equal(ownerOfAvatar);
 
-      const lootboxRarity = await lbx.rarities(totalSupplyAfter);
+      const lootboxRarity = await lbx.rarities(nextToMint);
       // console.log({ lootboxRarity });
       expect(lootboxRarity.toString()).to.be.equal("0");
+      nextToMint++;
     });
 
     it("Mint avatar owner lootbox with legendary rarity ", async () => {
@@ -162,9 +163,9 @@ contract("Lootboxes", (accounts) => {
 
       await gm.finishMission(message, signature.v, signature.r, signature.s);
 
-      const totalSupplyAfter = await lbx.totalSupply();
-      const lootboxRarity = await lbx.rarities(totalSupplyAfter);
+      const lootboxRarity = await lbx.rarities(nextToMint);
       expect(lootboxRarity.toString()).to.be.equal("2");
+      nextToMint++;
     });
 
     it("Doesn't mint avatar for land owner", async () => {
@@ -223,26 +224,26 @@ contract("Lootboxes", (accounts) => {
 
     it("Mint legendary first", async () => {
       await gm.mintLootbox({ from: user2 });
-      const totalSupply = await lbx.totalSupply();
-      const lootBoxOwner = await lbx.ownerOf(totalSupply);
+      const lootBoxOwner = await lbx.ownerOf(nextToMint);
 
       const lootBoxesToMintAfter = await gm.lootBoxesToMint(lootBoxOwner);
       expect(lootBoxesToMintAfter.legendary.toString()).to.be.equal("0");
 
-      const rarity = await lbx.rarities(totalSupply);
+      const rarity = await lbx.rarities(nextToMint);
       expect(rarity.toString()).to.be.equal("2");
+      nextToMint++;
     });
 
     it("Mint common last", async () => {
       await gm.mintLootbox({ from: user2 });
-      const totalSupply = await lbx.totalSupply();
-      const lootBoxOwner = await lbx.ownerOf(totalSupply);
+      const lootBoxOwner = await lbx.ownerOf(nextToMint);
 
       const lootBoxesToMintAfter = await gm.lootBoxesToMint(lootBoxOwner);
       expect(lootBoxesToMintAfter.common.toString()).to.be.equal("0");
 
-      const rarity = await lbx.rarities(totalSupply);
+      const rarity = await lbx.rarities(nextToMint);
       expect(rarity.toString()).to.be.equal("0");
+      nextToMint++;
     });
 
     it("Reverts if no lootboxes to mint more", async () => {
@@ -255,6 +256,7 @@ contract("Lootboxes", (accounts) => {
     it("Checks the function", async () => {
       await lbx.setGameManager(DAO);
       await lbx.mint(user1, 0);
+      nextToMint++;
       const balanceOf = +await lbx.balanceOf(user1);
       const token = +await lbx.tokenOfOwnerByIndex(user1, balanceOf - 1);
       const lastUriClassic = await lbx.tokenURI(token);
@@ -268,22 +270,22 @@ contract("Lootboxes", (accounts) => {
   describe("All My Tokens Paginate", async () => {
     it("Checks the function", async () => {
       const twoFirstTokens = await lbx.allMyTokensPaginate(0, 1, { from: user1 });
-      expect(twoFirstTokens[0].map(value => +value)).to.be.eql([1, 3]);
-      expect(twoFirstTokens[1].map(value => +value)).to.be.eql([0, 2]);
+      expect(twoFirstTokens[0].map(value => +value)).to.be.eql([5, 3]);
+      expect(twoFirstTokens[1].map(value => +value)).to.be.eql([0, 2]); // rarities
       const upTo100FirstTokens = await lbx.allMyTokensPaginate(0, 99, { from: user1 });
-      expect(upTo100FirstTokens[0].map(value => +value)).to.be.eql([1, 3, 4, 5, 6, 7, 10]);
-      expect(upTo100FirstTokens[1].map(value => +value)).to.be.eql([0, 2, 1, 0, 0, 2, 0]);
+      expect(upTo100FirstTokens[0].map(value => +value)).to.be.eql([5, 3, 4, 6, 7, 10]);
+      expect(upTo100FirstTokens[1].map(value => +value)).to.be.eql([0, 2, 1, 0, 2, 0]);
     });
   });
 
   describe("GameManager burns a token", async () => {
     it("Not a GameManager can't burn", async () => {
-      await expectRevert(lbx.burn(1, { from: user1 }), 'only game manager');
+      await expectRevert(lbx.burn(5, { from: user1 }), 'only game manager');
     });
     it("GameManager can burn", async () => {
       // DAO is GM
-      await lbx.burn(1, { from: DAO });
-      await expectRevert(lbx.ownerOf(1), "ERC721: owner query for nonexistent token");
+      await lbx.burn(5, { from: DAO });
+      await expectRevert(lbx.ownerOf(5), "ERC721: owner query for nonexistent token");
     });
   });
 });

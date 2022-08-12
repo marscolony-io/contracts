@@ -13,12 +13,11 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
 
   string private nftBaseURI;
   address public gameManager;
-  mapping (uint256 => bool) public opened;
   mapping (uint256 => Rarity) public rarities;
   mapping (address => uint256) private lastTokenMinted;
   bool lock;
 
-  uint256 nextIdToMint = 1;
+  uint256 private nextIdToMint = 1;
 
   modifier onlyGameManager {
     require(msg.sender == gameManager, 'only game manager');
@@ -73,10 +72,7 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
 
   function burn(uint256 tokenId) external onlyGameManager {
     _burn(tokenId);
-  }
-
-  function open(uint256 tokenId) external onlyGameManager {
-    opened[tokenId] = true;
+    rarities[tokenId] = Rarity.COMMON;
   }
 
   function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns(uint256[] memory, uint256[] memory) {
