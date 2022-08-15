@@ -5,22 +5,6 @@ import './ILootboxes.sol';
 
 interface IGears {
   enum Rarity{ COMMON, RARE, LEGENDARY }
-  enum GearType{ 
-    Rocket_fuel, 
-    Engine_Furious,
-    WD_40,
-    Titanium_drill,
-    Diamond_drill,
-    Laser_drill,
-    Small_area_scanner,
-    Medium_area_scanner,
-    Large_area_scanner,
-    Ultrasonic_transmitter,
-    Infrared_transmitter,
-    Vibration_transmitter,
-    The_Nebuchadnezzar,
-    Unknown
-  }
   function mint(address user, ILootboxes.Rarity rarity) external;
   function setBaseURI(string memory newURI) external;
   function lockGear(uint256 tokenId) external;

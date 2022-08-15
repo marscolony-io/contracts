@@ -12,9 +12,11 @@ import './interfaces/ILootboxes.sol';
 contract Gears is ERC721Enumerable, IGears, Ownable {
   using Strings for uint256;
 
+  address public DAO; // owner
+
   struct Gear {
     Rarity rarity;
-    GearType gearType;
+    uint256 gearType;
     uint256 durability;
     bool locked;
   }
@@ -23,12 +25,13 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
   Gear[] public initialRareGears;
   Gear[] public initialLegendaryGears;
   Gear[] public transportGears;
+  Gear[] public additionalGears; 
 
   string private nftBaseURI;
   address public gameManager;
   mapping (uint256 => Gear) public gears;
   mapping (address => uint256) private lastTokenMinted;
-  uint256 lastTokenId;
+  uint256 public nextIdToMint = 1;
   bool lock;
 
 
@@ -42,25 +45,46 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
     _;
   }
 
+  modifier onlyDAO {
+    require(msg.sender == DAO, 'Only DAO');
+    _;
+  }
+
+  // Rocket_fuel  0
+  // Engine_Furious  1
+  // WD_40  2
+  // Titanium_drill  3
+  // Diamond_drill  4
+  // Laser_drill  5
+  // Small_area_scanner 6
+  // Medium_area_scanner  7
+  // Large_area_scanner  8
+  // Ultrasonic_transmitter  9
+  // Infrared_transmitter  10
+  // Vibration_transmitter  11
+  // The_Nebuchadnezzar  12
+  // Unknown 13
+
   constructor (string memory _nftBaseURI) ERC721('Gears', 'Gear') {
+    DAO = msg.sender;
     nftBaseURI = _nftBaseURI;
-    initialCommonGears.push(Gear(Rarity.COMMON, GearType.Rocket_fuel, 100, false));
-    initialCommonGears.push(Gear(Rarity.COMMON, GearType.Titanium_drill, 100, false));
-    initialCommonGears.push(Gear(Rarity.COMMON, GearType.Small_area_scanner, 100, false));
-    initialCommonGears.push(Gear(Rarity.COMMON, GearType.Ultrasonic_transmitter, 100, false));
+    initialCommonGears.push(Gear(Rarity.COMMON, 0, 100, false));
+    initialCommonGears.push(Gear(Rarity.COMMON, 1, 100, false));
+    initialCommonGears.push(Gear(Rarity.COMMON, 2, 100, false));
+    initialCommonGears.push(Gear(Rarity.COMMON, 3, 100, false));
 
-    initialRareGears.push(Gear(Rarity.RARE, GearType.Engine_Furious, 150, false));
-    initialRareGears.push(Gear(Rarity.RARE, GearType.Diamond_drill, 150, false));
-    initialRareGears.push(Gear(Rarity.RARE, GearType.Medium_area_scanner, 150, false));
-    initialRareGears.push(Gear(Rarity.RARE, GearType.Infrared_transmitter, 150, false));
+    initialRareGears.push(Gear(Rarity.RARE, 4, 150, false));
+    initialRareGears.push(Gear(Rarity.RARE, 5, 150, false));
+    initialRareGears.push(Gear(Rarity.RARE, 6, 150, false));
+    initialRareGears.push(Gear(Rarity.RARE, 7, 150, false));
     
-    initialLegendaryGears.push(Gear(Rarity.LEGENDARY, GearType.WD_40, 200, false));
-    initialLegendaryGears.push(Gear(Rarity.LEGENDARY, GearType.Laser_drill, 200, false));
-    initialLegendaryGears.push(Gear(Rarity.LEGENDARY, GearType.Large_area_scanner, 200, false));
-    initialLegendaryGears.push(Gear(Rarity.LEGENDARY, GearType.Vibration_transmitter, 200, false));
+    initialLegendaryGears.push(Gear(Rarity.LEGENDARY, 8, 200, false));
+    initialLegendaryGears.push(Gear(Rarity.LEGENDARY, 9, 200, false));
+    initialLegendaryGears.push(Gear(Rarity.LEGENDARY, 10, 200, false));
+    initialLegendaryGears.push(Gear(Rarity.LEGENDARY, 11, 200, false));
 
-    transportGears.push(Gear(Rarity.LEGENDARY, GearType.The_Nebuchadnezzar, 350, false));
-    transportGears.push(Gear(Rarity.LEGENDARY, GearType.Unknown, 350, false));
+    transportGears.push(Gear(Rarity.LEGENDARY, 12, 350, false));
+    transportGears.push(Gear(Rarity.LEGENDARY, 13, 350, false));
 
   }
 
@@ -76,33 +100,17 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
     nftBaseURI = newURI;
   }
 
-  function getGearTypeUriPath(GearType _gearType) private pure returns (string memory) {
-    if (_gearType == GearType.Rocket_fuel) return "/0";
-    if (_gearType == GearType.Engine_Furious) return "/1";
-    if (_gearType == GearType.WD_40) return "/2";
-    if (_gearType == GearType.Titanium_drill) return "/3";
-    if (_gearType == GearType.Diamond_drill) return "/4";
-    if (_gearType == GearType.Laser_drill) return "/5";
-    if (_gearType == GearType.Small_area_scanner) return "/6";
-    if (_gearType == GearType.Medium_area_scanner) return "/7";
-    if (_gearType == GearType.Large_area_scanner) return "/8";
-    if (_gearType == GearType.Ultrasonic_transmitter) return "/9";
-    if (_gearType == GearType.Infrared_transmitter) return "/10";
-    if (_gearType == GearType.Vibration_transmitter) return "/11";
-    if (_gearType == GearType.The_Nebuchadnezzar) return "/12";
-    if (_gearType == GearType.Unknown) return "/13";
-    revert("Invalid gear type");
-  }
 
   function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
     require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
 
     string memory baseURI = _baseURI();
-    GearType gearType = gears[tokenId].gearType;
+    uint256 gearType = gears[tokenId].gearType;
     return bytes(baseURI).length > 0 ? string(abi.encodePacked(
       baseURI, 
       tokenId.toString(), 
-      getGearTypeUriPath(gearType)
+      "/",
+      gearType.toString()
       )) : "";
   }
 
@@ -142,10 +150,6 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
       }
       return Rarity.LEGENDARY;
     }
-  }
-
-  function getInitialLength() public view returns (uint) {
-    return initialCommonGears.length;
   }
 
   function getRandomizedGear(ILootboxes.Rarity _lootboxRarity, Rarity _gearRarity) public view returns (Gear memory gear) {
@@ -195,12 +199,19 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
   function mint(address receiver, ILootboxes.Rarity _lootBoxRarity) external override onlyGameManager {
     require(!lock, 'locked');
     lock = true;
-    lastTokenId++;
-    gears[lastTokenId] = calculateGear(_lootBoxRarity);
-    lastTokenMinted[receiver] = lastTokenId;
-    _safeMint(receiver, lastTokenId); 
+    gears[nextIdToMint] = calculateGear(_lootBoxRarity);
+    lastTokenMinted[receiver] = nextIdToMint;
+    _safeMint(receiver, nextIdToMint); 
+    nextIdToMint++;
     lock = false;
   }
+
+  function airdrop(address receiver, Rarity rarity, uint64 gearType, uint64 durability) external onlyDAO {
+    gears[nextIdToMint] = Gear(rarity, gearType, durability, false);
+    _safeMint(receiver, nextIdToMint);
+    nextIdToMint++;
+  }
+
 
   function burn(uint256 tokenId) external onlyGameManager {
     gears[tokenId].locked = false;
@@ -236,7 +247,7 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
     gears[tokenId].locked = false;
   }
 
-  function decreaseDurability(uint256 tokenId, uint256 amount) external onlyGameManager {
+  function decreaseDurability(uint256 tokenId, uint32 amount) external onlyGameManager {
     if (gears[tokenId].durability <= amount) {
        _burn(tokenId);
     }

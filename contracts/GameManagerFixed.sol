@@ -138,21 +138,21 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     gearsAddress = _address;
   }
 
-  function getPollData() external view returns (string memory, string memory, string[] memory, uint256[] memory, bool) {
-    if (pollAddress == address(0)) {
-      return ('', '', new string[](0), new uint256[](0), false);
-    }
-    (string memory description, string memory caption, string[] memory items) = IPoll(pollAddress).getVoteTopic();
-    uint256[] memory results = new uint256[](items.length);
-    for (uint8 i = 0; i < items.length; i++) {
-      results[i] = IPoll(pollAddress).totalVotesFor(i);
-    }
-    return (description, caption, items, results, IPoll(pollAddress).canVote(msg.sender));
-  }
+  // function getPollData() external view returns (string memory, string memory, string[] memory, uint256[] memory, bool) {
+  //   if (pollAddress == address(0)) {
+  //     return ('', '', new string[](0), new uint256[](0), false);
+  //   }
+  //   (string memory description, string memory caption, string[] memory items) = IPoll(pollAddress).getVoteTopic();
+  //   uint256[] memory results = new uint256[](items.length);
+  //   for (uint8 i = 0; i < items.length; i++) {
+  //     results[i] = IPoll(pollAddress).totalVotesFor(i);
+  //   }
+  //   return (description, caption, items, results, IPoll(pollAddress).canVote(msg.sender));
+  // }
 
-  function vote(uint8 decision) external {
-    IPoll(pollAddress).vote(msg.sender, decision);
-  }
+  // function vote(uint8 decision) external {
+  //   IPoll(pollAddress).vote(msg.sender, decision);
+  // }
 
   function stringToUint(string memory s) private pure returns (uint256) {
     bytes memory b = bytes(s);
@@ -837,13 +837,12 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
 
   // gears
   function openLootbox(uint256 tokenId) public onlyTokenOwner(tokenId) whenNotPaused {
-    require(!ILootboxes(lootboxesAddress).opened(tokenId), "This lootbox has been already opened");
 
     ILootboxes.Rarity rarity = ILootboxes(lootboxesAddress).rarities(tokenId);
     uint256 openPrice = rarity == ILootboxes.Rarity.COMMON ? 20 * 10e18 : rarity == ILootboxes.Rarity.RARE ? 45 * 10e18 : 70 * 10e18;
 
     TokenInterface(CLNYAddress).burn(msg.sender, openPrice, REASON_OPEN_LOOTBOX);
-    ILootboxes(lootboxesAddress).open(tokenId);
+    ILootboxes(lootboxesAddress).burn(tokenId);
 
     IGears(gearsAddress).mint(msg.sender, rarity);
   }

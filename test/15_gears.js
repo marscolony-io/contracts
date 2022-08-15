@@ -4,33 +4,39 @@ const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
 
 const GameManagerFixed = artifacts.require("GameManagerFixed");
 const GEARS = artifacts.require("Gears");
+const LOOTBOXES = artifacts.require("Lootboxes");
 const AVATARS = artifacts.require("MartianColonists");
 const AM = artifacts.require("AvatarManager");
 const MC = artifacts.require("MC");
+const CLNY = artifacts.require("CLNY");
 
 contract("Gears", (accounts) => {
   const [DAO, user1, user2] = accounts;
 
   let gm;
   let gears;
+  let lootboxes;
   let avatars;
   let am;
   let mc;
+  let clny;
 
   const baseUri = "baseuri.test/";
 
   before(async () => {
     gm = await GameManagerFixed.deployed();
     gears = await GEARS.deployed();
+    lootboxes = await LOOTBOXES.deployed();
     avatars = await AVATARS.deployed();
     am = await AM.deployed();
     mc = await MC.deployed();
+    clny = await CLNY.deployed();
 
     await am.setMaxTokenId(5);
     await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
     await gm.claim([1], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });
-    await time.increase(60 * 60 * 24 * 365);
+    await time.increase(60 * 60 * 24 * 365 * 10);
     await gm.claimEarned([1], { from: user1 });
     await gm.claimEarned([200], { from: user2 });
     await gm.mintAvatar({ from: user1 });
@@ -335,11 +341,10 @@ contract("Gears", (accounts) => {
 
     it("lockGear by owner", async () => {
       await gears.lockGear(1, { from: user1 });
-      const isLocked = await gears.locks(1);
-      expect(isLocked).to.be.equal(true);
+      const gear = await gears.gears(1);
 
-      const isNotLocked = await gears.locks(2);
-      expect(isNotLocked).to.be.equal(false);
+      const locked = await gear.locked;
+      expect(locked).to.be.equal(true);
     });
 
     it("Reverts if unlock called not by owner", async () => {
@@ -349,8 +354,10 @@ contract("Gears", (accounts) => {
 
     it("unlockGear by owner", async () => {
       await gears.unlockGear(1, { from: user1 });
-      const isLocked = await gears.locks(1);
-      expect(isLocked).to.be.equal(false);
+
+      const gear = await gears.gears(1);
+      const locked = await gear.locked;
+      expect(locked).to.be.equal(false);
     });
   });
 
@@ -400,6 +407,70 @@ contract("Gears", (accounts) => {
       await expectRevert(
         gears.ownerOf(1),
         "ERC721: owner query for nonexistent token"
+      );
+    });
+  });
+
+  describe("airdrop", () => {
+    it("dao can make airdrop", async () => {
+      const lastTokenId = await gears.nextIdToMint();
+      await gears.airdrop(user1, 0, 15, 100);
+      const gear = await gears.gears(lastTokenId);
+      expect(gear.rarity.toString()).to.be.equal("0");
+      expect(gear.gearType.toString()).to.be.equal("15");
+      expect(gear.durability.toString()).to.be.equal("100");
+    });
+  });
+
+  describe("gamemanager open lootbox", () => {
+    it("can not be opened by not owner", async () => {
+      await lootboxes.setGameManager(DAO);
+
+      await lootboxes.mint(user1, 1, { from: DAO });
+      await lootboxes.mint(user1, 1, { from: DAO });
+      await expectRevert(
+        gm.openLootbox(1, { from: DAO }),
+        "You aren't the token owner"
+      );
+    });
+
+    it("can be opened by owner", async () => {
+      await lootboxes.setGameManager(gm.address);
+      await gears.setGameManager(gm.address);
+      const totalMintedGears = await gears.totalSupply();
+      console.log("total minted gears", totalMintedGears.toString());
+      const lastTokenId = await gears.nextIdToMint();
+      console.log("lastTokenId", lastTokenId);
+      await gm.openLootbox(1, { from: user1 });
+      const mintedGearsAfter = await gears.totalSupply();
+      console.log("minted gears after", mintedGearsAfter.toString());
+      expect(parseInt(mintedGearsAfter)).to.be.equal(
+        parseInt(totalMintedGears) + 1
+      );
+
+      const gear = await gears.gears(lastTokenId);
+      console.log("gear", gear);
+
+      const owner = await gears.ownerOf(lastTokenId);
+      console.log("owner", owner);
+
+      expect(owner).to.be.equal(user1);
+    });
+
+    it("can not open opened lootbox", async () => {
+      await expectRevert(
+        gm.openLootbox(1, { from: user1 }),
+        "ERC721: owner query for nonexistent token"
+      );
+    });
+
+    it("can not open if not enough clny", async () => {
+      const clnyBalance = await clny.balanceOf(user1);
+      console.log("clny balance", clnyBalance.toString());
+      await clny.transfer(user2, clnyBalance.toString());
+      await expectRevert(
+        gm.openLootbox(2, { from: user1 }),
+        "ERC20: transfer amount exceeds balance"
       );
     });
   });
