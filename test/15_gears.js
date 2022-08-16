@@ -326,10 +326,12 @@ contract("Gears", (accounts) => {
 
       const gear = await gears.gears(1);
 
-      const [base1, id1, gearType] = uri.split("/");
+      const [base1, id1, gearType, category, rarity] = uri.split("/");
       expect(baseUri.startsWith(base1)).to.be.true;
       expect(id1).to.be.equal("1");
       expect(gearType).to.be.equal(gear.gearType.toString());
+      expect(category).to.be.equal(gear.category.toString());
+      expect(rarity).to.be.equal(gear.rarity.toString());
     });
   });
 
@@ -414,10 +416,11 @@ contract("Gears", (accounts) => {
   describe("airdrop", () => {
     it("dao can make airdrop", async () => {
       const lastTokenId = await gears.nextIdToMint();
-      await gears.airdrop(user1, 0, 15, 100);
+      await gears.airdrop(user1, 0, 15, 4, 100);
       const gear = await gears.gears(lastTokenId);
       expect(gear.rarity.toString()).to.be.equal("0");
       expect(gear.gearType.toString()).to.be.equal("15");
+      expect(gear.category.toString()).to.be.equal("4");
       expect(gear.durability.toString()).to.be.equal("100");
     });
   });
@@ -430,7 +433,7 @@ contract("Gears", (accounts) => {
       await lootboxes.mint(user1, 1, { from: DAO });
       await expectRevert(
         gm.openLootbox(1, { from: DAO }),
-        "You aren't the token owner"
+        "You aren't this lootbox owner"
       );
     });
 
@@ -465,12 +468,16 @@ contract("Gears", (accounts) => {
     });
 
     it("can not open if not enough clny", async () => {
+      const lootboxesSupply = await lootboxes.totalSupply();
+      console.log("lootboxesSupply", lootboxesSupply.toString());
+      const lastLootbox = await lootboxes.tokenByIndex(0);
+      console.log("last lootbox", lastLootbox.toString());
       const clnyBalance = await clny.balanceOf(user1);
       console.log("clny balance", clnyBalance.toString());
-      await clny.transfer(user2, clnyBalance.toString());
+      await clny.transfer(user2, clnyBalance.toString(), { from: user1 });
       await expectRevert(
         gm.openLootbox(2, { from: user1 }),
-        "ERC20: transfer amount exceeds balance"
+        "ERC20: burn amount exceeds balance"
       );
     });
   });

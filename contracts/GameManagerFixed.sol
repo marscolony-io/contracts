@@ -36,7 +36,6 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   address public backendSigner;
   mapping (bytes32 => bool) private usedSignatures;
   address public lootboxesAddress;
-  address public gearsAddress;
 
 
   struct AvailableRarities {
@@ -47,6 +46,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   mapping (address => AvailableRarities) public lootBoxesToMint;
   
   address public cryochamberAddress;
+  address public gearsAddress;
 
   uint256[41] private ______gm_gap_1;
 
@@ -836,12 +836,14 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
 
 
   // gears
-  function openLootbox(uint256 tokenId) public onlyTokenOwner(tokenId) whenNotPaused {
+  function openLootbox(uint256 tokenId) external whenNotPaused {
+
+    require(TokenInterface(lootboxesAddress).ownerOf(tokenId) == msg.sender, "You aren't this lootbox owner");
 
     ILootboxes.Rarity rarity = ILootboxes(lootboxesAddress).rarities(tokenId);
-    uint256 openPrice = rarity == ILootboxes.Rarity.COMMON ? 20 * 10e18 : rarity == ILootboxes.Rarity.RARE ? 45 * 10e18 : 70 * 10e18;
+    uint256 openPrice = (rarity == ILootboxes.Rarity.COMMON) ? 20 : (rarity == ILootboxes.Rarity.RARE) ? 45 : 70;
 
-    TokenInterface(CLNYAddress).burn(msg.sender, openPrice, REASON_OPEN_LOOTBOX);
+    TokenInterface(CLNYAddress).burn(msg.sender, openPrice * 10 ** 18, REASON_OPEN_LOOTBOX);
     ILootboxes(lootboxesAddress).burn(tokenId);
 
     IGears(gearsAddress).mint(msg.sender, rarity);
