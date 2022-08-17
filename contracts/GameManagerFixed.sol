@@ -48,7 +48,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   address public cryochamberAddress;
   address public gearsAddress;
 
-  uint256[41] private ______gm_gap_1;
+  uint256[40] private ______gm_gap_1;
 
   struct LandData {
     uint256 fixedEarnings; // already earned CLNY, but not withdrawn yet

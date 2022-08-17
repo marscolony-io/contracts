@@ -148,10 +148,10 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
       }
 
       if (randomNumber(100) > 70) {
-        return Rarity.LEGENDARY; // 70%
+        return Rarity.LEGENDARY; // 15%
       }
       
-      return Rarity.RARE; // 15%
+      return Rarity.RARE; // 70%
     }
 
     if (_lootBoxRarity == ILootboxes.Rarity.LEGENDARY) {
