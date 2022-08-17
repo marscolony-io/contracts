@@ -6,7 +6,7 @@ const GameManagerFixed = artifacts.require("GameManagerFixed");
 const GEARS = artifacts.require("Gears");
 const LOOTBOXES = artifacts.require("Lootboxes");
 const AVATARS = artifacts.require("MartianColonists");
-const AM = artifacts.require("AvatarManager");
+const CM = artifacts.require("CollectionManager");
 const MC = artifacts.require("MC");
 const CLNY = artifacts.require("CLNY");
 
@@ -17,7 +17,7 @@ contract("Gears", (accounts) => {
   let gears;
   let lootboxes;
   let avatars;
-  let am;
+  let cm;
   let mc;
   let clny;
 
@@ -28,11 +28,11 @@ contract("Gears", (accounts) => {
     gears = await GEARS.deployed();
     lootboxes = await LOOTBOXES.deployed();
     avatars = await AVATARS.deployed();
-    am = await AM.deployed();
+    cm = await CM.deployed();
     mc = await MC.deployed();
     clny = await CLNY.deployed();
 
-    await am.setMaxTokenId(5);
+    await cm.setMaxTokenId(5);
     await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
     await gm.claim([1], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });

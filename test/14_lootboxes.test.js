@@ -5,7 +5,7 @@ const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
 const GameManagerFixed = artifacts.require("GameManagerFixed");
 const LBX = artifacts.require("Lootboxes");
 const AVATARS = artifacts.require("MartianColonists");
-const AM = artifacts.require("AvatarManager");
+const CM = artifacts.require("CollectionManager");
 const MC = artifacts.require("MC");
 
 contract("Lootboxes", (accounts) => {
@@ -14,7 +14,7 @@ contract("Lootboxes", (accounts) => {
   let gm;
   let lbx;
   let avatars;
-  let am;
+  let cm;
   let mc;
 
   const baseUri = "baseuri.test/";
@@ -25,10 +25,10 @@ contract("Lootboxes", (accounts) => {
     gm = await GameManagerFixed.deployed();
     lbx = await LBX.deployed();
     avatars = await AVATARS.deployed();
-    am = await AM.deployed();
+    cm = await CM.deployed();
     mc = await MC.deployed();
 
-    await am.setMaxTokenId(5);
+    await cm.setMaxTokenId(5);
     await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
     await gm.claim([1], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });
@@ -103,9 +103,13 @@ contract("Lootboxes", (accounts) => {
 
     it("Burn lootbox", async () => {
       await lbx.setGameManager(DAO);
-      expect(await lbx.totalSupply()).to.be.a.bignumber.that.equals(new BN('5'));
+      expect(await lbx.totalSupply()).to.be.a.bignumber.that.equals(
+        new BN("5")
+      );
       await lbx.burn(1);
-      expect(await lbx.totalSupply()).to.be.a.bignumber.that.equals(new BN('4'));
+      expect(await lbx.totalSupply()).to.be.a.bignumber.that.equals(
+        new BN("4")
+      );
     });
   });
 
@@ -257,35 +261,59 @@ contract("Lootboxes", (accounts) => {
       await lbx.setGameManager(DAO);
       await lbx.mint(user1, 0);
       nextToMint++;
-      const balanceOf = +await lbx.balanceOf(user1);
-      const token = +await lbx.tokenOfOwnerByIndex(user1, balanceOf - 1);
+      const balanceOf = +(await lbx.balanceOf(user1));
+      const token = +(await lbx.tokenOfOwnerByIndex(user1, balanceOf - 1));
       const lastUriClassic = await lbx.tokenURI(token);
-      await expectRevert(lbx.lastOwnedTokenURI(), "User hasn't minted any token");
+      await expectRevert(
+        lbx.lastOwnedTokenURI(),
+        "User hasn't minted any token"
+      );
       const lastUri = await lbx.lastOwnedTokenURI({ from: user1 });
       expect(lastUri).to.be.equal(lastUriClassic);
-      expect(lastUri).to.be.equal(baseUri + '10/0/');
+      expect(lastUri).to.be.equal(baseUri + "10/0/");
     });
   });
 
   describe("All My Tokens Paginate", async () => {
     it("Checks the function", async () => {
-      const twoFirstTokens = await lbx.allMyTokensPaginate(0, 1, { from: user1 });
-      expect(twoFirstTokens[0].map(value => +value)).to.be.eql([5, 3]);
-      expect(twoFirstTokens[1].map(value => +value)).to.be.eql([0, 2]); // rarities
-      const upTo100FirstTokens = await lbx.allMyTokensPaginate(0, 99, { from: user1 });
-      expect(upTo100FirstTokens[0].map(value => +value)).to.be.eql([5, 3, 4, 6, 7, 10]);
-      expect(upTo100FirstTokens[1].map(value => +value)).to.be.eql([0, 2, 1, 0, 2, 0]);
+      const twoFirstTokens = await lbx.allMyTokensPaginate(0, 1, {
+        from: user1,
+      });
+      expect(twoFirstTokens[0].map((value) => +value)).to.be.eql([5, 3]);
+      expect(twoFirstTokens[1].map((value) => +value)).to.be.eql([0, 2]); // rarities
+      const upTo100FirstTokens = await lbx.allMyTokensPaginate(0, 99, {
+        from: user1,
+      });
+      expect(upTo100FirstTokens[0].map((value) => +value)).to.be.eql([
+        5,
+        3,
+        4,
+        6,
+        7,
+        10,
+      ]);
+      expect(upTo100FirstTokens[1].map((value) => +value)).to.be.eql([
+        0,
+        2,
+        1,
+        0,
+        2,
+        0,
+      ]);
     });
   });
 
   describe("GameManager burns a token", async () => {
     it("Not a GameManager can't burn", async () => {
-      await expectRevert(lbx.burn(5, { from: user1 }), 'only game manager');
+      await expectRevert(lbx.burn(5, { from: user1 }), "only game manager");
     });
     it("GameManager can burn", async () => {
       // DAO is GM
       await lbx.burn(5, { from: DAO });
-      await expectRevert(lbx.ownerOf(5), "ERC721: owner query for nonexistent token");
+      await expectRevert(
+        lbx.ownerOf(5),
+        "ERC721: owner query for nonexistent token"
+      );
     });
   });
 });

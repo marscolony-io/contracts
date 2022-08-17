@@ -10,7 +10,7 @@ import './Shares.sol';
 import './interfaces/IMartianColonists.sol';
 import './interfaces/ILootboxes.sol';
 import './interfaces/ICryochamber.sol';
-import './interfaces/IAvatarManager.sol';
+import './interfaces/ICollectionManager.sol';
 import './interfaces/IGameManager.sol';
 
 /**
@@ -289,7 +289,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     require(_xp >= 230 && _xp < 19971800, "XP increment is not valid");
     require((_lootbox >= 0 && _lootbox <= 3) || (_lootbox >= 23 && _lootbox <= 25), "Lootbox code is not valid");
 
-    IAvatarManager(avatarAddress).addXP(_avatar, _xp);
+    ICollectionManager(avatarAddress).addXP(_avatar, _xp);
 
 
     if (_lootbox >= 1 && _lootbox <= 3) {
@@ -816,7 +816,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
 
   function renameAvatar(uint256 avatarId, string calldata _name) external {
     require(martianColonists.ownerOf(avatarId) == msg.sender, 'You are not the owner');
-    IAvatarManager(avatarAddress).setNameByGameManager(avatarId, _name);
+    ICollectionManager(avatarAddress).setNameByGameManager(avatarId, _name);
     TokenInterface(CLNYAddress).burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
   }
 }

@@ -4,7 +4,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import './GameConnection.sol';
 import './interfaces/IMartianColonists.sol';
-import './interfaces/IAvatarManager.sol';
+import './interfaces/ICollectionManager.sol';
 import './interfaces/IGameManager.sol';
 import './interfaces/TokenInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -12,7 +12,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 contract MissionManager is GameConnection, PausableUpgradeable {
   IMartianColonists public collection;
-  IAvatarManager public avatarManager;
+  ICollectionManager public CollectionManager;
   TokenInterface public MC;
 
   struct AccountMissionState {
@@ -31,11 +31,11 @@ contract MissionManager is GameConnection, PausableUpgradeable {
 
   uint256[50] private ______gap;
 
-  function initialize(IMartianColonists _collection, IAvatarManager _avatarManager, TokenInterface _MC) external initializer {
+  function initialize(IMartianColonists _collection, ICollectionManager _CollectionManager, TokenInterface _MC) external initializer {
     GameConnection.__GameConnection_init(msg.sender);
     PausableUpgradeable.__Pausable_init();
     collection = _collection;
-    avatarManager = _avatarManager;
+    CollectionManager = _CollectionManager;
     MC = _MC;
   }
 

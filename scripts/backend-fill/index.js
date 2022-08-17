@@ -4,7 +4,7 @@ const MC = artifacts.require("MC");
 const MSN = artifacts.require("MissionManager");
 const CLNY = artifacts.require("CLNY");
 const COLONISTS = artifacts.require("MartianColonists");
-const AvatarManager = artifacts.require("AvatarManager");
+const CollectionManager = artifacts.require("CollectionManager");
 const CryochamberManager = artifacts.require("CryochamberManager");
 
 module.exports = async (callback) => {
@@ -18,7 +18,7 @@ module.exports = async (callback) => {
     const clny = await CLNY.deployed();
     const nft = await COLONISTS.deployed();
     const cryo = await CryochamberManager.deployed();
-    let avatars = await AvatarManager.deployed();
+    let collection = await CollectionManager.deployed();
 
     const totalLandsInitialCount = await mc.totalSupply();
     console.log("initial lands count:" + totalLandsInitialCount.toString());
@@ -101,7 +101,7 @@ module.exports = async (callback) => {
     const avatarsCountBefore = await nft.totalSupply();
     console.log("avatarsCountBefore", avatarsCountBefore.toString());
 
-    await avatars.setMaxTokenId(20, { from: accounts[0] });
+    await collection.setMaxTokenId(20, { from: accounts[0] });
 
     for (const account of accounts) {
       console.log("mint avatar for account", account);
@@ -172,7 +172,7 @@ module.exports = async (callback) => {
 
 MISSION_MANAGER=${msn.address}
 GAME_MANAGER=${gm.address}
-AVATAR_MANAGER=${avatars.address}
+COLLECTION_MANAGER=${collection.address}
 MC=${mc.address}
 MCLN=${nft.address}
 CRYO=${cryo.address}

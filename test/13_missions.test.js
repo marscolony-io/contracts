@@ -4,7 +4,7 @@ const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
 
 const GameManagerFixed = artifacts.require("GameManagerFixed");
 const CLNY = artifacts.require("CLNY");
-const AvatarManager = artifacts.require("AvatarManager");
+const CollectionManager = artifacts.require("CollectionManager");
 const NFT = artifacts.require("MartianColonists");
 const MSN = artifacts.require("MissionManager");
 const MC = artifacts.require("MC");
@@ -14,7 +14,7 @@ contract("MissionsManager", (accounts) => {
 
   let gm;
   let clny;
-  let avatars;
+  let collection;
   let nft;
   let msn;
   let mc;
@@ -22,11 +22,11 @@ contract("MissionsManager", (accounts) => {
   before(async () => {
     gm = await GameManagerFixed.deployed();
     clny = await CLNY.deployed();
-    avatars = await AvatarManager.deployed();
+    collection = await CollectionManager.deployed();
     nft = await NFT.deployed();
     msn = await MSN.deployed();
     mc = await MC.deployed();
-    await avatars.setMaxTokenId(5);
+    await collection.setMaxTokenId(5);
     await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
     await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });
@@ -226,7 +226,7 @@ contract("MissionsManager", (accounts) => {
     const landReward = 20;
 
     it("Xp added, CLNY rewards added for avatar and to land", async () => {
-      const initialXp = await avatars.getXP([1]);
+      const initialXp = await collection.getXP([1]);
 
       const avatarOwner = await nft.ownerOf(avatarId);
       const landOwner = await mc.ownerOf(landId);
@@ -257,7 +257,7 @@ contract("MissionsManager", (accounts) => {
         from: DAO,
       });
 
-      const addedXp = await avatars.getXP([4]);
+      const addedXp = await collection.getXP([4]);
 
       expect(+addedXp - +initialXp).to.be.equal(10000000);
 
@@ -291,7 +291,10 @@ contract("MissionsManager", (accounts) => {
       const earnedBefore = await gm.getEarned(landId);
       await gm.fixEarnings([landId]);
       const earnedAfter = await gm.getEarned(landId);
-      expect(earnedAfter / 1_000_000).to.be.approximately(earnedBefore / 1_000_000, 50_000_000);
+      expect(earnedAfter / 1_000_000).to.be.approximately(
+        earnedBefore / 1_000_000,
+        50_000_000
+      );
     });
 
     it("set landMissionEarnings to zero after claim", async () => {

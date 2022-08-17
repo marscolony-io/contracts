@@ -4,7 +4,7 @@ const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
 
 const GameManagerFixed = artifacts.require("GameManagerFixed");
 const CLNY = artifacts.require("CLNY");
-const AvatarManager = artifacts.require("AvatarManager");
+const CollectionManager = artifacts.require("CollectionManager");
 const MCL = artifacts.require("MartianColonists");
 const NFT = artifacts.require("MartianColonists");
 const CryochamberManager = artifacts.require("CryochamberManager");
@@ -14,7 +14,7 @@ contract("CryochamberManager", (accounts) => {
 
   let gm;
   let clny;
-  let avatars;
+  let collection;
   let mcl;
   let cryo;
   let nft;
@@ -22,11 +22,11 @@ contract("CryochamberManager", (accounts) => {
   before(async () => {
     gm = await GameManagerFixed.deployed();
     clny = await CLNY.deployed();
-    avatars = await AvatarManager.deployed();
+    collection = await CollectionManager.deployed();
     mcl = await MCL.deployed();
     nft = await NFT.deployed();
     cryo = await CryochamberManager.deployed();
-    await avatars.setMaxTokenId(5);
+    await collection.setMaxTokenId(5);
     await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
     await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([101], { value: web3.utils.toWei("0.1"), from: user2 });
@@ -83,7 +83,7 @@ contract("CryochamberManager", (accounts) => {
 
   it("send avatars to cryo success path", async () => {
     const cryoPeriodLength = await cryo.cryoPeriodLength();
-    const cryoReward = await cryo.estimateXpAddition(1) * 7;
+    const cryoReward = (await cryo.estimateXpAddition(1)) * 7;
     const cryoEnergyCost = +(await cryo.cryoEnergyCost()).toString();
 
     const cryochamberBefore = await cryo.cryochambers(user1);
@@ -116,13 +116,13 @@ contract("CryochamberManager", (accounts) => {
   });
 
   it("adds avatar xp when cryo has been finished", async () => {
-    const initialXp = await avatars.getXP([1]);
+    const initialXp = await collection.getXP([1]);
     expect(parseInt(initialXp[0])).to.be.equal(100);
 
-    const cryoReward = await cryo.estimateXpAddition(1) * 7;
+    const cryoReward = (await cryo.estimateXpAddition(1)) * 7;
     await time.increase(time.duration.days(8)); // wait 8 days
 
-    const newXp = await avatars.getXP([1]);
+    const newXp = await collection.getXP([1]);
     expect(parseInt(newXp[0])).to.be.equal(
       parseInt(initialXp) + parseInt(cryoReward)
     );
@@ -220,12 +220,14 @@ contract("CryochamberManager", (accounts) => {
   });
 
   it("bulk estimate xp additions", async () => {
-    const xps = await avatars.getXP([1, 2, 3]);
+    const xps = await collection.getXP([1, 2, 3]);
     // console.log(xps.map((xp) => xp.toString()));
     const xpAdditions = await cryo.bulkEstimateXpAddition([1, 2, 3]);
     // console.log(xpAdditions.map((xpAddition) => xpAddition.toString()));
 
-    expect(await cryo.estimateXpAddition(1)).to.bignumber.be.equal(new BN('2443'));
+    expect(await cryo.estimateXpAddition(1)).to.bignumber.be.equal(
+      new BN("2443")
+    );
 
     expect(parseInt(xpAdditions[0])).to.be.equal(2443);
     expect(parseInt(xpAdditions[1])).to.be.equal(400);

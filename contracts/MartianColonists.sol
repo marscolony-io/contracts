@@ -8,12 +8,12 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 contract MartianColonists is ERC721Enumerable, Ownable {
   string private nftBaseURI;
-  address public avatarManager;
+  address public CollectionManager;
   mapping (uint256 => string) public names;
   bool lock;
 
-  modifier onlyAvatarManager {
-    require(msg.sender == avatarManager, 'only avatar manager');
+  modifier onlyCollectionManager {
+    require(msg.sender == CollectionManager, 'only avatar manager');
     _;
   }
 
@@ -21,8 +21,8 @@ contract MartianColonists is ERC721Enumerable, Ownable {
     nftBaseURI = _nftBaseURI;
   }
 
-  function setAvatarManager(address _avatarManager) external onlyOwner {
-    avatarManager = _avatarManager;
+  function setCollectionManager(address _CollectionManager) external onlyOwner {
+    CollectionManager = _CollectionManager;
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -33,14 +33,14 @@ contract MartianColonists is ERC721Enumerable, Ownable {
     nftBaseURI = newURI;
   }
 
-  function mint(address receiver) external onlyAvatarManager {
+  function mint(address receiver) external onlyCollectionManager {
     require(!lock, 'locked');
     lock = true;
     _safeMint(receiver, ERC721Enumerable.totalSupply() + 1); // +1 because we emit 0 and start with 1
     lock = false;
   }
 
-  function setName(uint256 tokenId, string memory _name) external onlyAvatarManager {
+  function setName(uint256 tokenId, string memory _name) external onlyCollectionManager {
     names[tokenId] = _name;
   }
 

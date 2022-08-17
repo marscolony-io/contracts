@@ -7,7 +7,7 @@ import './interfaces/PauseInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IPoll.sol';
 import './interfaces/IMartianColonists.sol';
-import './interfaces/IAvatarManager.sol';
+import './interfaces/ICollectionManager.sol';
 import './interfaces/ICryochamber.sol';
 import './interfaces/ILootboxes.sol';
 import './interfaces/IGears.sol';
@@ -264,7 +264,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     require((_lootbox >= 0 && _lootbox <= 3) || (_lootbox >= 23 && _lootbox <= 25), "Lootbox code is not valid");
 
 
-    IAvatarManager(avatarAddress).addXP(_avatar, _xp);
+    ICollectionManager(avatarAddress).addXP(_avatar, _xp);
 
 
     if (_lootbox >= 1 && _lootbox <= 3) {
@@ -830,7 +830,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
 
   function renameAvatar(uint256 avatarId, string calldata _name) external {
     require(martianColonists.ownerOf(avatarId) == msg.sender, 'You are not the owner');
-    IAvatarManager(avatarAddress).setNameByGameManager(avatarId, _name);
+    ICollectionManager(avatarAddress).setNameByGameManager(avatarId, _name);
     TokenInterface(CLNYAddress).burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
   }
 

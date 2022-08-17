@@ -1,6 +1,6 @@
 const { deployProxy } = require("@openzeppelin/truffle-upgrades");
 
-const AvatarManager = artifacts.require("AvatarManager");
+const CollectionManager = artifacts.require("CollectionManager");
 const CryochamberManager = artifacts.require("CryochamberManager");
 
 const MCL = artifacts.require("MartianColonists");
@@ -8,11 +8,11 @@ const GM = artifacts.require("GameManagerFixed");
 
 module.exports = async (deployer, network) => {
   const _MCL = await MCL.deployed();
-  const _AvatarManager = await AvatarManager.deployed();
+  const _collectionManager = await CollectionManager.deployed();
 
   await deployProxy(
     CryochamberManager,
-    [_MCL.address, _AvatarManager.address],
+    [_MCL.address, _collectionManager.address],
     {
       deployer,
     }
@@ -22,16 +22,16 @@ module.exports = async (deployer, network) => {
 
   let _GM;
   if (network === "development") {
-    await _AvatarManager.setCryochamberManager(_CRYO.address);
+    await _collectionManager.setCryochamberManager(_CRYO.address);
     _GM = await GM.deployed();
   } else if (network === "hartest") {
-    // await _AvatarManager.setGameManager(
+    // await _collectionManager.setGameManager(
     //   "0xc65F8BA708814653EDdCe0e9f75827fe309E29aD"
     // );
     // _GM = await GM.at("0xc65F8BA708814653EDdCe0e9f75827fe309E29aD");
   } else {
     // // harmain
-    // await _AvatarManager.setGameManager(
+    // await _collectionManager.setGameManager(
     //   "0x0D112a449D23961d03E906572D8ce861C441D6c3"
     // );
     // _GM = await GM.at("0x0D112a449D23961d03E906572D8ce861C441D6c3");

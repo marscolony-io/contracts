@@ -6,10 +6,10 @@ import './GameConnection.sol';
 import './interfaces/IMartianColonists.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/ICryochamber.sol';
-import './interfaces/IAvatarManager.sol';
+import './interfaces/ICollectionManager.sol';
 
 
-contract AvatarManager is IAvatarManager, GameConnection, PausableUpgradeable {
+contract CollectionManager is ICollectionManager, GameConnection, PausableUpgradeable {
   uint256 public maxTokenId;
 
   IMartianColonists public collection;
