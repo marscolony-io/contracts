@@ -33,5 +33,5 @@ module.exports = async (deployer, network) => {
     );
   }
 
-  await gm.setAvatarAddress(CollectionManager.address);
+  await gm.setCollectionAddress(CollectionManager.address);
 };

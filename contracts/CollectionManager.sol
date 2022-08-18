@@ -7,6 +7,10 @@ import './interfaces/IMartianColonists.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/ICryochamber.sol';
 import './interfaces/ICollectionManager.sol';
+import './interfaces/ILootboxes.sol';
+import './interfaces/IEnums.sol';
+import './interfaces/IGears.sol';
+import './interfaces/TokenInterface.sol';
 
 
 contract CollectionManager is ICollectionManager, GameConnection, PausableUpgradeable {
@@ -16,8 +20,17 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   mapping (uint256 => uint256) private xp;
 
   ICryochamber public cryochambers;
+  address public gearsAddress;
 
-  uint256[48] private ______mc_gap;
+  struct GearLocks {
+    uint256 transportId;
+    uint256[] gearsId;
+  }
+
+  mapping (address => GearLocks) gearLocks;
+
+
+  uint256[47] private ______mc_gap;
 
   modifier onlyCryochamberManager {
     require(msg.sender == address(cryochambers), 'Only CryochamberManager');
@@ -34,6 +47,11 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   function setCryochamberManager(address cryochamberManager) external {
     cryochambers = ICryochamber(cryochamberManager);
   }
+
+   function setGearsAddress(address _address) external onlyDAO {
+    gearsAddress = _address;
+  }
+
 
   function _getXP(uint256 avatarId) private view returns(uint256) {
     uint256 totalAvatarsCount = collection.totalSupply();
@@ -122,6 +140,47 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
       result[i] = collection.names(tokenIds[i]);
     }
     return result;
+  }
+
+  // gears
+
+  function isGearCategoryChoosenBefore(uint256[] memory categories, uint256 category) private view returns (bool) {
+    for (uint i = 0; i < categories.length; i++) {
+      if (categories[i] == category) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function setLocks(uint256[] calldata tokenIds, uint256 transportId) external {
+    
+    // if user doesn't lock special transport, he can lock up to 2 gears. otherwise up to 3 
+    if (transportId == 0) {
+      require(tokenIds.length <= 2, "you can't lock so many gears");
+    } else {
+      IGears.Gear memory transport = IGears(gearsAddress).gears(transportId); 
+      require(transport.category == 4, "transportId is not transport");
+
+      require(msg.sender == TokenInterface(gearsAddress).ownerOf(transportId), "you are not transport owner");
+      require(tokenIds.length <= 3, "you can't lock so many gears");
+    }
+
+    // can not lock gears of the same categories
+    uint256[] memory choosenCategories;
+    for (uint i = 0; i < tokenIds.length; i++) {
+      require(msg.sender == TokenInterface(gearsAddress).ownerOf(tokenIds[i]), "you are not gear owner");
+      IGears.Gear memory gear = IGears(gearsAddress).gears(tokenIds[i]);
+      require(isGearCategoryChoosenBefore(choosenCategories, gear.category), "you can't lock gears of the same category");
+      choosenCategories[i] = gear.category;
+    }
+
+    // update state by rewrite
+    gearLocks[msg.sender] = GearLocks(transportId, tokenIds);
+  }
+
+  function mintGear(address owner, IEnums.Rarity rarity) external onlyGameManager {
+    IGears(gearsAddress).mint(owner, rarity);
   }
 
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {

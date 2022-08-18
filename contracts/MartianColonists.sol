@@ -13,7 +13,7 @@ contract MartianColonists is ERC721Enumerable, Ownable {
   bool lock;
 
   modifier onlyCollectionManager {
-    require(msg.sender == CollectionManager, 'only avatar manager');
+    require(msg.sender == CollectionManager, 'only collection manager');
     _;
   }
 

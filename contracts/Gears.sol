@@ -7,18 +7,11 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import "@openzeppelin/contracts/utils/Strings.sol";
 import './interfaces/IGears.sol';
 import './interfaces/ILootboxes.sol';
+import './interfaces/IEnums.sol';
 
 
 contract Gears is ERC721Enumerable, IGears, Ownable {
   using Strings for uint256;
-
-  struct Gear {
-    Rarity rarity;
-    uint256 gearType;
-    uint256 category;
-    uint256 durability;
-    bool locked;
-  }
 
   Gear[] public initialCommonGears;
   Gear[] public initialRareGears;
@@ -27,15 +20,15 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
   Gear[] public additionalGears; 
 
   string private nftBaseURI;
-  address public gameManager;
-  mapping (uint256 => Gear) public gears;
+  address public collectionManager;
+  mapping (uint256 => Gear) gears;
   mapping (address => uint256) private lastTokenMinted;
   uint256 public nextIdToMint = 1;
   bool lock;
 
 
-  modifier onlyGameManager {
-    require(msg.sender == gameManager, 'only game manager');
+  modifier onlyCollectionManager {
+    require(msg.sender == collectionManager, 'only collection manager');
     _;
   }
 
@@ -67,28 +60,28 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
 
   constructor (string memory _nftBaseURI) ERC721('Gears', 'Gear') {
     nftBaseURI = _nftBaseURI;
-    initialCommonGears.push(Gear(Rarity.COMMON, ROCKET_FUEL, CATEGORY_ENGINE, 100, false));
-    initialCommonGears.push(Gear(Rarity.COMMON, TITANIUM_DRILL, CATEGORY_DRILL, 100, false));
-    initialCommonGears.push(Gear(Rarity.COMMON, SMALL_AREA_SCANNER, CATEGORY_SCANNER, 100, false));
-    initialCommonGears.push(Gear(Rarity.COMMON, ULTRASONIC_TRANSMITTER, CATEGORY_TRANSMITTER, 100, false));
+    initialCommonGears.push(Gear(IEnums.Rarity.COMMON, ROCKET_FUEL, CATEGORY_ENGINE, 100, false));
+    initialCommonGears.push(Gear(IEnums.Rarity.COMMON, TITANIUM_DRILL, CATEGORY_DRILL, 100, false));
+    initialCommonGears.push(Gear(IEnums.Rarity.COMMON, SMALL_AREA_SCANNER, CATEGORY_SCANNER, 100, false));
+    initialCommonGears.push(Gear(IEnums.Rarity.COMMON, ULTRASONIC_TRANSMITTER, CATEGORY_TRANSMITTER, 100, false));
 
-    initialRareGears.push(Gear(Rarity.RARE, ENGINE_FURIOUS, CATEGORY_ENGINE, 150, false));
-    initialRareGears.push(Gear(Rarity.RARE, DIAMOND_DRILL, CATEGORY_DRILL, 150, false));
-    initialRareGears.push(Gear(Rarity.RARE, MEDIUM_AREA_SCANNER, CATEGORY_SCANNER, 150, false));
-    initialRareGears.push(Gear(Rarity.RARE, INFRARED_TRANSMITTER, CATEGORY_TRANSMITTER, 150, false));
+    initialRareGears.push(Gear(IEnums.Rarity.RARE, ENGINE_FURIOUS, CATEGORY_ENGINE, 150, false));
+    initialRareGears.push(Gear(IEnums.Rarity.RARE, DIAMOND_DRILL, CATEGORY_DRILL, 150, false));
+    initialRareGears.push(Gear(IEnums.Rarity.RARE, MEDIUM_AREA_SCANNER, CATEGORY_SCANNER, 150, false));
+    initialRareGears.push(Gear(IEnums.Rarity.RARE, INFRARED_TRANSMITTER, CATEGORY_TRANSMITTER, 150, false));
     
-    initialLegendaryGears.push(Gear(Rarity.LEGENDARY, WD_40, CATEGORY_ENGINE, 200, false));
-    initialLegendaryGears.push(Gear(Rarity.LEGENDARY, LASER_DRILL, CATEGORY_DRILL, 200, false));
-    initialLegendaryGears.push(Gear(Rarity.LEGENDARY, LARGE_AREA_SCANNER, CATEGORY_SCANNER, 200, false));
-    initialLegendaryGears.push(Gear(Rarity.LEGENDARY, VIBRATION_TRANSMITTER, CATEGORY_TRANSMITTER, 200, false));
+    initialLegendaryGears.push(Gear(IEnums.Rarity.LEGENDARY, WD_40, CATEGORY_ENGINE, 200, false));
+    initialLegendaryGears.push(Gear(IEnums.Rarity.LEGENDARY, LASER_DRILL, CATEGORY_DRILL, 200, false));
+    initialLegendaryGears.push(Gear(IEnums.Rarity.LEGENDARY, LARGE_AREA_SCANNER, CATEGORY_SCANNER, 200, false));
+    initialLegendaryGears.push(Gear(IEnums.Rarity.LEGENDARY, VIBRATION_TRANSMITTER, CATEGORY_TRANSMITTER, 200, false));
 
-    transportGears.push(Gear(Rarity.LEGENDARY, THE_NEBUCHADNEZZAR, CATEGORY_TRANSPORT, 350, false));
-    transportGears.push(Gear(Rarity.LEGENDARY, UNKNOWN, CATEGORY_TRANSPORT, 350, false));
+    transportGears.push(Gear(IEnums.Rarity.LEGENDARY, THE_NEBUCHADNEZZAR, CATEGORY_TRANSPORT, 350, false));
+    transportGears.push(Gear(IEnums.Rarity.LEGENDARY, UNKNOWN, CATEGORY_TRANSPORT, 350, false));
 
   }
 
-  function setGameManager(address _gameManager) external onlyOwner {
-    gameManager = _gameManager;
+  function setCollectionManager(address _collectionManager) external onlyOwner {
+    collectionManager = _collectionManager;
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -99,9 +92,9 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
     nftBaseURI = newURI;
   }
 
-  function getRarityUrlPath(Rarity rarity) private pure returns (string memory) {
-    if (rarity == Rarity.COMMON) return "0";
-    if (rarity == Rarity.RARE) return "1";
+  function getRarityUrlPath(IEnums.Rarity rarity) private pure returns (string memory) {
+    if (rarity == IEnums.Rarity.COMMON) return "0";
+    if (rarity == IEnums.Rarity.RARE) return "1";
     return "2";
   }
 
@@ -111,7 +104,7 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
     string memory baseURI = _baseURI();
     uint256 gearType = gears[tokenId].gearType;
     uint256 gearCategory = gears[tokenId].category;
-    Rarity rarity = gears[tokenId].rarity;
+    IEnums.Rarity rarity = gears[tokenId].rarity;
     return bytes(baseURI).length > 0 ? string(abi.encodePacked(
       baseURI, 
       tokenId.toString(), 
@@ -133,53 +126,53 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
     return (uint(blockhash(block.number - 1)) + block.timestamp) % modulo;
   }
 
-  function getRandomizedGearRarity(ILootboxes.Rarity _lootBoxRarity) private view returns (Rarity gearRarity) {
+  function getRandomizedGearRarity(IEnums.Rarity _lootBoxRarity) private view returns (IEnums.Rarity gearRarity) {
 
-    if (_lootBoxRarity == ILootboxes.Rarity.COMMON) {
+    if (_lootBoxRarity == ILootboxes.IEnums.Rarity.COMMON) {
       if (randomNumber(10) < 1) {
-        return Rarity.RARE; // 10%
+        return IEnums.Rarity.RARE; // 10%
       }
-      return Rarity.COMMON; // 90%
+      return IEnums.Rarity.COMMON; // 90%
     }
 
-    if (_lootBoxRarity == ILootboxes.Rarity.RARE) {
+    if (_lootBoxRarity == ILootboxes.IEnums.Rarity.RARE) {
       if (randomNumber(100) > 85) { 
-        return Rarity.COMMON; // 15%
+        return IEnums.Rarity.COMMON; // 15%
       }
 
       if (randomNumber(100) > 70) {
-        return Rarity.LEGENDARY; // 15%
+        return IEnums.Rarity.LEGENDARY; // 15%
       }
       
-      return Rarity.RARE; // 70%
+      return IEnums.Rarity.RARE; // 70%
     }
 
-    if (_lootBoxRarity == ILootboxes.Rarity.LEGENDARY) {
+    if (_lootBoxRarity == ILootboxes.IEnums.Rarity.LEGENDARY) {
       if (randomNumber(10) < 1) {
-        return Rarity.RARE; // 10%
+        return IEnums.Rarity.RARE; // 10%
       }
-      return Rarity.LEGENDARY; // 90%
+      return IEnums.Rarity.LEGENDARY; // 90%
     }
   }
 
-  function getRandomizedGear(ILootboxes.Rarity _lootboxRarity, Rarity _gearRarity) public view returns (Gear memory gear) {
-    if (_lootboxRarity == ILootboxes.Rarity.RARE && _gearRarity == Rarity.LEGENDARY) {
+  function getRandomizedGear(IEnums.Rarity _lootboxRarity, IEnums.Rarity _gearRarity) public view returns (Gear memory gear) {
+    if (_lootboxRarity == ILootboxes.IEnums.Rarity.RARE && _gearRarity == IEnums.Rarity.LEGENDARY) {
       // exclude transports
       uint256 modulo = randomNumber(initialLegendaryGears.length) ;
       return initialLegendaryGears[modulo];
     }
 
-    if (_gearRarity == Rarity.COMMON) {
+    if (_gearRarity == IEnums.Rarity.COMMON) {
       uint256 modulo = randomNumber(initialCommonGears.length);
       return initialCommonGears[modulo];
     }
 
-    if (_gearRarity == Rarity.RARE) {
+    if (_gearRarity == IEnums.Rarity.RARE) {
       uint256 modulo = randomNumber(initialRareGears.length);
       return initialRareGears[modulo];
     }
 
-    if (_gearRarity == Rarity.LEGENDARY) {
+    if (_gearRarity == IEnums.Rarity.LEGENDARY) {
       // choose from legendary and transports arrays
   
       uint256 modulo = randomNumber(initialLegendaryGears.length + transportGears.length);
@@ -189,13 +182,13 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
 
   }
 
-  function calculateGear(ILootboxes.Rarity _lootBoxRarity) public view returns (Gear memory) {
-    Rarity gearRarity = getRandomizedGearRarity(_lootBoxRarity);
+  function calculateGear(IEnums.Rarity _lootBoxRarity) public view returns (Gear memory) {
+    IEnums.Rarity gearRarity = getRandomizedGearRarity(_lootBoxRarity);
     Gear memory gear = getRandomizedGear(_lootBoxRarity, gearRarity);
     return gear;
   }
 
-  function mint(address receiver, ILootboxes.Rarity _lootBoxRarity) external override onlyGameManager {
+  function mint(address receiver,IEnums.Rarity _lootBoxRarity) external override onlyCollectionManager {
     require(!lock, 'locked');
     lock = true;
     gears[nextIdToMint] = calculateGear(_lootBoxRarity);
@@ -205,7 +198,7 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
     lock = false;
   }
 
-  function airdrop(address receiver, Rarity rarity, uint256 gearType, uint256 category, uint256 durability) external onlyOwner {
+  function airdrop(address receiver, IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability) external onlyOwner {
     require(!lock, 'locked');
     lock = true;
     gears[nextIdToMint] = Gear(rarity, gearType, category, durability, false);
@@ -215,7 +208,7 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
   }
 
 
-  function burn(uint256 tokenId) external onlyGameManager {
+  function burn(uint256 tokenId) external onlyCollectionManager {
     gears[tokenId].locked = false;
     _burn(tokenId);
   }
@@ -245,7 +238,7 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
     gears[tokenId].locked = false;
   }
 
-  function decreaseDurability(uint256 tokenId, uint32 amount) external onlyGameManager {
+  function decreaseDurability(uint256 tokenId, uint32 amount) external onlyCollectionManager {
     if (gears[tokenId].durability <= amount) {
        _burn(tokenId);
     }

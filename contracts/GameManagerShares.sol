@@ -12,6 +12,8 @@ import './interfaces/ILootboxes.sol';
 import './interfaces/ICryochamber.sol';
 import './interfaces/ICollectionManager.sol';
 import './interfaces/IGameManager.sol';
+import './interfaces/IEnums.sol';
+
 
 /**
  * Game logic; upgradable
@@ -149,7 +151,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   //   martianColonists = IMartianColonists(_address);
   // }
 
-  // function setAvatarAddress(address _avatarAddress) external onlyDAO {
+  // function setCollectionAddress(address _avatarAddress) external onlyDAO {
   //   avatarAddress = _avatarAddress;
   // }
 
@@ -275,10 +277,10 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     return (_avatar, _land, _xp, _lootbox, _avatarReward,_landReward);
   }
 
-  function getLootboxRarity(uint256 _lootbox) private pure returns (ILootboxes.Rarity rarity) {
-    if (_lootbox == 1 || _lootbox == 23) return ILootboxes.Rarity.COMMON;
-    if (_lootbox == 2 || _lootbox == 24) return ILootboxes.Rarity.RARE;
-    if (_lootbox == 3 || _lootbox == 25) return ILootboxes.Rarity.LEGENDARY;
+  function getLootboxRarity(uint256 _lootbox) private pure returns (IEnums.Rarity rarity) {
+    if (_lootbox == 1 || _lootbox == 23) return IEnums.Rarity.COMMON;
+    if (_lootbox == 2 || _lootbox == 24) return IEnums.Rarity.RARE;
+    if (_lootbox == 3 || _lootbox == 25) return IEnums.Rarity.LEGENDARY;
   }
 
   function proceedFinishMissionMessage(string calldata message) private {
@@ -326,13 +328,13 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   function mintLootbox() public {
     if (lootBoxesToMint[msg.sender].legendary > 0) {
       lootBoxesToMint[msg.sender].legendary--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.LEGENDARY);
+      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.LEGENDARY);
     } else if (lootBoxesToMint[msg.sender].rare > 0) {
       lootBoxesToMint[msg.sender].rare--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.RARE);
+      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.RARE);
     } else if (lootBoxesToMint[msg.sender].common > 0) {
       lootBoxesToMint[msg.sender].common--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.COMMON);
+      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.COMMON);
     } else {
       revert("you cannot mint lootbox");
     }
