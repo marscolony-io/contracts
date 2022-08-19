@@ -11,9 +11,10 @@ import './interfaces/ILootboxes.sol';
 import './interfaces/IEnums.sol';
 import './interfaces/IGears.sol';
 import './interfaces/TokenInterface.sol';
+import './Constants.sol';
 
 
-contract CollectionManager is ICollectionManager, GameConnection, PausableUpgradeable {
+contract CollectionManager is ICollectionManager, GameConnection, PausableUpgradeable, Constants {
   uint256 public maxTokenId;
 
   IMartianColonists public collection;
@@ -25,12 +26,19 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   struct GearLocks {
     uint256 transportId;
     uint256[] gearsId;
+    bool set;
   }
 
   mapping (address => GearLocks) gearLocks;
 
+  IGears.Gear[] public initialCommonGears;
+  IGears.Gear[] public initialRareGears;
+  IGears.Gear[] public initialLegendaryGears;
+  IGears.Gear[] public transportGears;
+  IGears.Gear[] public additionalGears; 
 
-  uint256[47] private ______mc_gap;
+
+  uint256[42] private ______mc_gap;
 
   modifier onlyCryochamberManager {
     require(msg.sender == address(cryochambers), 'Only CryochamberManager');
@@ -42,6 +50,26 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     PausableUpgradeable.__Pausable_init();
     maxTokenId = 0;
     collection = IMartianColonists(_collection);
+
+    // gears 
+    initialCommonGears.push(IGears.Gear(IEnums.Rarity.COMMON, ROCKET_FUEL, CATEGORY_ENGINE, COMMON_GEAR_DURABILITY, false));
+    initialCommonGears.push(IGears.Gear(IEnums.Rarity.COMMON, TITANIUM_DRILL, CATEGORY_DRILL, COMMON_GEAR_DURABILITY, false));
+    initialCommonGears.push(IGears.Gear(IEnums.Rarity.COMMON, SMALL_AREA_SCANNER, CATEGORY_SCANNER, COMMON_GEAR_DURABILITY, false));
+    initialCommonGears.push(IGears.Gear(IEnums.Rarity.COMMON, ULTRASONIC_TRANSMITTER, CATEGORY_TRANSMITTER, COMMON_GEAR_DURABILITY, false));
+
+    initialRareGears.push(IGears.Gear(IEnums.Rarity.RARE, ENGINE_FURIOUS, CATEGORY_ENGINE, RARE_GEAR_DURABILITY, false));
+    initialRareGears.push(IGears.Gear(IEnums.Rarity.RARE, DIAMOND_DRILL, CATEGORY_DRILL, RARE_GEAR_DURABILITY, false));
+    initialRareGears.push(IGears.Gear(IEnums.Rarity.RARE, MEDIUM_AREA_SCANNER, CATEGORY_SCANNER, RARE_GEAR_DURABILITY, false));
+    initialRareGears.push(IGears.Gear(IEnums.Rarity.RARE, INFRARED_TRANSMITTER, CATEGORY_TRANSMITTER, RARE_GEAR_DURABILITY, false));
+    
+    initialLegendaryGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, WD_40, CATEGORY_ENGINE, LEGENDARY_GEAR_DURABILITY, false));
+    initialLegendaryGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, LASER_DRILL, CATEGORY_DRILL, LEGENDARY_GEAR_DURABILITY, false));
+    initialLegendaryGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, LARGE_AREA_SCANNER, CATEGORY_SCANNER, LEGENDARY_GEAR_DURABILITY, false));
+    initialLegendaryGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, VIBRATION_TRANSMITTER, CATEGORY_TRANSMITTER, LEGENDARY_GEAR_DURABILITY, false));
+
+    transportGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, THE_NEBUCHADNEZZAR, CATEGORY_TRANSPORT, TRANSPORT_GEAR_DURABILITY, false));
+    transportGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, UNKNOWN, CATEGORY_TRANSPORT, TRANSPORT_GEAR_DURABILITY, false));
+
   }
 
   function setCryochamberManager(address cryochamberManager) external {
@@ -144,7 +172,73 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
 
   // gears
 
-  function isGearCategoryChoosenBefore(uint256[] memory categories, uint256 category) private view returns (bool) {
+  function getRandomizedGear(IEnums.Rarity _lootboxRarity, IEnums.Rarity _gearRarity) public view returns (IGears.Gear memory gear) {
+    if (_lootboxRarity == IEnums.Rarity.RARE && _gearRarity == IEnums.Rarity.LEGENDARY) {
+      // exclude transports
+      uint256 modulo = randomNumber(initialLegendaryGears.length) ;
+      return initialLegendaryGears[modulo];
+    }
+
+    if (_gearRarity == IEnums.Rarity.COMMON) {
+      uint256 modulo = randomNumber(initialCommonGears.length);
+      return initialCommonGears[modulo];
+    }
+
+    if (_gearRarity == IEnums.Rarity.RARE) {
+      uint256 modulo = randomNumber(initialRareGears.length);
+      return initialRareGears[modulo];
+    }
+
+    if (_gearRarity == IEnums.Rarity.LEGENDARY) {
+      // choose from legendary and transports arrays
+  
+      uint256 modulo = randomNumber(initialLegendaryGears.length + transportGears.length);
+      if (modulo < initialLegendaryGears.length) return initialLegendaryGears[modulo];
+      return transportGears[modulo - initialLegendaryGears.length];
+    }
+
+  }
+
+   function randomNumber(uint modulo) private view returns (uint) {
+    return (uint(blockhash(block.number - 1)) + block.timestamp) % modulo;
+  }
+
+  function getRandomizedGearRarity(IEnums.Rarity _lootBoxRarity) private view returns (IEnums.Rarity gearRarity) {
+
+    if (_lootBoxRarity == IEnums.Rarity.COMMON) {
+      if (randomNumber(10) < 1) {
+        return IEnums.Rarity.RARE; // 10%
+      }
+      return IEnums.Rarity.COMMON; // 90%
+    }
+
+    if (_lootBoxRarity == IEnums.Rarity.RARE) {
+      if (randomNumber(100) > 85) { 
+        return IEnums.Rarity.COMMON; // 15%
+      }
+
+      if (randomNumber(100) > 70) {
+        return IEnums.Rarity.LEGENDARY; // 15%
+      }
+      
+      return IEnums.Rarity.RARE; // 70%
+    }
+
+    if (_lootBoxRarity == IEnums.Rarity.LEGENDARY) {
+      if (randomNumber(10) < 1) {
+        return IEnums.Rarity.RARE; // 10%
+      }
+      return IEnums.Rarity.LEGENDARY; // 90%
+    }
+  }
+
+  function calculateGear(IEnums.Rarity _lootBoxRarity) public view returns (IGears.Gear memory) {
+    IEnums.Rarity gearRarity = getRandomizedGearRarity(_lootBoxRarity);
+    IGears.Gear memory gear = getRandomizedGear(_lootBoxRarity, gearRarity);
+    return gear;
+  }
+
+  function isGearCategoryChoosenBefore(uint256[] memory categories, uint256 category) private pure returns (bool) {
     for (uint i = 0; i < categories.length; i++) {
       if (categories[i] == category) {
         return true;
@@ -159,8 +253,8 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     if (transportId == 0) {
       require(tokenIds.length <= 2, "you can't lock so many gears");
     } else {
-      IGears.Gear memory transport = IGears(gearsAddress).gears(transportId); 
-      require(transport.category == 4, "transportId is not transport");
+      (IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability, bool locked) = IGears(gearsAddress).gears(transportId); 
+      require(category == 4, "transportId is not transport");
 
       require(msg.sender == TokenInterface(gearsAddress).ownerOf(transportId), "you are not transport owner");
       require(tokenIds.length <= 3, "you can't lock so many gears");
@@ -170,17 +264,42 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     uint256[] memory choosenCategories;
     for (uint i = 0; i < tokenIds.length; i++) {
       require(msg.sender == TokenInterface(gearsAddress).ownerOf(tokenIds[i]), "you are not gear owner");
-      IGears.Gear memory gear = IGears(gearsAddress).gears(tokenIds[i]);
-      require(isGearCategoryChoosenBefore(choosenCategories, gear.category), "you can't lock gears of the same category");
-      choosenCategories[i] = gear.category;
+      (IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability, bool locked) = IGears(gearsAddress).gears(tokenIds[i]);
+      require(isGearCategoryChoosenBefore(choosenCategories, category), "you can't lock gears of the same category");
+      choosenCategories[i] = category;
+    }
+
+
+    // unlock prev locked transport and gear
+    GearLocks memory prevLockedGears = gearLocks[msg.sender];
+
+    if (prevLockedGears.set) {
+      if (prevLockedGears.transportId > 0) {
+        IGears(gearsAddress).unlockGear(transportId);
+      }
+
+      for (uint i = 0; i < prevLockedGears.gearsId.length; i++) {
+        IGears(gearsAddress).unlockGear(prevLockedGears.gearsId[i]);
+      }
+    }
+
+    // lock current gears
+
+    if (transportId > 0) {
+      IGears(gearsAddress).lockGear(transportId);
+    }
+
+    for (uint i = 0; i < tokenIds.length; i++) {
+      IGears(gearsAddress).lockGear(tokenIds[i]);
     }
 
     // update state by rewrite
-    gearLocks[msg.sender] = GearLocks(transportId, tokenIds);
+    gearLocks[msg.sender] = GearLocks(transportId, tokenIds, true);
   }
 
-  function mintGear(address owner, IEnums.Rarity rarity) external onlyGameManager {
-    IGears(gearsAddress).mint(owner, rarity);
+  function mintGear(address owner, IEnums.Rarity _lootBoxrarity) external onlyGameManager {
+    IGears.Gear memory gear = calculateGear(_lootBoxrarity);
+    IGears(gearsAddress).mint(owner, gear.rarity, gear.gearType, gear.category, gear.durability);
   }
 
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {

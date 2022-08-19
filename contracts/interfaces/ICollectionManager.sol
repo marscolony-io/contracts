@@ -8,6 +8,6 @@ interface ICollectionManager {
   function addXPAfterCryo(uint256 avatarId, uint256 increment) external;
   function getXP(uint256[] memory avatarIds) external view returns(uint256[] memory);
   function setNameByGameManager(uint256 tokenId, string memory _name) external;
-  function setLocks(uint256[] calldata tokenIds) external;
+  function setLocks(uint256[] calldata tokenIds, uint256 transportId) external;
   function mintGear(address owner, IEnums.Rarity rarity) external;
 }

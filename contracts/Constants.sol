@@ -17,4 +17,33 @@ abstract contract Constants {
   uint256 constant REASON_OPEN_LOOTBOX = 12;
 
   uint256 constant REASON_SHARES_PREPARE_CLNY = 100;
+
+  // gears
+  uint256 constant ROCKET_FUEL = 0;
+  uint256 constant ENGINE_FURIOUS = 1;
+  uint256 constant WD_40 = 2;
+  uint256 constant TITANIUM_DRILL = 3;
+  uint256 constant DIAMOND_DRILL = 4;
+  uint256 constant LASER_DRILL = 5;
+  uint256 constant SMALL_AREA_SCANNER = 6;
+  uint256 constant MEDIUM_AREA_SCANNER = 7;
+  uint256 constant LARGE_AREA_SCANNER = 8;
+  uint256 constant ULTRASONIC_TRANSMITTER = 9;
+  uint256 constant INFRARED_TRANSMITTER = 10;
+  uint256 constant VIBRATION_TRANSMITTER = 11;
+  uint256 constant THE_NEBUCHADNEZZAR = 12; 
+  uint256 constant UNKNOWN = 13;
+
+  uint256 constant CATEGORY_ENGINE = 0;
+  uint256 constant CATEGORY_DRILL = 1;
+  uint256 constant CATEGORY_SCANNER = 2;
+  uint256 constant CATEGORY_TRANSMITTER = 3;
+  uint256 constant CATEGORY_TRANSPORT = 4;
+
+  uint256 constant COMMON_GEAR_DURABILITY = 100;
+  uint256 constant RARE_GEAR_DURABILITY = 150;
+  uint256 constant LEGENDARY_GEAR_DURABILITY = 200;
+  uint256 constant TRANSPORT_GEAR_DURABILITY = 350;
+
+
 }

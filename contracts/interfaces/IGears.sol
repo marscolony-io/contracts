@@ -14,9 +14,9 @@ interface IGears {
   }
 
 
-  function mint(address user, IEnums.Rarity rarity) external;
+  function mint(address receiver, IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability) external;
   function setBaseURI(string memory newURI) external;
   function lockGear(uint256 tokenId) external;
   function unlockGear(uint256 tokenId) external;
-  function gears(uint256 tokenId) external returns (Gear memory);
+  function gears(uint256 tokenId) external returns (IEnums.Rarity, uint256, uint256, uint256, bool);
 }
