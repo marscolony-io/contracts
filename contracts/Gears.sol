@@ -13,7 +13,7 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
   string private nftBaseURI;
   address public collectionManager;
   mapping (uint256 => Gear) public gears;
-  mapping (address => uint256) private lastTokenMinted;
+  mapping (address => uint256) public lastTokenMinted;
   uint256 public nextIdToMint = 1;
   bool lock;
 
@@ -81,6 +81,7 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
     Gear memory _gear = Gear(rarity, gearType, category, durability, false);
     gears[nextIdToMint] = _gear;
     _safeMint(receiver, nextIdToMint);
+    lastTokenMinted[receiver] = nextIdToMint;
     nextIdToMint++;
     lock = false;
   }
@@ -107,11 +108,11 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
   }
 
  
-  function lockGear(uint256 tokenId) external onlyTokenOwnerOrCollectionManager(tokenId) {
+  function lockGear(uint256 tokenId) external onlyCollectionManager {
     gears[tokenId].locked = true;
   }
 
-  function unlockGear(uint256 tokenId) external onlyTokenOwnerOrCollectionManager(tokenId) {
+  function unlockGear(uint256 tokenId) external onlyCollectionManager {
     gears[tokenId].locked = false;
   }
 

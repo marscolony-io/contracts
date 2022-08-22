@@ -52,16 +52,16 @@ contract("Gears", (accounts) => {
     //   });
     // });
 
-    it("Reverts if mint called not by mission manager", async () => {
-      const tx = gears.mint(user2, 1);
-      await truffleAssert.reverts(tx, "only game manager");
+    it("Reverts if mint called not by collection manager", async () => {
+      const tx = gears.mint(user2, 1, 1, 1, 1);
+      await truffleAssert.reverts(tx, "only collection manager");
     });
 
-    it("Mints if called by mission manager", async () => {
-      await gears.setGameManager(DAO);
+    it("Mints if called by collection manager", async () => {
+      await gears.setCollectionManager(DAO);
       await gears.setBaseURI(baseUri);
-      await gears.mint(user1, 0);
-      await gears.mint(user2, 1);
+      await gears.mint(user1, 1, 1, 1, 1);
+      await gears.mint(user2, 1, 1, 1, 1);
       const supplyAfterMint = await gears.totalSupply();
       expect(Number(supplyAfterMint.toString())).to.be.equal(2);
       const ownerOf1 = await gears.ownerOf(1);
@@ -71,40 +71,40 @@ contract("Gears", (accounts) => {
     });
   });
 
-  describe("initialGears", function() {
-    it("Returns initialCommonGears", async () => {
-      const initialCommonGears = await gears.initialCommonGears(0);
-      // console.log(
-      //   "initialCommonGears 0 rarity",
-      //   initialCommonGears.rarity.toString()
-      // );
-      expect(initialCommonGears.rarity).to.be.bignumber.equal(new BN(0));
-    });
+  // describe("initialGears", function() {
+  //   it("Returns initialCommonGears", async () => {
+  //     const initialCommonGears = await gears.initialCommonGears(0);
+  //     // console.log(
+  //     //   "initialCommonGears 0 rarity",
+  //     //   initialCommonGears.rarity.toString()
+  //     // );
+  //     expect(initialCommonGears.rarity).to.be.bignumber.equal(new BN(0));
+  //   });
 
-    it("Returns initialRareGears", async () => {
-      const initialRareGears = await gears.initialRareGears(0);
-      // console.log(
-      //   "initialRareGears 0 rarity",
-      //   initialRareGears.rarity.toString()
-      // );
-      expect(initialRareGears.rarity).to.be.bignumber.equal(new BN(1));
-    });
+  //   it("Returns initialRareGears", async () => {
+  //     const initialRareGears = await gears.initialRareGears(0);
+  //     // console.log(
+  //     //   "initialRareGears 0 rarity",
+  //     //   initialRareGears.rarity.toString()
+  //     // );
+  //     expect(initialRareGears.rarity).to.be.bignumber.equal(new BN(1));
+  //   });
 
-    it("Returns initialLegendaryGears", async () => {
-      const initialLegendaryGears = await gears.initialLegendaryGears(0);
-      // console.log(
-      //   "initialLegendaryGears 0 rarity",
-      //   initialLegendaryGears.rarity.toString()
-      // );
-      expect(initialLegendaryGears.rarity).to.be.bignumber.equal(new BN(2));
-    });
+  //   it("Returns initialLegendaryGears", async () => {
+  //     const initialLegendaryGears = await gears.initialLegendaryGears(0);
+  //     // console.log(
+  //     //   "initialLegendaryGears 0 rarity",
+  //     //   initialLegendaryGears.rarity.toString()
+  //     // );
+  //     expect(initialLegendaryGears.rarity).to.be.bignumber.equal(new BN(2));
+  //   });
 
-    it("Returns transportGears", async () => {
-      const transportGears = await gears.transportGears(0);
-      // console.log("transportGears 0 rarity", transportGears.rarity.toString());
-      expect(transportGears.rarity).to.be.bignumber.equal(new BN(2));
-    });
-  });
+  //   it("Returns transportGears", async () => {
+  //     const transportGears = await gears.transportGears(0);
+  //     // console.log("transportGears 0 rarity", transportGears.rarity.toString());
+  //     expect(transportGears.rarity).to.be.bignumber.equal(new BN(2));
+  //   });
+  // });
 
   describe("Randomized mint", function() {
     it("getRandomizedGearFromCommonLootbox", async () => {
@@ -141,7 +141,7 @@ contract("Gears", (accounts) => {
         //   },
         // });
 
-        const calculateGearFromCommonLootbox = await gears.calculateGear(0);
+        const calculateGearFromCommonLootbox = await cm.calculateGear(0);
         // console.log("calculateGearFromCommonLootbox", {
         //   calculateGearFromCommonLootbox: {
         //     rarity: calculateGearFromCommonLootbox.rarity.toString(),
@@ -190,7 +190,7 @@ contract("Gears", (accounts) => {
         // const rnd2 = await gears.randomNumber(2);
         // console.log("rnd2", rnd2.toString());
 
-        const calculateGearFromRareLootbox = await gears.calculateGear(1);
+        const calculateGearFromRareLootbox = await cm.calculateGear(1);
         // console.log({
         //   calculateGearFromRareLootbox: {
         //     rarity: calculateGearFromRareLootbox.rarity.toString(),
@@ -280,7 +280,7 @@ contract("Gears", (accounts) => {
         //   },
         // });
 
-        const calculateGearFromCommonLootbox = await gears.calculateGear(2);
+        const calculateGearFromCommonLootbox = await cm.calculateGear(2);
         // console.log("calculateGearFromCommonLootbox", {
         //   calculateGearFromCommonLootbox: {
         //     rarity: calculateGearFromCommonLootbox.rarity.toString(),
@@ -336,26 +336,26 @@ contract("Gears", (accounts) => {
   });
 
   describe("lockGear", function() {
-    it("Reverts if lock called not by owner", async () => {
-      const tx = gears.lockGear(1);
-      await truffleAssert.reverts(tx, "only token owner");
+    it("Reverts if lock called not by collection manager", async () => {
+      const tx = gears.lockGear(1, { from: user1 });
+      await truffleAssert.reverts(tx, "only collection manager");
     });
 
-    it("lockGear by owner", async () => {
-      await gears.lockGear(1, { from: user1 });
+    it("lockGear by collection manager", async () => {
+      await gears.lockGear(1);
       const gear = await gears.gears(1);
 
       const locked = await gear.locked;
       expect(locked).to.be.equal(true);
     });
 
-    it("Reverts if unlock called not by owner", async () => {
-      const tx = gears.unlockGear(1);
-      await truffleAssert.reverts(tx, "only token owner");
+    it("Reverts if unlock called not by collection manager", async () => {
+      const tx = gears.unlockGear(1, { from: user1 });
+      await truffleAssert.reverts(tx, "only collection manager");
     });
 
-    it("unlockGear by owner", async () => {
-      await gears.unlockGear(1, { from: user1 });
+    it("unlockGear by collection manager", async () => {
+      await gears.unlockGear(1);
 
       const gear = await gears.gears(1);
       const locked = await gear.locked;
@@ -384,27 +384,31 @@ contract("Gears", (accounts) => {
   });
 
   describe("Transfer lock", async () => {
-    it("Can not be transferred while locked", async () => {
-      await gears.lockGear(1, { from: user1 });
+    it("Can not be transferred   while locked", async () => {
+      await gears.lockGear(1);
       await expectRevert(
         gears.safeTransferFrom(user1, user2, 1, { from: user1 }),
         "This gear is locked by owner and can not be transferred"
       );
     });
     it("Can be transferred while unlocked", async () => {
-      await gears.unlockGear(1, { from: user1 });
+      await gears.unlockGear(1);
       await gears.safeTransferFrom(user1, user2, 1, { from: user1 });
       const newOwner = await gears.ownerOf(1);
       expect(newOwner.toString()).to.be.equal(user2);
     });
   });
 
-  describe("GameManager burns a token", async () => {
-    it("Not a GameManager can't burn token", async () => {
-      await expectRevert(gears.burn(1, { from: user1 }), "only game manager");
+  describe("CollectionManager burns a token", async () => {
+    it("Not a CollectionManager can't burn token", async () => {
+      await expectRevert(
+        gears.burn(1, { from: user1 }),
+        "only collection manager"
+      );
     });
-    it("GameManager can burn even locked token", async () => {
-      await gears.lockGear(1, { from: user2 });
+
+    it("CollectionManager can burn even locked token", async () => {
+      await gears.lockGear(1);
       await gears.burn(1, { from: DAO });
       await expectRevert(
         gears.ownerOf(1),
@@ -413,17 +417,17 @@ contract("Gears", (accounts) => {
     });
   });
 
-  describe("airdrop", () => {
-    it("dao can make airdrop", async () => {
-      const lastTokenId = await gears.nextIdToMint();
-      await gears.airdrop(user1, 0, 15, 4, 100);
-      const gear = await gears.gears(lastTokenId);
-      expect(gear.rarity.toString()).to.be.equal("0");
-      expect(gear.gearType.toString()).to.be.equal("15");
-      expect(gear.category.toString()).to.be.equal("4");
-      expect(gear.durability.toString()).to.be.equal("100");
-    });
-  });
+  // describe("airdrop", () => {
+  //   it("dao can make airdrop", async () => {
+  //     const lastTokenId = await gears.nextIdToMint();
+  //     await gears.airdrop(user1, 0, 15, 4, 100);
+  //     const gear = await gears.gears(lastTokenId);
+  //     expect(gear.rarity.toString()).to.be.equal("0");
+  //     expect(gear.gearType.toString()).to.be.equal("15");
+  //     expect(gear.category.toString()).to.be.equal("4");
+  //     expect(gear.durability.toString()).to.be.equal("100");
+  //   });
+  // });
 
   describe("gamemanager open lootbox", () => {
     it("can not be opened by not owner", async () => {
@@ -439,7 +443,7 @@ contract("Gears", (accounts) => {
 
     it("can be opened by owner", async () => {
       await lootboxes.setGameManager(gm.address);
-      await gears.setGameManager(gm.address);
+      await gears.setCollectionManager(cm.address);
       const totalMintedGears = await gears.totalSupply();
       console.log("total minted gears", totalMintedGears.toString());
       const lastTokenId = await gears.nextIdToMint();
@@ -479,6 +483,134 @@ contract("Gears", (accounts) => {
         gm.openLootbox(2, { from: user1 }),
         "ERC20: burn amount exceeds balance"
       );
+    });
+  });
+
+  describe("Gears locks by collection manager", () => {
+    it("can not lock more than 2 gears without special transport", async () => {
+      await expectRevert(
+        cm.setLocks([4, 5, 6], 0, { from: user1 }),
+        "you can't lock so many gears"
+      );
+    });
+
+    it("revert if not a transport sent as transport", async () => {
+      await expectRevert(
+        cm.setLocks([4, 5, 6], 1, { from: user1 }),
+        "transportId is not transport"
+      );
+    });
+
+    let user1transportId;
+    let firstGearId;
+    let secondGearId;
+    let thirdGearId;
+
+    let user2transportId;
+    let user2gearId;
+
+    it("mint gears and transports for next tests", async () => {
+      await gears.setCollectionManager(DAO);
+      await gears.mint(user1, 2, 12, 4, 100);
+      user1transportId = parseInt(await gears.lastTokenMinted(user1));
+      console.log({ user1transportId });
+
+      await gears.mint(user1, 2, 1, 1, 100);
+      firstGearId = parseInt(await gears.lastTokenMinted(user1));
+
+      await gears.mint(user1, 2, 1, 1, 100);
+      secondGearId = parseInt(await gears.lastTokenMinted(user1));
+      console.log({ secondGearId });
+
+      await gears.mint(user1, 2, 2, 2, 100);
+      thirdGearId = parseInt(await gears.lastTokenMinted(user1));
+
+      await gears.mint(user2, 2, 12, 4, 100);
+      user2transportId = parseInt(await gears.lastTokenMinted(user2));
+      console.log({ user2transportId });
+
+      await gears.mint(user2, 2, 1, 1, 100);
+      user2gearId = parseInt(await gears.lastTokenMinted(user2));
+      console.log({ user2gearId });
+
+      await gears.setCollectionManager(cm.address);
+    });
+
+    it("can not lock more than 3 gears with transport", async () => {
+      await expectRevert(
+        cm.setLocks([4, 5, 6, 5], user1transportId, { from: user1 }),
+        "you can't lock so many gears"
+      );
+    });
+
+    it("can not lock if not a transport owner", async () => {
+      await expectRevert(
+        cm.setLocks([2, 3], user2transportId, {
+          from: user1,
+        }),
+        "you are not transport owner"
+      );
+    });
+
+    it("can not lock if not a gear owner", async () => {
+      const ownerOfGear2 = await gears.ownerOf(user2gearId);
+      console.log({ ownerOfGear2, user2 });
+      await expectRevert(
+        cm.setLocks([firstGearId, user2gearId], 0, {
+          from: user1,
+        }),
+        "you are not gear owner"
+      );
+    });
+
+    it("can not lock transport in gears slots", async () => {
+      // const ownerOfGear2 = await gears.ownerOf(user2gearId);
+      // console.log({ ownerOfGear2, user2 });
+      await expectRevert(
+        cm.setLocks([firstGearId, user1transportId], 0, {
+          from: user1,
+        }),
+        "can not lock transport"
+      );
+    });
+
+    it("can not lock gears of the same category", async () => {
+      await expectRevert(
+        cm.setLocks([firstGearId, firstGearId], 0, {
+          from: user1,
+        }),
+        "you can't lock gears of the same category"
+      );
+    });
+
+    it("lock gears", async () => {
+      await cm.setLocks([firstGearId, thirdGearId], user1transportId, {
+        from: user1,
+      });
+
+      const gear1 = await gears.gears(firstGearId);
+      const gear2 = await gears.gears(thirdGearId);
+      const transport = await gears.gears(user1transportId);
+
+      expect(gear1.locked).to.be.equal(true);
+      expect(gear2.locked).to.be.equal(true);
+      expect(transport.locked).to.be.equal(true);
+    });
+
+    it("lock other gears unlocks previous locked", async () => {
+      await cm.setLocks([secondGearId], 0, {
+        from: user1,
+      });
+
+      const gear1 = await gears.gears(firstGearId);
+      const gear2 = await gears.gears(thirdGearId);
+      const transport = await gears.gears(user1transportId);
+
+      // console.log({ gear1, gear2, transport });
+
+      expect(gear1.locked).to.be.equal(false);
+      expect(gear2.locked).to.be.equal(false);
+      expect(transport.locked).to.be.equal(false);
     });
   });
 });
