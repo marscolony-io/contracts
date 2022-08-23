@@ -104,4 +104,9 @@ contract("AvatarManager", (accounts) => {
     expect(xp.length).to.be.equal(2);
     expect(parseInt(xp[0])).to.be.equal(100);
   });
+
+  it("airdrops avatar", async () => {
+    await avatars.airdrop(user1);
+    await expectRevert(avatars.airdrop(user2, { from: user1 }), 'Only DAO');
+  });
 });

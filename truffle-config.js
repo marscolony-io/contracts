@@ -1,4 +1,4 @@
-const { mnemonic } = require("./secrets.json");
+const { mnemonic, mumbai_node_key } = require("./secrets.json");
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 
 module.exports = {
@@ -54,10 +54,10 @@ module.exports = {
         });
       },
       network_id: 137,
-      gasPrice: 200 * 1e9,
-      maxGasFees: 600 * 1e9,
+      gasPrice: 350 * 1e9,
+      maxGasFees: 350 * 1e9,
       maxPriorityFees: 60 * 1e9,
-      gas: 5000000
+      // gas: 5000000
     },
     mumbai: {
       provider: () => {
@@ -70,11 +70,11 @@ module.exports = {
           networkCheckTimeout: 200000,
         });
       },
-      // gas: 500000,
+      gas: 1300000,
       network_id: 80001,
-      gasPrice: 20 * 1e9,
-      maxGasFees: 60 * 1e9,
-      maxPriorityFees: 70 * 1e9,
+      gasPrice: 13 * 1e9,
+      maxGasFees: 33 * 1e9,
+      maxPriorityFees: 34 * 1e9,
     },
   },
   compilers: {
