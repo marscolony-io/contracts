@@ -35,8 +35,6 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   IGears.Gear[] public initialRareGears;
   IGears.Gear[] public initialLegendaryGears;
   IGears.Gear[] public transportGears;
-  IGears.Gear[] public additionalGears; 
-
 
   uint256[42] private ______mc_gap;
 
@@ -52,23 +50,23 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     collection = IMartianColonists(_collection);
 
     // gears 
-    initialCommonGears.push(IGears.Gear(IEnums.Rarity.COMMON, ROCKET_FUEL, CATEGORY_ENGINE, COMMON_GEAR_DURABILITY, false));
-    initialCommonGears.push(IGears.Gear(IEnums.Rarity.COMMON, TITANIUM_DRILL, CATEGORY_DRILL, COMMON_GEAR_DURABILITY, false));
-    initialCommonGears.push(IGears.Gear(IEnums.Rarity.COMMON, SMALL_AREA_SCANNER, CATEGORY_SCANNER, COMMON_GEAR_DURABILITY, false));
-    initialCommonGears.push(IGears.Gear(IEnums.Rarity.COMMON, ULTRASONIC_TRANSMITTER, CATEGORY_TRANSMITTER, COMMON_GEAR_DURABILITY, false));
+    initialCommonGears.push(IGears.Gear(IEnums.Rarity.COMMON, ROCKET_FUEL, CATEGORY_ENGINE, COMMON_GEAR_DURABILITY, false, true));
+    initialCommonGears.push(IGears.Gear(IEnums.Rarity.COMMON, TITANIUM_DRILL, CATEGORY_DRILL, COMMON_GEAR_DURABILITY, false, true));
+    initialCommonGears.push(IGears.Gear(IEnums.Rarity.COMMON, SMALL_AREA_SCANNER, CATEGORY_SCANNER, COMMON_GEAR_DURABILITY, false, true));
+    initialCommonGears.push(IGears.Gear(IEnums.Rarity.COMMON, ULTRASONIC_TRANSMITTER, CATEGORY_TRANSMITTER, COMMON_GEAR_DURABILITY, false, true));
 
-    initialRareGears.push(IGears.Gear(IEnums.Rarity.RARE, ENGINE_FURIOUS, CATEGORY_ENGINE, RARE_GEAR_DURABILITY, false));
-    initialRareGears.push(IGears.Gear(IEnums.Rarity.RARE, DIAMOND_DRILL, CATEGORY_DRILL, RARE_GEAR_DURABILITY, false));
-    initialRareGears.push(IGears.Gear(IEnums.Rarity.RARE, MEDIUM_AREA_SCANNER, CATEGORY_SCANNER, RARE_GEAR_DURABILITY, false));
-    initialRareGears.push(IGears.Gear(IEnums.Rarity.RARE, INFRARED_TRANSMITTER, CATEGORY_TRANSMITTER, RARE_GEAR_DURABILITY, false));
+    initialRareGears.push(IGears.Gear(IEnums.Rarity.RARE, ENGINE_FURIOUS, CATEGORY_ENGINE, RARE_GEAR_DURABILITY, false, true));
+    initialRareGears.push(IGears.Gear(IEnums.Rarity.RARE, DIAMOND_DRILL, CATEGORY_DRILL, RARE_GEAR_DURABILITY, false, true));
+    initialRareGears.push(IGears.Gear(IEnums.Rarity.RARE, MEDIUM_AREA_SCANNER, CATEGORY_SCANNER, RARE_GEAR_DURABILITY, false, true));
+    initialRareGears.push(IGears.Gear(IEnums.Rarity.RARE, INFRARED_TRANSMITTER, CATEGORY_TRANSMITTER, RARE_GEAR_DURABILITY, false, true));
     
-    initialLegendaryGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, WD_40, CATEGORY_ENGINE, LEGENDARY_GEAR_DURABILITY, false));
-    initialLegendaryGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, LASER_DRILL, CATEGORY_DRILL, LEGENDARY_GEAR_DURABILITY, false));
-    initialLegendaryGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, LARGE_AREA_SCANNER, CATEGORY_SCANNER, LEGENDARY_GEAR_DURABILITY, false));
-    initialLegendaryGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, VIBRATION_TRANSMITTER, CATEGORY_TRANSMITTER, LEGENDARY_GEAR_DURABILITY, false));
+    initialLegendaryGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, WD_40, CATEGORY_ENGINE, LEGENDARY_GEAR_DURABILITY, false, true));
+    initialLegendaryGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, LASER_DRILL, CATEGORY_DRILL, LEGENDARY_GEAR_DURABILITY, false, true));
+    initialLegendaryGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, LARGE_AREA_SCANNER, CATEGORY_SCANNER, LEGENDARY_GEAR_DURABILITY, false, true));
+    initialLegendaryGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, VIBRATION_TRANSMITTER, CATEGORY_TRANSMITTER, LEGENDARY_GEAR_DURABILITY, false, true));
 
-    transportGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, THE_NEBUCHADNEZZAR, CATEGORY_TRANSPORT, TRANSPORT_GEAR_DURABILITY, false));
-    transportGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, UNKNOWN, CATEGORY_TRANSPORT, TRANSPORT_GEAR_DURABILITY, false));
+    transportGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, THE_NEBUCHADNEZZAR, CATEGORY_TRANSPORT, TRANSPORT_GEAR_DURABILITY, false, true));
+    transportGears.push(IGears.Gear(IEnums.Rarity.LEGENDARY, THE_WRAITH, CATEGORY_TRANSPORT, TRANSPORT_GEAR_DURABILITY, false, true));
 
   }
 
@@ -253,7 +251,7 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     if (transportId == 0) {
       require(tokenIds.length <= 2, "you can't lock so many gears");
     } else {
-      (IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability, bool locked) = IGears(gearsAddress).gears(transportId); 
+      (IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability, bool locked, bool set) = IGears(gearsAddress).gears(transportId); 
       require(category == CATEGORY_TRANSPORT, "transportId is not transport");
 
       require(msg.sender == TokenInterface(gearsAddress).ownerOf(transportId), "you are not transport owner");
@@ -264,7 +262,7 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     uint256[] memory choosenCategories = new uint256[](3);
     for (uint i = 0; i < tokenIds.length; i++) {
       require(msg.sender == TokenInterface(gearsAddress).ownerOf(tokenIds[i]), "you are not gear owner");
-      (IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability, bool locked) = IGears(gearsAddress).gears(tokenIds[i]);
+      (IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability, bool locked, bool set) = IGears(gearsAddress).gears(tokenIds[i]);
       require(category != CATEGORY_TRANSPORT, "can not lock transport");
       require(!isGearCategoryChoosenBefore(choosenCategories, category), "you can't lock gears of the same category");
       choosenCategories[i] = category;

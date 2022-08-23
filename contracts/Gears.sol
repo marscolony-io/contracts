@@ -78,7 +78,7 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
   function mint(address receiver, IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability) external onlyCollectionManager {
     require(!lock, 'locked');
     lock = true;
-    Gear memory _gear = Gear(rarity, gearType, category, durability, false);
+    Gear memory _gear = Gear(rarity, gearType, category, durability, false, true);
     gears[nextIdToMint] = _gear;
     _safeMint(receiver, nextIdToMint);
     lastTokenMinted[receiver] = nextIdToMint;
@@ -88,6 +88,7 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
 
   function burn(uint256 tokenId) external onlyCollectionManager {
     gears[tokenId].locked = false;
+    gears[tokenId].set = false;
     _burn(tokenId);
   }
 
@@ -105,6 +106,21 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
       resultGears[i - _from] = gears[result[i - _from]];
     }
     return (result, resultGears);
+  }
+
+  function allTokensPaginate(uint256 _from, uint256 _to) external view returns(uint256[] memory, Gear[] memory) {
+    uint256 tokenCount = ERC721Enumerable.totalSupply();
+    if (tokenCount <= _from || _from > _to || tokenCount == 0) {
+      return (new uint256[](0), new Gear[](0));
+    }
+    uint256 to = (tokenCount - 1 > _to) ? _to : tokenCount - 1;
+    uint256[] memory ids = new uint256[](to - _from + 1);
+    Gear[] memory gearsResult = new Gear[](to - _from + 1);
+    for (uint256 i = _from; i <= to; i++) {
+      ids[i - _from] = tokenByIndex(i);
+      gearsResult[i - _from] = gears[tokenByIndex(i)];
+    }
+    return (ids, gearsResult);
   }
 
  

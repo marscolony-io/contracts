@@ -1,10 +1,11 @@
 const { time } = require("openzeppelin-test-helpers");
-const GM = artifacts.require("GameManager");
+const GM = artifacts.require("GameManagerFixed");
 const MC = artifacts.require("MC");
 const MSN = artifacts.require("MissionManager");
 const CLNY = artifacts.require("CLNY");
 const COLONISTS = artifacts.require("MartianColonists");
 const CollectionManager = artifacts.require("CollectionManager");
+const GEARS = artifacts.require("Gears");
 const CryochamberManager = artifacts.require("CryochamberManager");
 
 module.exports = async (callback) => {
@@ -19,6 +20,7 @@ module.exports = async (callback) => {
     const nft = await COLONISTS.deployed();
     const cryo = await CryochamberManager.deployed();
     let collection = await CollectionManager.deployed();
+    const gears = await GEARS.deployed();
 
     const totalLandsInitialCount = await mc.totalSupply();
     console.log("initial lands count:" + totalLandsInitialCount.toString());
@@ -86,7 +88,7 @@ module.exports = async (callback) => {
 
     //  mint clny to users
     for (const account of accounts) {
-      await clny.mint(account, "100000000000000000000000", {
+      await clny.mint(account, "100000000000000000000000", 1, {
         from: accounts[0],
       });
 
@@ -161,6 +163,10 @@ module.exports = async (callback) => {
     console.log("set revshare 90 for user4");
     await msn.setAccountRevshare(90, { from: accounts[4] });
 
+    // mint gears
+    await gears.setCollectionManager(accounts[0], { from: accounts[0] });
+    await gears.mint(accounts[1], 0, 1, 1, 100);
+
     /*
     MISSION_MANAGER=0xC0633bcaB848D1738Ad22A05135C8E9EC9265092
     GAME_MANAGER=0xc65F8BA708814653EDdCe0e9f75827fe309E29aD
@@ -176,6 +182,7 @@ COLLECTION_MANAGER=${collection.address}
 MC=${mc.address}
 MCLN=${nft.address}
 CRYO=${cryo.address}
+GEAR=${gears.address}
 `);
 
     callback();
