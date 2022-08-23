@@ -137,33 +137,6 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     limit = allowlistLimit;
   }
 
-  // function setMissionManager(address _address) external onlyDAO {
-  //   missionManager = _address;
-  // }
-
-  // function setBackendSigner(address _address) external onlyDAO {
-  //   backendSigner = _address;
-  // }
-
-  // function setMartianColonists(address _address) external onlyDAO {
-  //   martianColonists = IMartianColonists(_address);
-  // }
-
-  // function setAvatarAddress(address _avatarAddress) external onlyDAO {
-  //   avatarAddress = _avatarAddress;
-  // }
-
-  function setPollAddress(address _address) external onlyDAO {
-    pollAddress = _address;
-  }
-
-  function setCryochamberAddress(address _address) external onlyDAO {
-    cryochamberAddress = _address;
-  }
-
-  function setLootboxesAddress(address _address) external onlyDAO {
-    lootboxesAddress = _address;
-  }
 
   function getPollData() external view returns (string memory, string memory, string[] memory, uint256[] memory, bool) {
     if (pollAddress == address(0)) {
@@ -175,10 +148,6 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
       results[i] = IPoll(pollAddress).totalVotesFor(i);
     }
     return (description, caption, items, results, IPoll(pollAddress).canVote(msg.sender));
-  }
-
-  function vote(uint8 decision) external {
-    IPoll(pollAddress).vote(msg.sender, decision);
   }
 
   function stringToUint(string memory s) private pure returns (uint256) {
@@ -521,7 +490,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   uint8 constant BASE_STATION = 0;
   /** these constants (for sure just `_deduct` function) can be changed while upgrading */
   uint256 constant BASE_STATION_COST = 30;
-  uint256 constant AVATAR_MINT_COST = 30;
+  uint256 constant AVATAR_MINT_COST = 90;
   uint256 constant LEVEL_1_COST = 60;
   uint256 constant LEVEL_2_COST = 120;
   uint256 constant LEVEL_3_COST = 240;
@@ -742,6 +711,16 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
       powerProductionPlacement[tokenId].x = x;
       powerProductionPlacement[tokenId].y = y;
     }
+  }
+
+  function getEarningData(uint256[] memory tokenIds) external view returns (uint256, uint256) {
+    uint256 result = 0;
+    uint256 speed = 0;
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      result = result + getEarned(tokenIds[i]);
+      speed = speed + getEarningSpeed(tokenIds[i]);
+    }
+    return (result, speed);
   }
 
   /* 0x3eb87111 */

@@ -7,12 +7,13 @@ import './interfaces/IMartianColonists.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/ICryochamber.sol';
 import './interfaces/IAvatarManager.sol';
+import './interfaces/IGameManager.sol';
 
 
 contract AvatarManager is IAvatarManager, GameConnection, PausableUpgradeable {
   uint256 public maxTokenId;
 
-  IMartianColonists public collection;
+  uint256 reserved0;
   mapping (uint256 => uint256) private xp;
 
   ICryochamber public cryochambers;
@@ -24,11 +25,14 @@ contract AvatarManager is IAvatarManager, GameConnection, PausableUpgradeable {
     _;
   }
 
-  function initialize(address _collection) external initializer {
+  function collection() private view returns (IMartianColonists) {
+    return IGameManager(GameManager).martianColonists();
+  }
+
+  function initialize() external initializer {
     GameConnection.__GameConnection_init(msg.sender);
     PausableUpgradeable.__Pausable_init();
     maxTokenId = 0;
-    collection = IMartianColonists(_collection);
   }
 
   function setCryochamberManager(address cryochamberManager) external {
@@ -36,7 +40,7 @@ contract AvatarManager is IAvatarManager, GameConnection, PausableUpgradeable {
   }
 
   function _getXP(uint256 avatarId) private view returns(uint256) {
-    uint256 totalAvatarsCount = collection.totalSupply();
+    uint256 totalAvatarsCount = collection().totalSupply();
     require(avatarId <= totalAvatarsCount, "wrong avatarId requested");
     return xp[avatarId] + 100; // 100 is a base for every avatar
   }
@@ -68,13 +72,13 @@ contract AvatarManager is IAvatarManager, GameConnection, PausableUpgradeable {
   }
 
   function allMyTokens() external view returns(uint256[] memory) {
-    uint256 tokenCount = collection.balanceOf(msg.sender);
+    uint256 tokenCount = collection().balanceOf(msg.sender);
     if (tokenCount == 0) {
       return new uint256[](0);
     } else {
       uint256[] memory result = new uint256[](tokenCount);
       for (uint256 i = 0; i < tokenCount; i++) {
-        result[i] = collection.tokenOfOwnerByIndex(msg.sender, i);
+        result[i] = collection().tokenOfOwnerByIndex(msg.sender, i);
       }
       return result;
     }
@@ -86,12 +90,17 @@ contract AvatarManager is IAvatarManager, GameConnection, PausableUpgradeable {
   }
 
   function ableToMint() view public returns (bool) {
-    return collection.totalSupply() < maxTokenId;
+    return collection().totalSupply() < maxTokenId;
   }
 
   function mint(address receiver) external onlyGameManager whenNotPaused {
     require (ableToMint(), 'cannot mint');
-    collection.mint(receiver);
+    collection().mint(receiver);
+  }
+
+  function airdrop(address receiver) external onlyDAO whenNotPaused {
+    require (ableToMint(), 'cannot mint');
+    collection().mint(receiver);
   }
 
   function pause() external onlyGameManager {
@@ -103,23 +112,23 @@ contract AvatarManager is IAvatarManager, GameConnection, PausableUpgradeable {
   }
 
   function setName(uint256 tokenId, string memory _name) external {
-    require (collection.ownerOf(tokenId) == msg.sender, 'not your token');
+    require (collection().ownerOf(tokenId) == msg.sender, 'not your token');
     require (bytes(_name).length > 0, 'empty name');
     require (bytes(_name).length <= 15, 'name too long');
-    require (bytes(collection.names(tokenId)).length == 0, 'name is already set');
-    collection.setName(tokenId, _name);
+    require (bytes(collection().names(tokenId)).length == 0, 'name is already set');
+    collection().setName(tokenId, _name);
   }
 
   function setNameByGameManager(uint256 tokenId, string memory _name) external onlyGameManager {
     require (bytes(_name).length <= 15, 'name too long');
-    require (keccak256(abi.encodePacked(_name)) != keccak256(abi.encodePacked(collection.names(tokenId))), 'same name');
-    collection.setName(tokenId, _name);
+    require (keccak256(abi.encodePacked(_name)) != keccak256(abi.encodePacked(collection().names(tokenId))), 'same name');
+    collection().setName(tokenId, _name);
   }
 
   function getNames(uint256[] calldata tokenIds) external view returns (string[] memory) {
     string[] memory result = new string[](tokenIds.length);
     for (uint256 i = 0; i < tokenIds.length; i++) {
-      result[i] = collection.names(tokenIds[i]);
+      result[i] = collection().names(tokenIds[i]);
     }
     return result;
   }
