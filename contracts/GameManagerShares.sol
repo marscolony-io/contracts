@@ -5,7 +5,6 @@ import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import './interfaces/TokenInterface.sol';
 import './interfaces/PauseInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import './interfaces/IPoll.sol';
 import './Shares.sol';
 import './interfaces/IMartianColonists.sol';
 import './interfaces/ILootboxes.sol';
@@ -29,7 +28,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   uint256 public maxTokenId;
   address public MCAddress;
   address public avatarAddress;
-  address public pollAddress;
+  uint256 deprecated0;
 
   address public missionManager;
   IMartianColonists public martianColonists;
@@ -135,19 +134,6 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     allowed = !allowlistOnly || allowlist[msg.sender];
     minted = TokenInterface(MCAddress).totalSupply();
     limit = allowlistLimit;
-  }
-
-
-  function getPollData() external view returns (string memory, string memory, string[] memory, uint256[] memory, bool) {
-    if (pollAddress == address(0)) {
-      return ('', '', new string[](0), new uint256[](0), false);
-    }
-    (string memory description, string memory caption, string[] memory items) = IPoll(pollAddress).getVoteTopic();
-    uint256[] memory results = new uint256[](items.length);
-    for (uint8 i = 0; i < items.length; i++) {
-      results[i] = IPoll(pollAddress).totalVotesFor(i);
-    }
-    return (description, caption, items, results, IPoll(pollAddress).canVote(msg.sender));
   }
 
   function stringToUint(string memory s) private pure returns (uint256) {
