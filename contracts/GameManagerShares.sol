@@ -30,7 +30,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   address public CLNYAddress;
   uint256 public maxTokenId;
   address public MCAddress;
-  address public avatarAddress;
+  address public collectionAddress;
   address public pollAddress;
 
   address public missionManager;
@@ -151,9 +151,9 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   //   martianColonists = IMartianColonists(_address);
   // }
 
-  // function setCollectionAddress(address _avatarAddress) external onlyDAO {
-  //   avatarAddress = _avatarAddress;
-  // }
+  function setCollectionAddress(address _collectionAddress) external onlyDAO {
+    collectionAddress = _collectionAddress;
+  }
 
   function setPollAddress(address _address) external onlyDAO {
     pollAddress = _address;
@@ -291,7 +291,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     require(_xp >= 230 && _xp < 19971800, "XP increment is not valid");
     require((_lootbox >= 0 && _lootbox <= 3) || (_lootbox >= 23 && _lootbox <= 25), "Lootbox code is not valid");
 
-    ICollectionManager(avatarAddress).addXP(_avatar, _xp);
+    ICollectionManager(collectionAddress).addXP(_avatar, _xp);
 
 
     if (_lootbox >= 1 && _lootbox <= 3) {
@@ -418,7 +418,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
 
   function mintAvatar() external nonReentrant {
     _deduct(MINT_AVATAR_LEVEL, REASON_MINT_AVATAR);
-    TokenInterface(avatarAddress).mint(msg.sender);
+    TokenInterface(collectionAddress).mint(msg.sender);
   }
 
   function mintLand(address _address, uint256 tokenId) private {
@@ -498,8 +498,8 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     _pause();
     PauseInterface(CLNYAddress).pause();
     PauseInterface(MCAddress).pause();
-    if (avatarAddress != address(0)) {
-      PauseInterface(avatarAddress).pause();
+    if (collectionAddress != address(0)) {
+      PauseInterface(collectionAddress).pause();
     }
   }
 
@@ -510,8 +510,8 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     _unpause();
     PauseInterface(CLNYAddress).unpause();
     PauseInterface(MCAddress).unpause();
-    if (avatarAddress != address(0)) {
-      PauseInterface(avatarAddress).unpause();
+    if (collectionAddress != address(0)) {
+      PauseInterface(collectionAddress).unpause();
     }
   }
 
@@ -818,7 +818,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
 
   function renameAvatar(uint256 avatarId, string calldata _name) external {
     require(martianColonists.ownerOf(avatarId) == msg.sender, 'You are not the owner');
-    ICollectionManager(avatarAddress).setNameByGameManager(avatarId, _name);
+    ICollectionManager(collectionAddress).setNameByGameManager(avatarId, _name);
     TokenInterface(CLNYAddress).burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
   }
 }
