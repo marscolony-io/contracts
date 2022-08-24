@@ -5,7 +5,6 @@ import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import './interfaces/TokenInterface.sol';
 import './interfaces/PauseInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import './interfaces/IPoll.sol';
 import './Shares.sol';
 import './interfaces/IMartianColonists.sol';
 import './interfaces/ILootboxes.sol';
@@ -138,18 +137,6 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     minted = TokenInterface(MCAddress).totalSupply();
     limit = allowlistLimit;
   }
-
-  // function setMissionManager(address _address) external onlyDAO {
-  //   missionManager = _address;
-  // }
-
-  // function setBackendSigner(address _address) external onlyDAO {
-  //   backendSigner = _address;
-  // }
-
-  // function setMartianColonists(address _address) external onlyDAO {
-  //   martianColonists = IMartianColonists(_address);
-  // }
 
   function setCollectionAddress(address _collectionAddress) external onlyDAO {
     collectionAddress = _collectionAddress;
@@ -523,7 +510,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   uint8 constant BASE_STATION = 0;
   /** these constants (for sure just `_deduct` function) can be changed while upgrading */
   uint256 constant BASE_STATION_COST = 30;
-  uint256 constant AVATAR_MINT_COST = 30;
+  uint256 constant AVATAR_MINT_COST = 90;
   uint256 constant LEVEL_1_COST = 60;
   uint256 constant LEVEL_2_COST = 120;
   uint256 constant LEVEL_3_COST = 240;
@@ -744,6 +731,16 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
       powerProductionPlacement[tokenId].x = x;
       powerProductionPlacement[tokenId].y = y;
     }
+  }
+
+  function getEarningData(uint256[] memory tokenIds) external view returns (uint256, uint256) {
+    uint256 result = 0;
+    uint256 speed = 0;
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      result = result + getEarned(tokenIds[i]);
+      speed = speed + getEarningSpeed(tokenIds[i]);
+    }
+    return (result, speed);
   }
 
   /* 0x3eb87111 */

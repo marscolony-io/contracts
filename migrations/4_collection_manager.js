@@ -8,9 +8,7 @@ const GameManagerShares = artifacts.require("GameManagerShares");
 module.exports = async (deployer, network) => {
   await deployer.deploy(
     MartianColonists,
-    network === "hartest"
-      ? "https://meta-avatar-test.marscolony.io/"
-      : "https://meta-avatar.marscolony.io/"
+    "https://meta-avatar-polygon.marscolony.io/"
   );
   await deployProxy(CollectionManager, [MartianColonists.address], {
     deployer,
