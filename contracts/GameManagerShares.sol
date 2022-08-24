@@ -30,7 +30,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   uint256 public maxTokenId;
   address public MCAddress;
   address public collectionAddress;
-  address public pollAddress;
+  uint256 reserved0;
 
   address public missionManager;
   IMartianColonists public martianColonists;
@@ -142,32 +142,12 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     collectionAddress = _collectionAddress;
   }
 
-  function setPollAddress(address _address) external onlyDAO {
-    pollAddress = _address;
-  }
-
   function setCryochamberAddress(address _address) external onlyDAO {
     cryochamberAddress = _address;
   }
 
   function setLootboxesAddress(address _address) external onlyDAO {
     lootboxesAddress = _address;
-  }
-
-  function getPollData() external view returns (string memory, string memory, string[] memory, uint256[] memory, bool) {
-    if (pollAddress == address(0)) {
-      return ('', '', new string[](0), new uint256[](0), false);
-    }
-    (string memory description, string memory caption, string[] memory items) = IPoll(pollAddress).getVoteTopic();
-    uint256[] memory results = new uint256[](items.length);
-    for (uint8 i = 0; i < items.length; i++) {
-      results[i] = IPoll(pollAddress).totalVotesFor(i);
-    }
-    return (description, caption, items, results, IPoll(pollAddress).canVote(msg.sender));
-  }
-
-  function vote(uint8 decision) external {
-    IPoll(pollAddress).vote(msg.sender, decision);
   }
 
   function stringToUint(string memory s) private pure returns (uint256) {

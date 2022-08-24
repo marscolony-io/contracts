@@ -30,7 +30,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   uint256 public maxTokenId;
   address public MCAddress;
   address public collectionAddress;
-  address public pollAddress;
+  uint256 reserved0;
   address public missionManager;
   IMartianColonists public martianColonists;
   address public backendSigner;
