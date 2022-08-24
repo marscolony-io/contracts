@@ -54,18 +54,9 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
     require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
 
     string memory baseURI = _baseURI();
-    uint256 gearType = gears[tokenId].gearType;
-    uint256 gearCategory = gears[tokenId].category;
-    IEnums.Rarity rarity = gears[tokenId].rarity;
     return bytes(baseURI).length > 0 ? string(abi.encodePacked(
       baseURI, 
-      tokenId.toString(), 
-      "/",
-      gearType.toString(),
-      "/",
-      gearCategory.toString(),
-      "/",
-      getRarityUrlPath(rarity)
+      tokenId.toString()
       )) : "";
   }
 
