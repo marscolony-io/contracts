@@ -166,6 +166,8 @@ module.exports = async (callback) => {
     // mint gears
     await gears.setCollectionManager(accounts[0], { from: accounts[0] });
     await gears.mint(accounts[1], 0, 1, 1, 100);
+    await gears.mint(accounts[1], 0, 2, 1, 150);
+    await gears.lockGear(2);
 
     /*
     MISSION_MANAGER=0xC0633bcaB848D1738Ad22A05135C8E9EC9265092

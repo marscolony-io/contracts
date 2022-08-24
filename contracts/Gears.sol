@@ -134,6 +134,8 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
 
   function decreaseDurability(uint256 tokenId, uint32 amount) external onlyCollectionManager {
     if (gears[tokenId].durability <= amount) {
+      gears[tokenId].locked = false;
+      gears[tokenId].set = false;
        _burn(tokenId);
     }
 
