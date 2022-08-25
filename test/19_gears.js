@@ -324,14 +324,9 @@ contract("Gears", (accounts) => {
     it("Returns correct URI with gearType part", async () => {
       const uri = await gears.tokenURI(1);
 
-      const gear = await gears.gears(1);
-
       const [base1, id1, gearType, category, rarity] = uri.split("/");
       expect(baseUri.startsWith(base1)).to.be.true;
       expect(id1).to.be.equal("1");
-      expect(gearType).to.be.equal(gear.gearType.toString());
-      expect(category).to.be.equal(gear.category.toString());
-      expect(rarity).to.be.equal(gear.rarity.toString());
     });
   });
 
