@@ -5,8 +5,6 @@ pragma solidity >=0.8.0 <0.9.0;
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
-
-
 contract Oracle is Ownable {
 
   address[] public relayers;
@@ -18,10 +16,15 @@ contract Oracle is Ownable {
   IERC20 constant SLP_CLNY = IERC20(0xcd818813F038A4d1a27c84d24d74bBC21551FA83);
 
 
-  uint256 constant validityPeriod = 6 * 60 * 60 * 1000; // six hours in milliseconds
+  uint256 constant validityPeriod = 6 * 60 * 60; // six hours in seconds
   
   modifier onlyRelayer() {
     require(isRelayerAlreadyAdded(msg.sender), "not relayer");
+    _;
+  }
+
+  modifier onlyRelayerOrOwner() {
+    require(isRelayerAlreadyAdded(msg.sender) || owner() == _msgSender(), "neither relayer nor owner");
     _;
   }
 
@@ -36,24 +39,26 @@ contract Oracle is Ownable {
 
   function addRelayer(address _relayer) external onlyOwner {
     require(!isRelayerAlreadyAdded(_relayer), "relayer added already");
+    for (uint i = 0; i < relayers.length; i++) {
+      if (relayers[i] == address(0)) {
+        relayers[i] = _relayer;
+        return;
+      }
+    }
     relayers.push(_relayer);
   }
 
   function deleteRelayer(address _relayer) external onlyOwner {
     require(isRelayerAlreadyAdded(_relayer), "this address is not in relayers");
-    address[] memory newRelayers = new address[](relayers.length - 1);
-    uint index = 0;
     for (uint i = 0; i < relayers.length; i++) {
-      if (relayers[i] != _relayer) {
-        newRelayers[index] = relayers[i];
-        index++;
+      if (relayers[i] == _relayer) {
+        delete relayers[i];
       }
     }
-    relayers = newRelayers;
   }
 
   function isRateValid() private view returns (bool) {
-    return block.timestamp - lastUpdateTime > lastUpdateTime;
+    return block.timestamp - lastUpdateTime < validityPeriod;
   }
 
   function oneInUsd() external view returns (bool valid, uint256 rate) {
@@ -68,7 +73,12 @@ contract Oracle is Ownable {
   }
 
   function actualize(uint256 price) external onlyRelayer {
+    lastUpdateTime = block.timestamp;
     oneUsdRate = price;
+  }
+
+  function stop() external onlyRelayerOrOwner {
+    lastUpdateTime = 0;
   }
   
 }

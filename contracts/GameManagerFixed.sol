@@ -109,6 +109,23 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     backendSigner = _address;
   }
 
+  function setCollectionAddress(address _collectionAddress) external onlyDAO {
+    collectionAddress = _collectionAddress;
+  }
+
+  function setMissionManager(address _address) external onlyDAO {
+    missionManager = _address;
+  }
+
+  function setLootboxesAddress(address _address) external onlyDAO {
+    lootboxesAddress = _address;
+  }
+
+  function setMartianColonists(address _address) external onlyDAO {
+    martianColonists = IMartianColonists(_address);
+  }
+
+
   function stringToUint(string memory s) private pure returns (uint256) {
     bytes memory b = bytes(s);
     uint result = 0;
