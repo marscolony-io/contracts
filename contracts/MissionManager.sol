@@ -12,7 +12,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 contract MissionManager is GameConnection, PausableUpgradeable {
   IMartianColonists public collection;
-  ICollectionManager public CollectionManager;
+  ICollectionManager public collectionManager;
   TokenInterface public MC;
 
   struct AccountMissionState {
@@ -31,11 +31,11 @@ contract MissionManager is GameConnection, PausableUpgradeable {
 
   uint256[50] private ______gap;
 
-  function initialize(IMartianColonists _collection, ICollectionManager _CollectionManager, TokenInterface _MC) external initializer {
+  function initialize(IMartianColonists _collection, ICollectionManager _collectionManager, TokenInterface _MC) external initializer {
     GameConnection.__GameConnection_init(msg.sender);
     PausableUpgradeable.__Pausable_init();
     collection = _collection;
-    CollectionManager = _CollectionManager;
+    collectionManager = _collectionManager;
     MC = _MC;
   }
 

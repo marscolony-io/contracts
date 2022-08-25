@@ -12,7 +12,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber {
   IMartianColonists public avatars;
-  ICollectionManager public CollectionManager;
+  ICollectionManager public collectionManager;
 
   uint256 public override cryochamberPrice;
   uint256 public override energyPrice;
@@ -34,11 +34,11 @@ contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber
 
   uint256[49] private ______gap;
 
-  function initialize(address _collection, address _CollectionManager) external initializer {
+  function initialize(address _collection, address _collectionManager) external initializer {
     GameConnection.__GameConnection_init(msg.sender);
     PausableUpgradeable.__Pausable_init();
     avatars = IMartianColonists(_collection);
-    CollectionManager = ICollectionManager(_CollectionManager);
+    collectionManager = ICollectionManager(_collectionManager);
 
     cryochamberPrice = 30 * 10 ** 18;
     energyPrice = 5 * 10 ** 18;
@@ -117,7 +117,7 @@ contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber
 
     CryoTime memory avatarCryo = cryos[avatarId];
     if (avatarCryo.endTime > 0 && avatarCryo.endTime <= uint64(block.timestamp)) {
-      CollectionManager.addXPAfterCryo(avatarId, avatarCryo.reward);
+      collectionManager.addXPAfterCryo(avatarId, avatarCryo.reward);
     }
 
     decreaseCryochamberEnergy(user, cryoEnergyCost);
@@ -170,7 +170,7 @@ contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber
     uint256[] memory avatarArg = new uint256[](1);
     avatarArg[0] = avatarId;
 
-    uint256[] memory currentXps = CollectionManager.getXP(avatarArg);
+    uint256[] memory currentXps = collectionManager.getXP(avatarArg);
     uint256 currentXp = currentXps[0];
 
     return cryoXpAddition(currentXp);
