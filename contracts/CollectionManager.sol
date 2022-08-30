@@ -314,13 +314,13 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   }
 
   function getLootboxOpeningPrice() external view returns (uint256 common, uint256 rare, uint256 legendary) {
-    (bool valid, uint256 clnyInUsd) = IOracle(oracleAddress).hclnyInUsd();
+    (bool valid, uint256 clnyInUsd) = IOracle(oracleAddress).clnyInUsd();
     
     require(valid, "oracle price of clny is not valid");
     
-    common = COMMON_OPENING_PRICE_USD/(clnyInUsd * 100); // from cents to usd
-    rare = RARE_OPENING_PRICE_USD/(clnyInUsd * 100); 
-    legendary = LEGENDARY_OPENING_PRICE_USD/(clnyInUsd * 100);
+    common = COMMON_OPENING_PRICE_USD*clnyInUsd/100; // from cents to usd
+    rare = RARE_OPENING_PRICE_USD*clnyInUsd/100; 
+    legendary = LEGENDARY_OPENING_PRICE_USD*clnyInUsd/100;
   }
 
 }

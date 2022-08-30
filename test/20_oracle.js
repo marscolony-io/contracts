@@ -5,6 +5,7 @@ const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
 const ORACLE = artifacts.require("Oracle");
 const WETH = artifacts.require("Oracle");
 const CLNY = artifacts.require("CLNY");
+const CollectionManager = artifacts.require("CollectionManager");
 
 contract("Gears", (accounts) => {
   const [DAO, user1, user2, user3] = accounts;
@@ -12,11 +13,13 @@ contract("Gears", (accounts) => {
   let oracle;
   let wethAddress;
   let clny;
+  let collectionManager;
 
   before(async () => {
     oracle = await ORACLE.deployed();
     wethAddress = (await WETH.deployed()).address;
     clny = await CLNY.deployed();
+    collectionManager = await CollectionManager.deployed();
   });
 
   describe("Relayers", function() {
@@ -143,6 +146,25 @@ contract("Gears", (accounts) => {
       // console.log({ clnyInUsd: clnyInUsd["rate"].toString() });
       expect(clnyInUsd["rate"]).to.bignumber.equal(
         new BN("1000000000000000000")
+      );
+    });
+  });
+
+  describe("Lootbox opening price for frontend", () => {
+    it("show opening prices for rarities", async () => {
+      await collectionManager.setOracleAddress(oracle.address);
+      const prices = await collectionManager.getLootboxOpeningPrice();
+      // console.log(prices["common"].toString());
+      // console.log(prices["rare"].toString());
+      // console.log(prices["legendary"].toString());
+      expect(prices["common"]).to.bignumber.be.equal(
+        new BN("1000000000000000000")
+      );
+      expect(prices["rare"]).to.bignumber.be.equal(
+        new BN("2000000000000000000")
+      );
+      expect(prices["legendary"]).to.bignumber.be.equal(
+        new BN("3000000000000000000")
       );
     });
   });

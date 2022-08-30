@@ -4,8 +4,9 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
+import './interfaces/IOracle.sol';
 
-contract Oracle is Ownable {
+contract Oracle is Ownable, IOracle {
 
   address[] public relayers;
   uint256 wethUsdRate;
