@@ -8,13 +8,12 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 contract Oracle is Ownable {
 
   address[] public relayers;
-  uint256 oneUsdRate;
+  uint256 wethUsdRate;
   uint256 lastUpdateTime;
 
-  IERC20 constant WONE = IERC20(0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a);
-  IERC20 constant CLNY = IERC20(0x0D625029E21540aBdfAFa3BFC6FD44fB4e0A66d0);
-  IERC20 constant SLP_CLNY = IERC20(0xcd818813F038A4d1a27c84d24d74bBC21551FA83);
-
+  address weth;
+  address wclny;
+  address lpool;
 
   uint256 constant validityPeriod = 6 * 60 * 60; // six hours in seconds
   
@@ -26,6 +25,12 @@ contract Oracle is Ownable {
   modifier onlyRelayerOrOwner() {
     require(isRelayerAlreadyAdded(msg.sender) || owner() == _msgSender(), "neither relayer nor owner");
     _;
+  }
+
+  constructor (address _weth, address _wclny, address _lpool)  {
+    weth = _weth;
+    wclny = _wclny;
+    lpool = _lpool;
   }
 
   function isRelayerAlreadyAdded(address _relayer) private view returns (bool) {
@@ -61,20 +66,20 @@ contract Oracle is Ownable {
     return block.timestamp - lastUpdateTime < validityPeriod;
   }
 
-  function oneInUsd() external view returns (bool valid, uint256 rate) {
-    return (isRateValid(), oneUsdRate);
+  function wethInUsd() external view returns (bool valid, uint256 rate) {
+    return (isRateValid(), wethUsdRate);
   }
 
-  function hclnyInUsd() external view returns (bool valid, uint256 rate) {
-    uint256 woneInLiq = WONE.balanceOf(address(SLP_CLNY));
-    uint256 clnyInLiq = CLNY.balanceOf(address(SLP_CLNY));
-    uint256 onePrice = woneInLiq * 1e18 / clnyInLiq;
-    return (isRateValid(), onePrice * oneUsdRate);
+  function clnyInUsd() external view returns (bool valid, uint256 rate) {
+    uint256 wethInLiq = IERC20(weth).balanceOf(lpool);
+    uint256 clnyInLiq = IERC20(wclny).balanceOf(lpool);
+    uint256 wethPrice = wethInLiq * 1e18 / clnyInLiq;
+    return (isRateValid(), (wethPrice * wethUsdRate)/1e18);
   }
 
   function actualize(uint256 price) external onlyRelayer {
     lastUpdateTime = block.timestamp;
-    oneUsdRate = price;
+    wethUsdRate = price;
   }
 
   function stop() external onlyRelayerOrOwner {

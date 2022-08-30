@@ -8,6 +8,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/ICryochamber.sol';
 import './interfaces/ICollectionManager.sol';
 import './interfaces/ILootboxes.sol';
+import './interfaces/IOracle.sol';
 import './interfaces/IEnums.sol';
 import './interfaces/IGears.sol';
 import './interfaces/TokenInterface.sol';
@@ -36,9 +37,11 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   IGears.Gear[] public initialLegendaryGears;
   IGears.Gear[] public transportGears;
 
-  uint256[42] private ______mc_gap;
+  address oracleAddress;
 
-  modifier onlyCryochamberManager {
+  uint256[41] private ______mc_gap;
+
+    modifier onlyCryochamberManager {
     require(msg.sender == address(cryochambers), 'Only CryochamberManager');
     _;
   }
@@ -74,8 +77,12 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     cryochambers = ICryochamber(cryochamberManager);
   }
 
-   function setGearsAddress(address _address) external onlyDAO {
+  function setGearsAddress(address _address) external onlyDAO {
     gearsAddress = _address;
+  }
+
+  function setOracleAddress(address _address) external onlyDAO {
+    oracleAddress = _address;
   }
 
 
@@ -305,4 +312,15 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
   }
+
+  function getLootboxOpeningPrice() external view returns (uint256 common, uint256 rare, uint256 legendary) {
+    (bool valid, uint256 clnyInUsd) = IOracle(oracleAddress).hclnyInUsd();
+    
+    require(valid, "oracle price of clny is not valid");
+    
+    common = COMMON_OPENING_PRICE_USD/(clnyInUsd * 100); // from cents to usd
+    rare = RARE_OPENING_PRICE_USD/(clnyInUsd * 100); 
+    legendary = LEGENDARY_OPENING_PRICE_USD/(clnyInUsd * 100);
+  }
+
 }

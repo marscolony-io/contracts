@@ -1,4 +1,4 @@
-const GM = artifacts.require("GameManager");
+const GM = artifacts.require("GameManagerFixed");
 const MC = artifacts.require("MC");
 const CLNY = artifacts.require("CLNY");
 

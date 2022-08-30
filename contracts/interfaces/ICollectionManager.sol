@@ -10,4 +10,5 @@ interface ICollectionManager {
   function setNameByGameManager(uint256 tokenId, string memory _name) external;
   function setLocks(uint256[] calldata tokenIds, uint256 transportId) external;
   function mintGear(address owner, IEnums.Rarity rarity) external;
+  function getLootboxOpeningPrice() external view returns (uint256 common, uint256 rare, uint256 legendary);
 }

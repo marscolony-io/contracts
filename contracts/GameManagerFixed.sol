@@ -795,18 +795,32 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
 
 
   // gears
+
   function openLootbox(uint256 tokenId) external whenNotPaused {
 
     require(TokenInterface(lootboxesAddress).ownerOf(tokenId) == msg.sender, "You aren't this lootbox owner");
 
     IEnums.Rarity rarity = ILootboxes(lootboxesAddress).rarities(tokenId);
-    uint256 openPrice = (rarity == IEnums.Rarity.COMMON) ? 20 : (rarity == IEnums.Rarity.RARE) ? 45 : 70;
 
-    TokenInterface(CLNYAddress).burn(msg.sender, openPrice * 10 ** 18, REASON_OPEN_LOOTBOX);
+    (uint256 commonPrice, uint256 rarePrice, uint256 legendaryPrice) = ICollectionManager(collectionAddress).getLootboxOpeningPrice();
+    uint256 openPrice;
+    
+    if (rarity == IEnums.Rarity.COMMON) {
+      openPrice = commonPrice;
+    }
+    
+    if (rarity == IEnums.Rarity.RARE) {
+      openPrice = rarePrice;
+    }
+
+    if (rarity == IEnums.Rarity.LEGENDARY) {
+      openPrice = legendaryPrice;
+    }
+
+    TokenInterface(CLNYAddress).burn(msg.sender, openPrice, REASON_OPEN_LOOTBOX);
     ILootboxes(lootboxesAddress).burn(tokenId);
 
     ICollectionManager(collectionAddress).mintGear(msg.sender, rarity);
-
   }
 
   // for compatibility with Polygon

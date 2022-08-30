@@ -3,14 +3,20 @@ const truffleAssert = require("truffle-assertions");
 const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
 
 const ORACLE = artifacts.require("Oracle");
+const WETH = artifacts.require("Oracle");
+const CLNY = artifacts.require("CLNY");
 
 contract("Gears", (accounts) => {
   const [DAO, user1, user2, user3] = accounts;
 
   let oracle;
+  let wethAddress;
+  let clny;
 
   before(async () => {
     oracle = await ORACLE.deployed();
+    wethAddress = (await WETH.deployed()).address;
+    clny = await CLNY.deployed();
   });
 
   describe("Relayers", function() {
@@ -81,17 +87,17 @@ contract("Gears", (accounts) => {
 
     it("Actualize", async () => {
       await oracle.actualize("2000000000000000", { from: user2 });
-      const oneInUsd = await oracle.oneInUsd();
-      const isValid = await oracle.isRateValid();
-      console.log({ isValid });
-      expect(oneInUsd["valid"]).to.be.equal(true);
-      expect(parseInt(oneInUsd["rate"])).to.be.equal(2000000000000000);
+      const wethInUsd = await oracle.wethInUsd();
+      // const isValid = await oracle.isRateValid();
+      // console.log({ isValid });
+      expect(wethInUsd["valid"]).to.be.equal(true);
+      expect(parseInt(wethInUsd["rate"])).to.be.equal(2000000000000000);
     });
 
     it("isRateValid invalid case", async () => {
       await time.increase(time.duration.hours(7));
-      const oneInUsd = await oracle.oneInUsd();
-      expect(oneInUsd["valid"]).to.be.equal(false);
+      const wethInUsd = await oracle.wethInUsd();
+      expect(wethInUsd["valid"]).to.be.equal(false);
     });
   });
 
@@ -106,15 +112,38 @@ contract("Gears", (accounts) => {
     it("can be invoked by owner", async () => {
       await oracle.actualize("2000000000000000", { from: user2 });
       await oracle.stop({ from: DAO });
-      const oneInUsd = await oracle.oneInUsd();
-      expect(oneInUsd["valid"]).to.be.equal(false);
+      const wethInUsd = await oracle.wethInUsd();
+      expect(wethInUsd["valid"]).to.be.equal(false);
     });
 
     it("can be invoked by relayer", async () => {
       await oracle.actualize("2000000000000000", { from: user2 });
       await oracle.stop({ from: user2 });
-      const oneInUsd = await oracle.oneInUsd();
-      expect(oneInUsd["valid"]).to.be.equal(false);
+      const wethInUsd = await oracle.wethInUsd();
+      expect(wethInUsd["valid"]).to.be.equal(false);
+    });
+  });
+
+  describe("CLNY price", () => {
+    it("response with actual clny price", async () => {
+      // send some clny to liq pool to get clny/weth price
+      await clny.setGameManager(accounts[0], { from: accounts[0] });
+      await clny.mint(
+        "0xcd818813F038A4d1a27c84d24d74bBC21551FA83",
+        new BN("2000000000000000000000"), // same as mocked weth, so rate should be 1/1
+        1,
+        {
+          from: accounts[0],
+        }
+      );
+
+      // set weth price to $1, expect clny same
+      await oracle.actualize("1000000000000000000", { from: user2 });
+      const clnyInUsd = await oracle.clnyInUsd();
+      // console.log({ clnyInUsd: clnyInUsd["rate"].toString() });
+      expect(clnyInUsd["rate"]).to.bignumber.equal(
+        new BN("1000000000000000000")
+      );
     });
   });
 });
