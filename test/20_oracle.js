@@ -167,5 +167,14 @@ contract("Gears", (accounts) => {
         new BN("3000000000000000000")
       );
     });
+
+    it("reverts if price is not valid", async () => {
+      await oracle.stop({ from: user2 });
+
+      await truffleAssert.reverts(
+        collectionManager.getLootboxOpeningPrice(),
+        "oracle price of clny is not valid"
+      );
+    });
   });
 });
