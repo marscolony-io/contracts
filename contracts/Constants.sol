@@ -45,9 +45,9 @@ abstract contract Constants {
   uint256 constant LEGENDARY_GEAR_DURABILITY = 200;
   uint256 constant TRANSPORT_GEAR_DURABILITY = 350;
 
-  uint256 constant COMMON_OPENING_PRICE_USD = 100; // cents 
-  uint256 constant RARE_OPENING_PRICE_USD = 200;
-  uint256 constant LEGENDARY_OPENING_PRICE_USD = 300;
+  uint256 constant COMMON_OPENING_PRICE_USD = 200; // cents 
+  uint256 constant RARE_OPENING_PRICE_USD = 400;
+  uint256 constant LEGENDARY_OPENING_PRICE_USD = 800;
 
 
 

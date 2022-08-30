@@ -392,7 +392,7 @@
         "type": "address"
       }
     ],
-    "name": "setAvatarAddress",
+    "name": "setCollectionAddress",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
