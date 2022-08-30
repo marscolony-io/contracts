@@ -9,6 +9,8 @@ const AVATARS = artifacts.require("MartianColonists");
 const CM = artifacts.require("CollectionManager");
 const MC = artifacts.require("MC");
 const CLNY = artifacts.require("CLNY");
+const ORACLE = artifacts.require("Oracle");
+const WETH = artifacts.require("Oracle");
 
 contract("Gears", (accounts) => {
   const [DAO, user1, user2] = accounts;
@@ -20,6 +22,8 @@ contract("Gears", (accounts) => {
   let cm;
   let mc;
   let clny;
+  let oracle;
+  let wethAddress;
 
   const baseUri = "baseuri.test/";
 
@@ -30,6 +34,9 @@ contract("Gears", (accounts) => {
     avatars = await AVATARS.deployed();
     cm = await CM.deployed();
     mc = await MC.deployed();
+    clny = await CLNY.deployed();
+    oracle = await ORACLE.deployed();
+    wethAddress = (await WETH.deployed()).address;
     clny = await CLNY.deployed();
 
     await cm.setMaxTokenId(5);
@@ -42,6 +49,21 @@ contract("Gears", (accounts) => {
     await gm.mintAvatar({ from: user1 });
     await gm.mintAvatar({ from: user1 });
     await gm.mintAvatar({ from: user1 });
+
+    await oracle.addRelayer(DAO, { from: DAO });
+
+    await clny.setGameManager(DAO, { from: DAO });
+    await clny.mint(
+      "0xcd818813F038A4d1a27c84d24d74bBC21551FA83",
+      new BN("2000000000000000000000"), // same as mocked weth, so rate should be 1/1
+      1,
+      {
+        from: DAO,
+      }
+    );
+
+    // set weth price to $1,
+    await oracle.actualize("1000000000000000000", { from: DAO });
   });
 
   describe("Mint", function() {
@@ -442,8 +464,10 @@ contract("Gears", (accounts) => {
       const totalMintedGears = await gears.totalSupply();
       console.log("total minted gears", totalMintedGears.toString());
       const lastTokenId = await gears.nextIdToMint();
-      console.log("lastTokenId", lastTokenId);
+      console.log("lastTokenId", lastTokenId.toString());
+
       await gm.openLootbox(1, { from: user1 });
+
       const mintedGearsAfter = await gears.totalSupply();
       console.log("minted gears after", mintedGearsAfter.toString());
       expect(parseInt(mintedGearsAfter)).to.be.equal(

@@ -11,13 +11,11 @@ contract("Gears", (accounts) => {
   const [DAO, user1, user2, user3] = accounts;
 
   let oracle;
-  let wethAddress;
   let clny;
   let collectionManager;
 
   before(async () => {
     oracle = await ORACLE.deployed();
-    wethAddress = (await WETH.deployed()).address;
     clny = await CLNY.deployed();
     collectionManager = await CollectionManager.deployed();
   });
