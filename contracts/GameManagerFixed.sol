@@ -796,7 +796,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
 
   // gears
 
-  function openLootbox(uint256 tokenId) external whenNotPaused {
+  function openLootbox(uint256 tokenId, uint256 maxPrice) external whenNotPaused {
 
     require(TokenInterface(lootboxesAddress).ownerOf(tokenId) == msg.sender, "You aren't this lootbox owner");
 
@@ -816,6 +816,8 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     if (rarity == IEnums.Rarity.LEGENDARY) {
       openPrice = legendaryPrice;
     }
+
+    require(openPrice < maxPrice, "open price too high");
 
     TokenInterface(CLNYAddress).burn(msg.sender, openPrice, REASON_OPEN_LOOTBOX);
     ILootboxes(lootboxesAddress).burn(tokenId);
