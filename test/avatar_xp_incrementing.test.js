@@ -2,20 +2,20 @@ const { expect } = require("chai");
 const { time, expectRevert } = require("openzeppelin-test-helpers");
 
 const GameManagerFixed = artifacts.require("GameManagerFixed");
-const AvatarManager = artifacts.require("AvatarManager");
+const CollectionManager = artifacts.require("CollectionManager");
 
-contract("AvatarManager", (accounts) => {
+contract("CollectionManager", (accounts) => {
   const [user0, user1, user2] = accounts;
   const DAO = user0;
 
   let gm;
-  let avatarManager;
+  let cm;
 
   before(async () => {
     gm = await GameManagerFixed.deployed();
-    avatarManager = await AvatarManager.deployed();
+    cm = await CollectionManager.deployed();
 
-    await avatarManager.setMaxTokenId(5);
+    await cm.setMaxTokenId(5);
     await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
     await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });
@@ -26,18 +26,18 @@ contract("AvatarManager", (accounts) => {
     await gm.mintAvatar({ from: user1 });
   });
 
-  describe("AvatarManager xp increase", function() {
+  describe("CollectionManager xp increase", function() {
     it("Set gm to user0; check addXP permissions", async () => {
-      await expectRevert(avatarManager.addXP(1, 100), 'Only GameManager');
-      await avatarManager.setGameManager(user0);
-      const initialXP = await avatarManager.getXP([1, 2, 3]);
+      await expectRevert(cm.addXP(1, 100), "Only GameManager");
+      await cm.setGameManager(user0);
+      const initialXP = await cm.getXP([1, 2, 3]);
       expect(+initialXP[0]).to.be.equal(100);
       expect(+initialXP[1]).to.be.equal(100);
       expect(+initialXP[2]).to.be.equal(100);
-      await avatarManager.addXP(1, 100);
-      const xpAfterAdding = await avatarManager.getXP([1]);
+      await cm.addXP(1, 100);
+      const xpAfterAdding = await cm.getXP([1]);
       expect(+xpAfterAdding[0]).to.be.equal(200);
-      await avatarManager.setGameManager(gm.address);
+      await cm.setGameManager(gm.address);
     });
   });
 });

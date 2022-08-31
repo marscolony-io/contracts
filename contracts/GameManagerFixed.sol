@@ -6,11 +6,13 @@ import './interfaces/TokenInterface.sol';
 import './interfaces/PauseInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IMartianColonists.sol';
-import './interfaces/IAvatarManager.sol';
+import './interfaces/ICollectionManager.sol';
 import './interfaces/ICryochamber.sol';
 import './interfaces/ILootboxes.sol';
 import './interfaces/IGameManager.sol';
 import './Constants.sol';
+import './interfaces/IEnums.sol';
+
 
 
 /**
@@ -27,13 +29,14 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   address public CLNYAddress;
   uint256 public maxTokenId;
   address public MCAddress;
-  address public avatarAddress;
-  uint256 deprecated0;
+  address public collectionAddress;
+  uint256 reserved0;
   address public missionManager;
   IMartianColonists public martianColonists;
   address public backendSigner;
   mapping (bytes32 => bool) private usedSignatures;
   address public lootboxesAddress;
+
 
   struct AvailableRarities {
     uint64 common;
@@ -105,6 +108,23 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   function setBackendSigner(address _address) external onlyDAO {
     backendSigner = _address;
   }
+
+  function setCollectionAddress(address _collectionAddress) external onlyDAO {
+    collectionAddress = _collectionAddress;
+  }
+
+  function setMissionManager(address _address) external onlyDAO {
+    missionManager = _address;
+  }
+
+  function setLootboxesAddress(address _address) external onlyDAO {
+    lootboxesAddress = _address;
+  }
+
+  function setMartianColonists(address _address) external onlyDAO {
+    martianColonists = IMartianColonists(_address);
+  }
+
 
   function stringToUint(string memory s) private pure returns (uint256) {
     bytes memory b = bytes(s);
@@ -201,10 +221,10 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     return (_avatar, _land, _xp, _lootbox, _avatarReward,_landReward );
   }
 
-  function getLootboxRarity(uint256 _lootbox) private pure returns (ILootboxes.Rarity rarity) {
-    if (_lootbox == 1 || _lootbox == 23) return ILootboxes.Rarity.COMMON;
-    if (_lootbox == 2 || _lootbox == 24) return ILootboxes.Rarity.RARE;
-    if (_lootbox == 3 || _lootbox == 25) return ILootboxes.Rarity.LEGENDARY;
+  function getLootboxRarity(uint256 _lootbox) private pure returns (IEnums.Rarity rarity) {
+    if (_lootbox == 1 || _lootbox == 23) return IEnums.Rarity.COMMON;
+    if (_lootbox == 2 || _lootbox == 24) return IEnums.Rarity.RARE;
+    if (_lootbox == 3 || _lootbox == 25) return IEnums.Rarity.LEGENDARY;
   }
 
   function proceedFinishMissionMessage(string calldata message) private {
@@ -216,7 +236,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     require((_lootbox >= 0 && _lootbox <= 3) || (_lootbox >= 23 && _lootbox <= 25), "Lootbox code is not valid");
 
 
-    IAvatarManager(avatarAddress).addXP(_avatar, _xp);
+    ICollectionManager(collectionAddress).addXP(_avatar, _xp);
 
 
     if (_lootbox >= 1 && _lootbox <= 3) {
@@ -254,13 +274,13 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   function mintLootbox() public {
     if (lootBoxesToMint[msg.sender].legendary > 0) {
       lootBoxesToMint[msg.sender].legendary--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.LEGENDARY);
+      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.LEGENDARY);
     } else if (lootBoxesToMint[msg.sender].rare > 0) {
       lootBoxesToMint[msg.sender].rare--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.RARE);
+      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.RARE);
     } else if (lootBoxesToMint[msg.sender].common > 0) {
       lootBoxesToMint[msg.sender].common--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.COMMON);
+      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.COMMON);
     } else {
       revert("you cannot mint lootbox");
     }
@@ -361,7 +381,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
 
   function mintAvatar() external nonReentrant {
     _deduct(MINT_AVATAR_LEVEL, REASON_MINT_AVATAR);
-    TokenInterface(avatarAddress).mint(msg.sender);
+    TokenInterface(collectionAddress).mint(msg.sender);
   }
 
   function mintLand(address _address, uint256 tokenId) private {
@@ -395,8 +415,8 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     _pause();
     PauseInterface(CLNYAddress).pause();
     PauseInterface(MCAddress).pause();
-    if (avatarAddress != address(0)) {
-      PauseInterface(avatarAddress).pause();
+    if (collectionAddress != address(0)) {
+      PauseInterface(collectionAddress).pause();
     }
   }
 
@@ -407,8 +427,8 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     _unpause();
     PauseInterface(CLNYAddress).unpause();
     PauseInterface(MCAddress).unpause();
-    if (avatarAddress != address(0)) {
-      PauseInterface(avatarAddress).unpause();
+    if (collectionAddress != address(0)) {
+      PauseInterface(collectionAddress).unpause();
     }
   }
 
@@ -751,20 +771,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     }
   }
 
-  /**
-   * 0x91cdd9f0
-   */
-  function withdrawValue(uint256 value) external onlyDAO {
-    require (address(this).balance != 0, 'Nothing to withdraw');
-    (bool success, ) = payable(DAO).call{ value: value }('');
-    require(success, 'Withdraw failed');
-  }
-
-  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
-    IERC20 tokenContract = IERC20(_tokenContract);
-    tokenContract.transfer(_whereTo, _amount);
-  }
-
+  
   function purchaseCryochamber() external {
     ICryochamber(cryochamberAddress).purchaseCryochamber(msg.sender);
 
@@ -782,8 +789,40 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
 
   function renameAvatar(uint256 avatarId, string calldata _name) external {
     require(martianColonists.ownerOf(avatarId) == msg.sender, 'You are not the owner');
-    IAvatarManager(avatarAddress).setNameByGameManager(avatarId, _name);
+    ICollectionManager(collectionAddress).setNameByGameManager(avatarId, _name);
     TokenInterface(CLNYAddress).burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
+  }
+
+
+  // gears
+
+  function openLootbox(uint256 tokenId, uint256 maxPrice) external whenNotPaused {
+
+    require(TokenInterface(lootboxesAddress).ownerOf(tokenId) == msg.sender, "You aren't this lootbox owner");
+
+    IEnums.Rarity rarity = ILootboxes(lootboxesAddress).rarities(tokenId);
+
+    (uint256 commonPrice, uint256 rarePrice, uint256 legendaryPrice) = ICollectionManager(collectionAddress).getLootboxOpeningPrice();
+    uint256 openPrice;
+    
+    if (rarity == IEnums.Rarity.COMMON) {
+      openPrice = commonPrice;
+    }
+    
+    if (rarity == IEnums.Rarity.RARE) {
+      openPrice = rarePrice;
+    }
+
+    if (rarity == IEnums.Rarity.LEGENDARY) {
+      openPrice = legendaryPrice;
+    }
+
+    require(openPrice < maxPrice, "open price too high");
+
+    TokenInterface(CLNYAddress).burn(msg.sender, openPrice, REASON_OPEN_LOOTBOX);
+    ILootboxes(lootboxesAddress).burn(tokenId);
+
+    ICollectionManager(collectionAddress).mintGear(msg.sender, rarity);
   }
 
   // for compatibility with Polygon
@@ -798,4 +837,19 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   function totalShare() external pure returns (uint256) {
     return 0;
   }
+
+  /**
+   * 0x91cdd9f0
+   */
+  function withdrawValue(uint256 value) external onlyDAO {
+    require (address(this).balance != 0, 'Nothing to withdraw');
+    (bool success, ) = payable(DAO).call{ value: value }('');
+    require(success, 'Withdraw failed');
+  }
+
+  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
+    IERC20 tokenContract = IERC20(_tokenContract);
+    tokenContract.transfer(_whereTo, _amount);
+  }
+
 }

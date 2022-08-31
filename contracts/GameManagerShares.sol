@@ -9,8 +9,10 @@ import './Shares.sol';
 import './interfaces/IMartianColonists.sol';
 import './interfaces/ILootboxes.sol';
 import './interfaces/ICryochamber.sol';
-import './interfaces/IAvatarManager.sol';
+import './interfaces/ICollectionManager.sol';
 import './interfaces/IGameManager.sol';
+import './interfaces/IEnums.sol';
+
 
 /**
  * Game logic; upgradable
@@ -27,8 +29,8 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   address public CLNYAddress;
   uint256 public maxTokenId;
   address public MCAddress;
-  address public avatarAddress;
-  uint256 deprecated0;
+  address public collectionAddress;
+  uint256 reserved0;
 
   address public missionManager;
   IMartianColonists public martianColonists;
@@ -136,6 +138,18 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     limit = allowlistLimit;
   }
 
+  function setCollectionAddress(address _collectionAddress) external onlyDAO {
+    collectionAddress = _collectionAddress;
+  }
+
+  function setCryochamberAddress(address _address) external onlyDAO {
+    cryochamberAddress = _address;
+  }
+
+  function setLootboxesAddress(address _address) external onlyDAO {
+    lootboxesAddress = _address;
+  }
+
   function stringToUint(string memory s) private pure returns (uint256) {
     bytes memory b = bytes(s);
     uint result = 0;
@@ -230,10 +244,10 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     return (_avatar, _land, _xp, _lootbox, _avatarReward,_landReward);
   }
 
-  function getLootboxRarity(uint256 _lootbox) private pure returns (ILootboxes.Rarity rarity) {
-    if (_lootbox == 1 || _lootbox == 23) return ILootboxes.Rarity.COMMON;
-    if (_lootbox == 2 || _lootbox == 24) return ILootboxes.Rarity.RARE;
-    if (_lootbox == 3 || _lootbox == 25) return ILootboxes.Rarity.LEGENDARY;
+  function getLootboxRarity(uint256 _lootbox) private pure returns (IEnums.Rarity rarity) {
+    if (_lootbox == 1 || _lootbox == 23) return IEnums.Rarity.COMMON;
+    if (_lootbox == 2 || _lootbox == 24) return IEnums.Rarity.RARE;
+    if (_lootbox == 3 || _lootbox == 25) return IEnums.Rarity.LEGENDARY;
   }
 
   function proceedFinishMissionMessage(string calldata message) private {
@@ -244,7 +258,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     require(_xp >= 230 && _xp < 19971800, "XP increment is not valid");
     require((_lootbox >= 0 && _lootbox <= 3) || (_lootbox >= 23 && _lootbox <= 25), "Lootbox code is not valid");
 
-    IAvatarManager(avatarAddress).addXP(_avatar, _xp);
+    ICollectionManager(collectionAddress).addXP(_avatar, _xp);
 
 
     if (_lootbox >= 1 && _lootbox <= 3) {
@@ -281,13 +295,13 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   function mintLootbox() public {
     if (lootBoxesToMint[msg.sender].legendary > 0) {
       lootBoxesToMint[msg.sender].legendary--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.LEGENDARY);
+      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.LEGENDARY);
     } else if (lootBoxesToMint[msg.sender].rare > 0) {
       lootBoxesToMint[msg.sender].rare--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.RARE);
+      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.RARE);
     } else if (lootBoxesToMint[msg.sender].common > 0) {
       lootBoxesToMint[msg.sender].common--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, ILootboxes.Rarity.COMMON);
+      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.COMMON);
     } else {
       revert("you cannot mint lootbox");
     }
@@ -371,7 +385,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
 
   function mintAvatar() external nonReentrant {
     _deduct(MINT_AVATAR_LEVEL, REASON_MINT_AVATAR);
-    TokenInterface(avatarAddress).mint(msg.sender);
+    TokenInterface(collectionAddress).mint(msg.sender);
   }
 
   function mintLand(address _address, uint256 tokenId) private {
@@ -451,8 +465,8 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     _pause();
     PauseInterface(CLNYAddress).pause();
     PauseInterface(MCAddress).pause();
-    if (avatarAddress != address(0)) {
-      PauseInterface(avatarAddress).pause();
+    if (collectionAddress != address(0)) {
+      PauseInterface(collectionAddress).pause();
     }
   }
 
@@ -463,8 +477,8 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     _unpause();
     PauseInterface(CLNYAddress).unpause();
     PauseInterface(MCAddress).unpause();
-    if (avatarAddress != address(0)) {
-      PauseInterface(avatarAddress).unpause();
+    if (collectionAddress != address(0)) {
+      PauseInterface(collectionAddress).unpause();
     }
   }
 
@@ -781,7 +795,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
 
   function renameAvatar(uint256 avatarId, string calldata _name) external {
     require(martianColonists.ownerOf(avatarId) == msg.sender, 'You are not the owner');
-    IAvatarManager(avatarAddress).setNameByGameManager(avatarId, _name);
+    ICollectionManager(collectionAddress).setNameByGameManager(avatarId, _name);
     TokenInterface(CLNYAddress).burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
   }
 }

@@ -1,10 +1,12 @@
 const { time } = require("openzeppelin-test-helpers");
-const GM = artifacts.require("GameManager");
+const GM = artifacts.require("GameManagerFixed");
 const MC = artifacts.require("MC");
 const MSN = artifacts.require("MissionManager");
 const CLNY = artifacts.require("CLNY");
 const COLONISTS = artifacts.require("MartianColonists");
-const AvatarManager = artifacts.require("AvatarManager");
+const CollectionManager = artifacts.require("CollectionManager");
+const GEARS = artifacts.require("Gears");
+const ORACLE = artifacts.require("Oracle");
 const CryochamberManager = artifacts.require("CryochamberManager");
 
 module.exports = async (callback) => {
@@ -18,7 +20,9 @@ module.exports = async (callback) => {
     const clny = await CLNY.deployed();
     const nft = await COLONISTS.deployed();
     const cryo = await CryochamberManager.deployed();
-    let avatars = await AvatarManager.deployed();
+    let collection = await CollectionManager.deployed();
+    const gears = await GEARS.deployed();
+    const oracle = await ORACLE.deployed();
 
     const totalLandsInitialCount = await mc.totalSupply();
     console.log("initial lands count:" + totalLandsInitialCount.toString());
@@ -86,7 +90,7 @@ module.exports = async (callback) => {
 
     //  mint clny to users
     for (const account of accounts) {
-      await clny.mint(account, "100000000000000000000000", {
+      await clny.mint(account, "100000000000000000000000", 1, {
         from: accounts[0],
       });
 
@@ -101,7 +105,7 @@ module.exports = async (callback) => {
     const avatarsCountBefore = await nft.totalSupply();
     console.log("avatarsCountBefore", avatarsCountBefore.toString());
 
-    await avatars.setMaxTokenId(20, { from: accounts[0] });
+    await collection.setMaxTokenId(20, { from: accounts[0] });
 
     for (const account of accounts) {
       console.log("mint avatar for account", account);
@@ -151,15 +155,25 @@ module.exports = async (callback) => {
     }
 
     // mint avatar for cryocamera
-    await gm.mintAvatar({ from: accounts[1] });
-    const avatarId = await nft.totalSupply();
-    console.log("id of the avatar in cryochamber", parseInt(avatarId));
-    await await gm.purchaseCryochamber({ from: accounts[1] });
-    await cryo.putAvatarsInCryochamber([avatarId], { from: accounts[1] });
+    // await gm.mintAvatar({ from: accounts[1] });
+    // const avatarId = await nft.totalSupply();
+    // console.log("id of the avatar in cryochamber", parseInt(avatarId));
+    // await gm.purchaseCryochamber({ from: accounts[1] });
+    // console.log(1);
+    // await cryo.putAvatarsInCryochamber([avatarId], { from: accounts[1] });
+    // console.log(2);
+    // // set max revshares for two users
+    // console.log("set revshare 90 for user4");
+    // await msn.setAccountRevshare(90, { from: accounts[4] });
 
-    // set max revshares for two users
-    console.log("set revshare 90 for user4");
-    await msn.setAccountRevshare(90, { from: accounts[4] });
+    // mint gears
+    await gears.setCollectionManager(accounts[0], { from: accounts[0] });
+    await gears.mint(accounts[1], 0, 1, 1, 100);
+    await gears.mint(accounts[1], 0, 2, 1, 150);
+    await gears.lockGear(2);
+
+    // oracle
+    await oracle.addRelayer(accounts[0]);
 
     /*
     MISSION_MANAGER=0xC0633bcaB848D1738Ad22A05135C8E9EC9265092
@@ -172,10 +186,12 @@ module.exports = async (callback) => {
 
 MISSION_MANAGER=${msn.address}
 GAME_MANAGER=${gm.address}
-AVATAR_MANAGER=${avatars.address}
+COLLECTION_MANAGER=${collection.address}
 MC=${mc.address}
 MCLN=${nft.address}
 CRYO=${cryo.address}
+GEAR=${gears.address}
+ORACLE=${oracle.address}
 `);
 
     callback();

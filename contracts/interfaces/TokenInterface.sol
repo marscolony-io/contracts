@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-enum Rarity{ COMMON, RARE, LEGENDARY }
-
 interface TokenInterface {
   function mint(address receiver, uint256 tokenId) external;
   function mint(address receiver, uint256 _amount, uint256 reason) external;

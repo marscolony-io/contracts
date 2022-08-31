@@ -6,6 +6,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import "@openzeppelin/contracts/utils/Strings.sol";
 import './interfaces/ILootboxes.sol';
+import './interfaces/IEnums.sol';
 
 
 contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
@@ -13,7 +14,7 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
 
   string private nftBaseURI;
   address public gameManager;
-  mapping (uint256 => Rarity) public rarities;
+  mapping (uint256 => IEnums.Rarity) public rarities;
   mapping (address => uint256) private lastTokenMinted;
   bool lock;
 
@@ -40,10 +41,10 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
     nftBaseURI = newURI;
   }
 
-  function getRarityUriPath(Rarity _rarity) private pure returns (string memory) {
-    if (_rarity == Rarity.COMMON) return "/0/";
-    if (_rarity == Rarity.RARE) return "/1/";
-    if (_rarity == Rarity.LEGENDARY) return "/2/";
+  function getRarityUriPath(IEnums.Rarity _rarity) private pure returns (string memory) {
+    if (_rarity == IEnums.Rarity.COMMON) return "/0/";
+    if (_rarity == IEnums.Rarity.RARE) return "/1/";
+    if (_rarity == IEnums.Rarity.LEGENDARY) return "/2/";
     revert("Invalid rarity");
   }
 
@@ -51,7 +52,7 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
     require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
 
     string memory baseURI = _baseURI();
-    Rarity rarity = rarities[tokenId];
+    IEnums.Rarity rarity = rarities[tokenId];
     return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString(), getRarityUriPath(rarity))) : "";
   }
 
@@ -60,7 +61,7 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
     return tokenURI(lastTokenMinted[msg.sender]);
   }
 
-  function mint(address receiver, Rarity _rarity) external override onlyGameManager {
+  function mint(address receiver, IEnums.Rarity _rarity) external override onlyGameManager {
     require(!lock, 'locked');
     lock = true;
     rarities[nextIdToMint] = _rarity;
@@ -72,7 +73,7 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
 
   function burn(uint256 tokenId) external onlyGameManager {
     _burn(tokenId);
-    rarities[tokenId] = Rarity.COMMON;
+    rarities[tokenId] = IEnums.Rarity.COMMON;
   }
 
   function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns(uint256[] memory, uint256[] memory) {
