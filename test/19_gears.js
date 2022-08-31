@@ -49,6 +49,7 @@ contract("Gears", (accounts) => {
     await gm.mintAvatar({ from: user1 });
     await gm.mintAvatar({ from: user1 });
     await gm.mintAvatar({ from: user1 });
+    await cm.setOracleAddress(oracle.address);
 
     await oracle.addRelayer(DAO, { from: DAO });
 
@@ -453,40 +454,82 @@ contract("Gears", (accounts) => {
       await lootboxes.mint(user1, 1, { from: DAO });
       await lootboxes.mint(user1, 1, { from: DAO });
       await expectRevert(
-        gm.openLootbox(1, { from: DAO }),
+        gm.openLootbox(1, 0, { from: DAO }),
         "You aren't this lootbox owner"
       );
     });
 
     it("can be opened by owner", async () => {
       await lootboxes.setGameManager(gm.address);
+      await clny.setGameManager(gm.address);
       await gears.setCollectionManager(cm.address);
+      await cm.setGameManager(gm.address);
+
       const totalMintedGears = await gears.totalSupply();
       console.log("total minted gears", totalMintedGears.toString());
       const lastTokenId = await gears.nextIdToMint();
       console.log("lastTokenId", lastTokenId.toString());
 
-      await gm.openLootbox(1, { from: user1 });
+      const openPrices = await cm.getLootboxOpeningPrice();
+      console.log("common open price", openPrices["common"].toString());
+      console.log("rare open price", openPrices["rare"].toString());
+      console.log("legendary open price", openPrices["legendary"].toString());
+
+      const gearToOpen = await gears.gears(1);
+
+      const gearRarity = parseInt(gearToOpen["rarity"]);
+
+      const openPrice =
+        gearRarity === 0
+          ? openPrices["common"]
+          : gearRarity === 1
+          ? openPrices["rare"]
+          : openPrices["legendary"];
+
+      await gm.openLootbox(1, openPrice.add(new BN(1)), {
+        from: user1,
+      });
 
       const mintedGearsAfter = await gears.totalSupply();
-      console.log("minted gears after", mintedGearsAfter.toString());
+      // console.log("minted gears after", mintedGearsAfter.toString());
       expect(parseInt(mintedGearsAfter)).to.be.equal(
         parseInt(totalMintedGears) + 1
       );
 
-      const gear = await gears.gears(lastTokenId);
-      console.log("gear", gear);
+      // const gear = await gears.gears(lastTokenId);
+      // console.log("gear", gear);
 
       const owner = await gears.ownerOf(lastTokenId);
-      console.log("owner", owner);
+      // console.log("owner", owner);
 
       expect(owner).to.be.equal(user1);
     });
 
     it("can not open opened lootbox", async () => {
       await expectRevert(
-        gm.openLootbox(1, { from: user1 }),
+        gm.openLootbox(1, new BN("1e24"), { from: user1 }),
         "ERC721: owner query for nonexistent token"
+      );
+    });
+
+    it("open price too high", async () => {
+      const gearToOpen = await gears.gears(2);
+      const gearRarity = parseInt(gearToOpen["rarity"]);
+
+      const openPrices = await cm.getLootboxOpeningPrice();
+      const openPrice =
+        gearRarity === 0
+          ? openPrices["common"]
+          : gearRarity === 1
+          ? openPrices["rare"]
+          : openPrices["legendary"];
+
+      // price of one and clny increase
+      await oracle.actualize("2000000000000000000", { from: DAO });
+
+      await expectRevert(
+        gm.openLootbox(2, openPrice.add(new BN(1)), { from: user1 }),
+        "open price too high"
       );
     });
 
@@ -498,8 +541,20 @@ contract("Gears", (accounts) => {
       const clnyBalance = await clny.balanceOf(user1);
       console.log("clny balance", clnyBalance.toString());
       await clny.transfer(user2, clnyBalance.toString(), { from: user1 });
+
+      const gearToOpen = await gears.gears(2);
+      const gearRarity = parseInt(gearToOpen["rarity"]);
+
+      const openPrices = await cm.getLootboxOpeningPrice();
+      const openPrice =
+        gearRarity === 0
+          ? openPrices["common"]
+          : gearRarity === 1
+          ? openPrices["rare"]
+          : openPrices["legendary"];
+
       await expectRevert(
-        gm.openLootbox(2, { from: user1 }),
+        gm.openLootbox(2, openPrice.add(new BN(1)), { from: user1 }),
         "ERC20: burn amount exceeds balance"
       );
     });
@@ -532,25 +587,25 @@ contract("Gears", (accounts) => {
       await gears.setCollectionManager(DAO);
       await gears.mint(user1, 2, 12, 4, 100);
       user1transportId = parseInt(await gears.lastTokenMinted(user1));
-      console.log({ user1transportId });
+      // console.log({ user1transportId });
 
       await gears.mint(user1, 2, 1, 1, 100);
       firstGearId = parseInt(await gears.lastTokenMinted(user1));
 
       await gears.mint(user1, 2, 1, 1, 100);
       secondGearId = parseInt(await gears.lastTokenMinted(user1));
-      console.log({ secondGearId });
+      // console.log({ secondGearId });
 
       await gears.mint(user1, 2, 2, 2, 100);
       thirdGearId = parseInt(await gears.lastTokenMinted(user1));
 
       await gears.mint(user2, 2, 12, 4, 100);
       user2transportId = parseInt(await gears.lastTokenMinted(user2));
-      console.log({ user2transportId });
+      // console.log({ user2transportId });
 
       await gears.mint(user2, 2, 1, 1, 100);
       user2gearId = parseInt(await gears.lastTokenMinted(user2));
-      console.log({ user2gearId });
+      // console.log({ user2gearId });
 
       await gears.setCollectionManager(cm.address);
     });
@@ -573,7 +628,7 @@ contract("Gears", (accounts) => {
 
     it("can not lock if not a gear owner", async () => {
       const ownerOfGear2 = await gears.ownerOf(user2gearId);
-      console.log({ ownerOfGear2, user2 });
+      // console.log({ ownerOfGear2, user2 });
       await expectRevert(
         cm.setLocks([firstGearId, user2gearId], 0, {
           from: user1,
