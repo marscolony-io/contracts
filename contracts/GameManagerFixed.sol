@@ -795,6 +795,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
 
 
   // gears
+  address constant GEAR_ARTIST_ROYALTY_WALLET = 0x352c478CD91BA54615Cc1eDFbA4A3E7EC9f60EE1;
 
   function openLootbox(uint256 tokenId, uint256 maxPrice) external whenNotPaused {
 
@@ -820,6 +821,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     require(openPrice < maxPrice, "open price too high");
 
     TokenInterface(CLNYAddress).burn(msg.sender, openPrice, REASON_OPEN_LOOTBOX);
+    TokenInterface(CLNYAddress).mint(GEAR_ARTIST_ROYALTY_WALLET, openPrice * 2_000 / 100_000, REASON_WOMBAT_ROYALTY); // 2% to the artist
     ILootboxes(lootboxesAddress).burn(tokenId);
 
     ICollectionManager(collectionAddress).mintGear(msg.sender, rarity);

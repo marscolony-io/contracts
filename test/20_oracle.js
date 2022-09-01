@@ -92,7 +92,7 @@ contract("Gears", (accounts) => {
       // const isValid = await oracle.isRateValid();
       // console.log({ isValid });
       expect(wethInUsd["valid"]).to.be.equal(true);
-      expect(parseInt(wethInUsd["rate"])).to.be.equal(2000000000000000);
+      expect(parseInt(wethInUsd["rate"])).to.be.equal(500000000000000000000); // back rate
     });
 
     it("isRateValid invalid case", async () => {
@@ -156,13 +156,13 @@ contract("Gears", (accounts) => {
       // console.log(prices["rare"].toString());
       // console.log(prices["legendary"].toString());
       expect(prices["common"]).to.bignumber.be.equal(
-        new BN("1000000000000000000")
-      );
-      expect(prices["rare"]).to.bignumber.be.equal(
         new BN("2000000000000000000")
       );
+      expect(prices["rare"]).to.bignumber.be.equal(
+        new BN("4000000000000000000")
+      );
       expect(prices["legendary"]).to.bignumber.be.equal(
-        new BN("3000000000000000000")
+        new BN("8000000000000000000")
       );
     });
 
