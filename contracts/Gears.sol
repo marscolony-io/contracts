@@ -28,7 +28,7 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
     _;
   }
 
-  constructor (string memory _nftBaseURI) ERC721('Gears', 'Gear') {
+  constructor (string memory _nftBaseURI) ERC721('Mining Mission Gear', 'MGR') {
     nftBaseURI = _nftBaseURI;
   }
 

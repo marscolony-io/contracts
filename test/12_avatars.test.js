@@ -12,6 +12,7 @@ contract("CollectionManager", (accounts) => {
   let gm;
   let clny;
   let collection;
+  let avatars;
   let nft;
 
   const ROYALTY1 = "0x352c478CD91BA54615Cc1eDFbA4A3E7EC9f60EE1";
@@ -118,7 +119,7 @@ contract("CollectionManager", (accounts) => {
   });
 
   it("airdrops avatar", async () => {
-    await avatars.airdrop(user1);
-    await expectRevert(avatars.airdrop(user2, { from: user1 }), 'Only DAO');
+    await nft.airdrop(user1);
+    await expectRevert(nft.airdrop(user2, { from: user1 }), 'Only DAO');
   });
 });

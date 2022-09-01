@@ -525,7 +525,7 @@ contract("Gears", (accounts) => {
           : openPrices["legendary"];
 
       // price of one and clny increase
-      await oracle.actualize("2000000000000000000", { from: DAO });
+      await oracle.actualize("200000000000000000", { from: DAO });
 
       await expectRevert(
         gm.openLootbox(2, openPrice.add(new BN(1)), { from: user1 }),
