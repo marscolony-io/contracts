@@ -258,7 +258,7 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     if (transportId == 0) {
       require(tokenIds.length <= 2, "you can't lock so many gears");
     } else {
-      (IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability, bool locked, bool set) = IGears(gearsAddress).gears(transportId); 
+      ( , , uint256 category, , , ) = IGears(gearsAddress).gears(transportId); 
       require(category == CATEGORY_TRANSPORT, "transportId is not transport");
 
       require(msg.sender == TokenInterface(gearsAddress).ownerOf(transportId), "you are not transport owner");
@@ -269,7 +269,7 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     uint256[] memory choosenCategories = new uint256[](3);
     for (uint i = 0; i < tokenIds.length; i++) {
       require(msg.sender == TokenInterface(gearsAddress).ownerOf(tokenIds[i]), "you are not gear owner");
-      (IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability, bool locked, bool set) = IGears(gearsAddress).gears(tokenIds[i]);
+      ( , , uint256 category, , , ) = IGears(gearsAddress).gears(tokenIds[i]);
       require(category != CATEGORY_TRANSPORT, "can not lock transport");
       require(!isGearCategoryChoosenBefore(choosenCategories, category), "you can't lock gears of the same category");
       choosenCategories[i] = category;
