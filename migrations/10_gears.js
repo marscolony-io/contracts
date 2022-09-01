@@ -7,7 +7,7 @@ const CM = artifacts.require("CollectionManager");
 module.exports = async (deployer, network) => {
   let _CM;
 
-  await deployer.deploy(GEARS, "");
+  await deployer.deploy(GEARS, "https://gears-harmony.marscolony.io/");
   const _GEARS = await GEARS.deployed();
 
   if (network === "development") {
@@ -16,9 +16,9 @@ module.exports = async (deployer, network) => {
   } else {
     // harmain
     await _GEARS.setCollectionManager(
-      "0x0D112a449D23961d03E906572D8ce861C441D6c3"
+      "0xCc55065afd013CF06f989448cf724fEC4fF29626"
     );
-    _CM = await CM.at("");
+    _CM = await CM.at("0xCc55065afd013CF06f989448cf724fEC4fF29626");
   }
 
   await _CM.setGearsAddress(_GEARS.address);
