@@ -476,7 +476,12 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
       TokenInterface(CLNYAddress).mint(
         0x2581A6C674D84dAD92A81E8d3072C9561c21B935,
         AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
-        REASON_ROYALTY
+        REASON_CREATORS_ROYALTY
+      );
+      TokenInterface(CLNYAddress).mint(
+        ARTIST1_ROYALTY_WALLET,
+        AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
+        REASON_ARTIST_ROYALTY
       );
     }
     require (amount > 0, 'Wrong level');
@@ -795,7 +800,6 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
 
 
   // gears
-  address constant GEAR_ARTIST_ROYALTY_WALLET = 0x352c478CD91BA54615Cc1eDFbA4A3E7EC9f60EE1;
 
   function openLootbox(uint256 tokenId, uint256 maxPrice) external whenNotPaused {
 
@@ -821,7 +825,8 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     require(openPrice < maxPrice, "open price too high");
 
     TokenInterface(CLNYAddress).burn(msg.sender, openPrice, REASON_OPEN_LOOTBOX);
-    TokenInterface(CLNYAddress).mint(GEAR_ARTIST_ROYALTY_WALLET, openPrice * 2_000 / 100_000, REASON_WOMBAT_ROYALTY); // 2% to the artist
+    TokenInterface(CLNYAddress).mint(ARTIST1_ROYALTY_WALLET, openPrice * 3_000 / 100_000, REASON_ARTIST_ROYALTY); // 3% to the artist
+    TokenInterface(CLNYAddress).mint(ARTIST2_ROYALTY_WALLET, openPrice * 3_000 / 100_000, REASON_ARTIST_ROYALTY); // 3% to the artist
     ILootboxes(lootboxesAddress).burn(tokenId);
 
     ICollectionManager(collectionAddress).mintGear(msg.sender, rarity);

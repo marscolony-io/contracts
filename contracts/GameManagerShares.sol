@@ -526,7 +526,12 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
       TokenInterface(CLNYAddress).mint(
         0x2581A6C674D84dAD92A81E8d3072C9561c21B935,
         AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
-        REASON_ROYALTY
+        REASON_CREATORS_ROYALTY
+      );
+      TokenInterface(CLNYAddress).mint(
+        ARTIST1_ROYALTY_WALLET,
+        AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
+        REASON_ARTIST_ROYALTY
       );
     }
     require (amount > 0, 'Wrong level');

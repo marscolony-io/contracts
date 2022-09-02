@@ -24,6 +24,8 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   ICryochamber public cryochambers;
   address public gearsAddress;
 
+  uint8 randomNonce;
+
   struct GearLocks {
     uint256 transportId;
     uint256[] gearsId;
@@ -41,7 +43,7 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
 
   uint256[41] private ______mc_gap;
 
-    modifier onlyCryochamberManager {
+  modifier onlyCryochamberManager {
     require(msg.sender == address(cryochambers), 'Only CryochamberManager');
     _;
   }
@@ -177,10 +179,10 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
 
   // gears
 
-  function getRandomizedGear(IEnums.Rarity _lootboxRarity, IEnums.Rarity _gearRarity) public view returns (IGears.Gear memory gear) {
+  function getRandomizedGear(IEnums.Rarity _lootboxRarity, IEnums.Rarity _gearRarity) public returns (IGears.Gear memory gear) {
     if (_lootboxRarity == IEnums.Rarity.RARE && _gearRarity == IEnums.Rarity.LEGENDARY) {
       // exclude transports
-      uint256 modulo = randomNumber(initialLegendaryGears.length) ;
+      uint256 modulo = randomNumber(initialLegendaryGears.length);
       return initialLegendaryGears[modulo];
     }
 
@@ -204,25 +206,30 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
 
   }
 
-   function randomNumber(uint modulo) private view returns (uint) {
-    return (uint(blockhash(block.number - 1)) + block.timestamp) % modulo;
+  function randomNumber(uint modulo) private returns (uint) {
+    randomNonce = randomNonce + 1;
+    if (randomNonce > 250) {
+      randomNonce = 0;
+    }
+    return (uint(blockhash(block.number - 1)) + block.timestamp * randomNonce + uint256(uint160(msg.sender)) + randomNonce) % modulo;
   }
 
-  function getRandomizedGearRarity(IEnums.Rarity _lootBoxRarity) private view returns (IEnums.Rarity gearRarity) {
+  function getRandomizedGearRarity(IEnums.Rarity _lootBoxRarity) private returns (IEnums.Rarity gearRarity) {
+    uint256 randomOf100 = randomNumber(100);
 
     if (_lootBoxRarity == IEnums.Rarity.COMMON) {
-      if (randomNumber(10) < 1) {
+      if (randomOf100 < 10) {
         return IEnums.Rarity.RARE; // 10%
       }
       return IEnums.Rarity.COMMON; // 90%
     }
 
     if (_lootBoxRarity == IEnums.Rarity.RARE) {
-      if (randomNumber(100) > 85) { 
+      if (randomOf100 > 85) { 
         return IEnums.Rarity.COMMON; // 15%
       }
 
-      if (randomNumber(100) > 70) {
+      if (randomOf100 > 70) {
         return IEnums.Rarity.LEGENDARY; // 15%
       }
       
@@ -230,14 +237,14 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     }
 
     if (_lootBoxRarity == IEnums.Rarity.LEGENDARY) {
-      if (randomNumber(10) < 1) {
+      if (randomOf100 < 10) {
         return IEnums.Rarity.RARE; // 10%
       }
       return IEnums.Rarity.LEGENDARY; // 90%
     }
   }
 
-  function calculateGear(IEnums.Rarity _lootBoxRarity) public view returns (IGears.Gear memory) {
+  function calculateGear(IEnums.Rarity _lootBoxRarity) public returns (IGears.Gear memory) {
     IEnums.Rarity gearRarity = getRandomizedGearRarity(_lootBoxRarity);
     IGears.Gear memory gear = getRandomizedGear(_lootBoxRarity, gearRarity);
     return gear;

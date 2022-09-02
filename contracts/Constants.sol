@@ -7,7 +7,7 @@ abstract contract Constants {
   uint256 constant REASON_PLACE = 2;
   uint256 constant REASON_RENAME_AVATAR = 3;
   uint256 constant REASON_MINT_AVATAR = 4;
-  uint256 constant REASON_ROYALTY = 5;
+  uint256 constant REASON_CREATORS_ROYALTY = 5;
   uint256 constant REASON_EARNING = 6;
   uint256 constant REASON_TREASURY = 7;
   uint256 constant REASON_LP_POOL = 8;
@@ -15,7 +15,7 @@ abstract contract Constants {
   uint256 constant REASON_PURCHASE_CRYOCHAMBER = 10;
   uint256 constant REASON_PURCHASE_CRYOCHAMBER_ENERGY = 11;
   uint256 constant REASON_OPEN_LOOTBOX = 12;
-  uint256 constant REASON_WOMBAT_ROYALTY = 13;
+  uint256 constant REASON_ARTIST_ROYALTY = 13;
 
   uint256 constant REASON_SHARES_PREPARE_CLNY = 100;
 
@@ -49,6 +49,10 @@ abstract contract Constants {
   uint256 constant COMMON_OPENING_PRICE_USD = 200; // cents 
   uint256 constant RARE_OPENING_PRICE_USD = 400;
   uint256 constant LEGENDARY_OPENING_PRICE_USD = 800;
+
+  // wallets
+  address constant ARTIST1_ROYALTY_WALLET = 0x352c478CD91BA54615Cc1eDFbA4A3E7EC9f60EE1;
+  address constant ARTIST2_ROYALTY_WALLET = 0x6cDa418Ea9a6be44531a567f778D340615017D00;
 
 
 
