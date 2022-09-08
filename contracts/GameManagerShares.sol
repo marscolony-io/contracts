@@ -2,14 +2,8 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
-import './interfaces/TokenInterface.sol';
-import './interfaces/PauseInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './Shares.sol';
-import './interfaces/IMartianColonists.sol';
-import './interfaces/ILootboxes.sol';
-import './interfaces/ICryochamber.sol';
-import './interfaces/ICollectionManager.sol';
 import './interfaces/IGameManager.sol';
 import './interfaces/IEnums.sol';
 
@@ -21,19 +15,19 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   // 25 256bit slots in Shares.sol
   uint256[25] private ______gm_gap_0;
 
-  address public DAO; // owner
+  address reserved0; // owner
 
-  address public treasury;
-  address public liquidity;
+  address reserved1;
+  address reserved2;
   uint256 public price;
-  address public CLNYAddress;
+  address reserved3;
   uint256 public maxTokenId;
-  address public MCAddress;
-  address public collectionAddress;
-  uint256 reserved0;
+  address reserved5;
+  address reserved6;
+  uint256 reserved7;
 
-  address public missionManager;
-  IMartianColonists public martianColonists;
+  address reserved8;
+  address reserved9;
   address public backendSigner;
   mapping (bytes32 => bool) private usedSignatures;
 
@@ -52,7 +46,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   mapping (address => ReferrerSettings) public referrerSettings;
   mapping (address => address) public referrers;
 
-  address public lootboxesAddress;
+  address reserved11;
 
   struct AvailableRarities {
     uint64 common;
@@ -61,7 +55,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   }
   mapping (address => AvailableRarities) public lootBoxesToMint;
 
-  address public cryochamberAddress;
+  address reserved12;
 
   uint256[34] private ______gm_gap_1;
 
@@ -99,13 +93,13 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   event SetPrice (uint256 price);
   event MissionReward (uint256 indexed landId, uint256 indexed avatarId, uint256 indexed rewardType, uint256 rewardAmount);
 
-  modifier onlyDAO {
-    require(msg.sender == DAO, 'Only DAO');
+  modifier onlyOwner {
+    require(msg.sender == d.owner(), 'Only owner');
     _;
   }
 
   modifier onlyTokenOwner(uint256 tokenId) {
-    require(TokenInterface(MCAddress).ownerOf(tokenId) == msg.sender, "You aren't the token owner");
+    require(d.mc().ownerOf(tokenId) == msg.sender, "You aren't the token owner");
     _;
   }
 
@@ -116,38 +110,30 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     locked = false;
   }
 
-  function setClnyPerSecond(uint256 newSpeed) external onlyDAO {
-    updatePool(CLNYAddress);
+  function setClnyPerSecond(uint256 newSpeed) external onlyOwner {
+    updatePool();
     clnyPerSecond = newSpeed;
   }
 
-  // function addToAllowlist(address[] calldata _addresses) external onlyDAO {
+  // function addToAllowlist(address[] calldata _addresses) external onlyOwner {
   //   for (uint i = 0; i < _addresses.length; i++) {
   //     allowlist[_addresses[i]] = true;
   //   }
   // }
 
-  // function setAllowListLimit(uint256 limit, bool listOn) external onlyDAO {
+  // function setAllowListLimit(uint256 limit, bool listOn) external onlyOwner {
   //   allowlistLimit = limit;
   //   allowlistOnly = listOn;
   // }
 
   function saleData() external view returns (bool allowed, uint256 minted, uint256 limit) {
     allowed = !allowlistOnly || allowlist[msg.sender];
-    minted = TokenInterface(MCAddress).totalSupply();
+    minted = d.mc().totalSupply();
     limit = allowlistLimit;
   }
 
-  function setCollectionAddress(address _collectionAddress) external onlyDAO {
-    collectionAddress = _collectionAddress;
-  }
-
-  function setCryochamberAddress(address _address) external onlyDAO {
-    cryochamberAddress = _address;
-  }
-
-  function setLootboxesAddress(address _address) external onlyDAO {
-    lootboxesAddress = _address;
+  function setDependencies(IDependencies addr) external onlyOwner {
+    d = addr;
   }
 
   function stringToUint(string memory s) private pure returns (uint256) {
@@ -258,13 +244,13 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     require(_xp >= 230 && _xp < 19971800, "XP increment is not valid");
     require((_lootbox >= 0 && _lootbox <= 3) || (_lootbox >= 23 && _lootbox <= 25), "Lootbox code is not valid");
 
-    ICollectionManager(collectionAddress).addXP(_avatar, _xp);
+    d.collectionManager().addXP(_avatar, _xp);
 
 
     if (_lootbox >= 1 && _lootbox <= 3) {
-      address avatarOwner = martianColonists.ownerOf(_avatar);
+      address avatarOwner = d.martianColonists().ownerOf(_avatar);
 
-      ILootboxes(lootboxesAddress).mint(avatarOwner, getLootboxRarity(_lootbox));
+      d.lootboxes().mint(avatarOwner, getLootboxRarity(_lootbox));
     } 
 
     if (_lootbox == 23) {
@@ -283,7 +269,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     landMissionEarnings[_land] += landOwnerClnyReward;
 
     uint256 avatarClnyReward = _avatarReward * 10**18 / 100;
-    TokenInterface(CLNYAddress).mint(martianColonists.ownerOf(_avatar), avatarClnyReward);
+    d.clny().mint(d.martianColonists().ownerOf(_avatar), avatarClnyReward);
 
     // one event for every reward type
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp
@@ -295,13 +281,13 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   function mintLootbox() public {
     if (lootBoxesToMint[msg.sender].legendary > 0) {
       lootBoxesToMint[msg.sender].legendary--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.LEGENDARY);
+      d.lootboxes().mint(msg.sender, IEnums.Rarity.LEGENDARY);
     } else if (lootBoxesToMint[msg.sender].rare > 0) {
       lootBoxesToMint[msg.sender].rare--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.RARE);
+      d.lootboxes().mint(msg.sender, IEnums.Rarity.RARE);
     } else if (lootBoxesToMint[msg.sender].common > 0) {
       lootBoxesToMint[msg.sender].common--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.COMMON);
+      d.lootboxes().mint(msg.sender, IEnums.Rarity.COMMON);
     } else {
       revert("you cannot mint lootbox");
     }
@@ -324,20 +310,10 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     usedSignatures[signatureHashed] = true;
   }
 
-  function initialize(
-    address _CLNYAddress,
-    address _MCAddress,
-    address _treasury,
-    address _liquidity
-  ) public initializer {
+  function initialize() public initializer {
     __Pausable_init();
-    DAO = msg.sender;
-    CLNYAddress = _CLNYAddress;
-    MCAddress = _MCAddress;
     maxTokenId = 21000;
     price = 250 ether;
-    treasury = _treasury;
-    liquidity = _liquidity;
   }
 
   /**
@@ -377,7 +353,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   /**
    * Sets the cost of minting for 1 token
    */
-  function setPrice(uint256 _price) external onlyDAO {
+  function setPrice(uint256 _price) external onlyOwner {
     require(_price >= 0.01 ether && _price <= 10000 ether, 'New price is out of bounds');
     price = _price;
     emit SetPrice(_price);
@@ -385,17 +361,17 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
 
   function mintAvatar() external nonReentrant {
     _deduct(MINT_AVATAR_LEVEL, REASON_MINT_AVATAR);
-    TokenInterface(collectionAddress).mint(msg.sender);
+    d.collectionManager().mint(msg.sender);
   }
 
   function mintLand(address _address, uint256 tokenId) private {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
     if (allowlistOnly) {
       require(allowlist[msg.sender], 'you are not in allowlist');
-      require(TokenInterface(MCAddress).totalSupply() < allowlistLimit, 'Presale limit has ended');
+      require(d.mc().totalSupply() < allowlistLimit, 'Presale limit has ended');
     }
     setInitialShare(tokenId);
-    TokenInterface(MCAddress).mint(_address, tokenId);
+    d.mc().mint(_address, tokenId);
   }
 
 
@@ -414,7 +390,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     uint256 fee = getFee(tokenIds.length, referrer);
 
     require (msg.value == fee, 'Wrong claiming fee');
-    updatePool(CLNYAddress);
+    updatePool();
     for (uint8 i = 0; i < tokenIds.length; i++) {
       mintLand(msg.sender, tokenIds[i]);
     }
@@ -461,28 +437,28 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   /**
    * 0x8456cb59
    */
-  function pause() external onlyDAO {
+  function pause() external onlyOwner {
     _pause();
-    PauseInterface(CLNYAddress).pause();
-    PauseInterface(MCAddress).pause();
-    if (collectionAddress != address(0)) {
-      PauseInterface(collectionAddress).pause();
+    d.clny().pause();
+    d.mc().pause();
+    if (address(d.collectionManager()) != address(0)) {
+      d.collectionManager().pause();
     }
   }
 
   /**
    * 0x3f4ba83a
    */
-  function unpause() external onlyDAO {
+  function unpause() external onlyOwner {
     _unpause();
-    PauseInterface(CLNYAddress).unpause();
-    PauseInterface(MCAddress).unpause();
-    if (collectionAddress != address(0)) {
-      PauseInterface(collectionAddress).unpause();
+    d.clny().unpause();
+    d.mc().unpause();
+    if (address(d.collectionManager()) != address(0)) {
+      d.collectionManager().unpause();
     }
   }
 
-  function airdrop(address receiver, uint256 tokenId) external whenNotPaused onlyDAO {
+  function airdrop(address receiver, uint256 tokenId) external whenNotPaused onlyOwner {
     mintLand(receiver, tokenId);
     emit Airdrop(receiver, tokenId);
   }
@@ -523,19 +499,47 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     if (level == MINT_AVATAR_LEVEL) {
       amount = AVATAR_MINT_COST * 10 ** 18;
       // artist and team minting royalties
-      TokenInterface(CLNYAddress).mint(
+      d.clny().mint(
         0x2581A6C674D84dAD92A81E8d3072C9561c21B935,
         AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
         REASON_CREATORS_ROYALTY
       );
-      TokenInterface(CLNYAddress).mint(
+      d.clny().mint(
         ARTIST1_ROYALTY_WALLET,
         AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
         REASON_ARTIST_ROYALTY
       );
     }
     require (amount > 0, 'Wrong level');
-    TokenInterface(CLNYAddress).burn(msg.sender, amount, reason);
+    d.clny().burn(msg.sender, amount, reason);
+  }
+
+  function getPassiveEarningSpeed(uint256 tokenId) public view returns (uint256 shareCount) {
+    // shares from powerproduction are excluded from passive speed
+    shareCount = landInfo[tokenId].share;
+    shareCount = shareCount - tokenData[tokenId].powerProduction;
+    if (tokenData[tokenId].powerProduction == 3) {
+      shareCount = shareCount - 1; // one more share for pp lvl3
+    }
+  }
+
+  // View function to see pending ColonyToken on frontend.
+  /* 0xe9387504 */
+  function getEarned(uint256 landId) public view returns (uint256) {
+    if (lastRewardTime < startCLNYDate) {
+      return 0;
+    }
+    if (getLastRewardTime() == 0) {
+      return 0;
+    }
+    uint256 activeShares = getPassiveEarningSpeed(landId);
+    uint256 _accColonyPerShare = accColonyPerShare;
+    if (block.timestamp > getLastRewardTime() && totalShare != 0) {
+      uint256 clnyReward = (block.timestamp - getLastRewardTime()) * clnyPerSecond;
+      _accColonyPerShare = _accColonyPerShare + clnyReward * 1e12 / totalShare;
+    }
+    // we need to treat 0 as 1 because we migrate from allowlist and no-share minting
+    return (activeShares == 0 ? 1 : activeShares) * _accColonyPerShare / 1e12 - landInfo[landId].rewardDebt;
   }
 
   /* 0xfd5da729 */
@@ -550,7 +554,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
    */
   function buildBaseStation(uint256 tokenId) public onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].baseStation == 0, 'There is already a base station');
-    addToShare(tokenId, 1, CLNYAddress);
+    addToShare(tokenId, 1);
     tokenData[tokenId].baseStation = 1;
     _deduct(BASE_STATION, REASON_UPGRADE);
     emit BuildBaseStation(tokenId, msg.sender);
@@ -594,7 +598,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   function buildTransport(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
     require(level <= 3, 'wrong level');
     require(tokenData[tokenId].transport == level - 1, 'Can buy only next level');
-    addToShare(tokenId, level == 3 ? 2 : 1, CLNYAddress); // level 3 gives +2 shares
+    addToShare(tokenId, level == 3 ? 2 : 1); // level 3 gives +2 shares
     tokenData[tokenId].transport = level;
     _deduct(level, REASON_UPGRADE);
     emit BuildTransport(tokenId, msg.sender, level);
@@ -638,7 +642,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   function buildRobotAssembly(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
     require(level <= 3, 'wrong level');
     require(tokenData[tokenId].robotAssembly == level - 1, 'Can buy only next level');
-    addToShare(tokenId, level == 3 ? 2 : 1, CLNYAddress); // level 3 gives +2 shares
+    addToShare(tokenId, level == 3 ? 2 : 1); // level 3 gives +2 shares
     tokenData[tokenId].robotAssembly = level;
     _deduct(level, REASON_UPGRADE);
     emit BuildRobotAssembly(tokenId, msg.sender, level);
@@ -682,7 +686,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   function buildPowerProduction(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
     require(level <= 3, 'wrong level');
     require(tokenData[tokenId].powerProduction == level - 1, 'Can buy only next level');
-    addToShare(tokenId, level == 3 ? 2 : 1, CLNYAddress); // level 3 gives +2 shares
+    addToShare(tokenId, level == 3 ? 2 : 1); // level 3 gives +2 shares
     tokenData[tokenId].powerProduction = level;
     _deduct(level, REASON_UPGRADE);
     emit BuildPowerProduction(tokenId, msg.sender, level);
@@ -753,26 +757,26 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   function claimEarned(uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
     require (block.timestamp > startCLNYDate, 'CLNY not started');
     require (tokenIds.length != 0, 'Empty array');
-    updatePool(CLNYAddress);
+    updatePool();
 
     for (uint8 i = 0; i < tokenIds.length; i++) {
-      require (msg.sender == TokenInterface(MCAddress).ownerOf(tokenIds[i]));
-      uint256 toUser = claimClnyWithoutPoolUpdate(tokenIds[i], CLNYAddress);
+      require (msg.sender == d.mc().ownerOf(tokenIds[i]));
+      uint256 toUser = claimClnyWithoutPoolUpdate(tokenIds[i]);
       uint256 toTreasury = toUser * 31 / 49;
       uint256 toLiquidity = toUser * 20 / 49;
-      TokenInterface(CLNYAddress).mint(treasury, toTreasury, REASON_TREASURY);
-      TokenInterface(CLNYAddress).mint(liquidity, toLiquidity, REASON_LP_POOL);
+      d.clny().mint(d.treasury(), toTreasury, REASON_TREASURY);
+      d.clny().mint(d.liquidity(), toLiquidity, REASON_LP_POOL);
     }
   }
 
-  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
+  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
   }
 
   // referrers
 
-  function setReferrerSettings(address referrer, uint64 discount, uint64 reward) external onlyDAO {
+  function setReferrerSettings(address referrer, uint64 discount, uint64 reward) external onlyOwner {
     referrerSettings[referrer] = ReferrerSettings({discount: discount, reward: reward});
   }
 
@@ -784,23 +788,23 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   }
 
   function purchaseCryochamber() external {
-    ICryochamber(cryochamberAddress).purchaseCryochamber(msg.sender);
+    d.cryochamber().purchaseCryochamber(msg.sender);
 
-    uint256 cryochamberPrice = ICryochamber(cryochamberAddress).cryochamberPrice();
-    TokenInterface(CLNYAddress).burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
+    uint256 cryochamberPrice = d.cryochamber().cryochamberPrice();
+    d.clny().burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
 
   }
 
   function purchaseCryochamberEnergy(uint256 amount) external {
-    ICryochamber(cryochamberAddress).purchaseCryochamberEnergy(msg.sender, amount);
+    d.cryochamber().purchaseCryochamberEnergy(msg.sender, amount);
 
-    uint256 energyPrice = ICryochamber(cryochamberAddress).energyPrice();
-    TokenInterface(CLNYAddress).burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
+    uint256 energyPrice = d.cryochamber().energyPrice();
+    d.clny().burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
   }
 
   function renameAvatar(uint256 avatarId, string calldata _name) external {
-    require(martianColonists.ownerOf(avatarId) == msg.sender, 'You are not the owner');
-    ICollectionManager(collectionAddress).setNameByGameManager(avatarId, _name);
-    TokenInterface(CLNYAddress).burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
+    require(d.martianColonists().ownerOf(avatarId) == msg.sender, 'You are not the owner');
+    d.collectionManager().setNameByGameManager(avatarId, _name);
+    d.clny().burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
   }
 }

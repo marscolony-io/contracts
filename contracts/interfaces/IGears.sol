@@ -2,9 +2,10 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import './ILootboxes.sol';
+import './IOwnable.sol';
 import './IEnums.sol';
 
-interface IGears {
+interface IGears is IOwnable {
   struct Gear {
     IEnums.Rarity rarity;
     uint256 gearType;

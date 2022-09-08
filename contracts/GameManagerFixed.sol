@@ -2,13 +2,8 @@
 pragma solidity =0.8.13;
 
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
-import './interfaces/TokenInterface.sol';
-import './interfaces/PauseInterface.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import './interfaces/IMartianColonists.sol';
-import './interfaces/ICollectionManager.sol';
-import './interfaces/ICryochamber.sol';
-import './interfaces/ILootboxes.sol';
+import './interfaces/IDependencies.sol';
 import './interfaces/IGameManager.sol';
 import './Constants.sol';
 import './interfaces/IEnums.sol';
@@ -19,23 +14,25 @@ import './interfaces/IEnums.sol';
  * Game Manager; fixed (harmony-like economy)
  */
 contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
-  uint256[50] private ______gm_gap_0;
+  uint256[49] private ______gm_gap_0;
 
-  address public DAO; // owner
+  IDependencies public d; // dependencies
 
-  address public treasury;
-  address public liquidity;
+  address reserved0; // owner
+
+  address reserved1;
+  address reserved2;
   uint256 public price;
-  address public CLNYAddress;
+  address reserved3;
   uint256 public maxTokenId;
-  address public MCAddress;
-  address public collectionAddress;
-  uint256 reserved0;
-  address public missionManager;
-  IMartianColonists public martianColonists;
+  address reserved5;
+  address reserved6;
+  uint256 reserved7;
+  address reserved8;
+  address reserved9;
   address public backendSigner;
   mapping (bytes32 => bool) private usedSignatures;
-  address public lootboxesAddress;
+  address reserved11;
 
 
   struct AvailableRarities {
@@ -45,7 +42,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   }
   mapping (address => AvailableRarities) public lootBoxesToMint;
   
-  address public cryochamberAddress;
+  address reserved12;
 
   uint256[41] private ______gm_gap_1;
 
@@ -83,13 +80,13 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   event SetPrice (uint256 price);
   event MissionReward (uint256 indexed landId, uint256 indexed avatarId, uint256 indexed rewardType, uint256 rewardAmount);
 
-  modifier onlyDAO {
-    require(msg.sender == DAO, 'Only DAO');
+  modifier onlyOwner {
+    require(msg.sender == d.owner(), 'Only owner');
     _;
   }
 
   modifier onlyTokenOwner(uint256 tokenId) {
-    require(TokenInterface(MCAddress).ownerOf(tokenId) == msg.sender, "You aren't the token owner");
+    require(d.mc().ownerOf(tokenId) == msg.sender, "You aren't the token owner");
     _;
   }
 
@@ -105,26 +102,13 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     return (true, 0, 0);
   }
 
-  function setBackendSigner(address _address) external onlyDAO {
+  function setBackendSigner(address _address) external onlyOwner {
     backendSigner = _address;
   }
 
-  function setCollectionAddress(address _collectionAddress) external onlyDAO {
-    collectionAddress = _collectionAddress;
+  function setDependencies(IDependencies addr) external onlyOwner {
+    d = addr;
   }
-
-  function setMissionManager(address _address) external onlyDAO {
-    missionManager = _address;
-  }
-
-  function setLootboxesAddress(address _address) external onlyDAO {
-    lootboxesAddress = _address;
-  }
-
-  function setMartianColonists(address _address) external onlyDAO {
-    martianColonists = IMartianColonists(_address);
-  }
-
 
   function stringToUint(string memory s) private pure returns (uint256) {
     bytes memory b = bytes(s);
@@ -236,13 +220,13 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     require((_lootbox >= 0 && _lootbox <= 3) || (_lootbox >= 23 && _lootbox <= 25), "Lootbox code is not valid");
 
 
-    ICollectionManager(collectionAddress).addXP(_avatar, _xp);
+    d.collectionManager().addXP(_avatar, _xp);
 
 
     if (_lootbox >= 1 && _lootbox <= 3) {
-      address avatarOwner = martianColonists.ownerOf(_avatar);
+      address avatarOwner = d.martianColonists().ownerOf(_avatar);
 
-      ILootboxes(lootboxesAddress).mint(avatarOwner, getLootboxRarity(_lootbox));
+      d.lootboxes().mint(avatarOwner, getLootboxRarity(_lootbox));
     } 
 
     if (_lootbox == 23) {
@@ -261,7 +245,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     landMissionEarnings[_land] += landOwnerClnyReward;
 
     uint256 avatarClnyReward = _avatarReward * 10**18 / 100;
-    TokenInterface(CLNYAddress).mint(martianColonists.ownerOf(_avatar), avatarClnyReward, REASON_MISSION_REWARD);
+    d.clny().mint(d.martianColonists().ownerOf(_avatar), avatarClnyReward, REASON_MISSION_REWARD);
 
     // one event for every reward type
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp
@@ -274,13 +258,13 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   function mintLootbox() public {
     if (lootBoxesToMint[msg.sender].legendary > 0) {
       lootBoxesToMint[msg.sender].legendary--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.LEGENDARY);
+      d.lootboxes().mint(msg.sender, IEnums.Rarity.LEGENDARY);
     } else if (lootBoxesToMint[msg.sender].rare > 0) {
       lootBoxesToMint[msg.sender].rare--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.RARE);
+      d.lootboxes().mint(msg.sender, IEnums.Rarity.RARE);
     } else if (lootBoxesToMint[msg.sender].common > 0) {
       lootBoxesToMint[msg.sender].common--;
-      ILootboxes(lootboxesAddress).mint(msg.sender, IEnums.Rarity.COMMON);
+      d.lootboxes().mint(msg.sender, IEnums.Rarity.COMMON);
     } else {
       revert("you cannot mint lootbox");
     }
@@ -341,20 +325,10 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     return result;
   }
 
-  function initialize(
-    address _CLNYAddress,
-    address _MCAddress,
-    address _treasury,
-    address _liquidity
-  ) public initializer {
+  function initialize() public initializer {
     __Pausable_init();
-    DAO = msg.sender;
-    CLNYAddress = _CLNYAddress;
-    MCAddress = _MCAddress;
     maxTokenId = 21000;
     price = 250 ether;
-    treasury = _treasury;
-    liquidity = _liquidity;
   }
 
   /**
@@ -373,7 +347,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   /**
    * Sets the cost of minting for 1 token
    */
-  function setPrice(uint256 _price) external onlyDAO {
+  function setPrice(uint256 _price) external onlyOwner {
     require(_price >= 0.01 ether && _price <= 10000 ether, 'New price is out of bounds');
     price = _price;
     emit SetPrice(_price);
@@ -381,13 +355,13 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
 
   function mintAvatar() external nonReentrant {
     _deduct(MINT_AVATAR_LEVEL, REASON_MINT_AVATAR);
-    TokenInterface(collectionAddress).mint(msg.sender);
+    d.collectionManager().mint(msg.sender);
   }
 
   function mintLand(address _address, uint256 tokenId) private {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
     tokenData[tokenId].lastCLNYCheckout = uint64(block.timestamp);
-    TokenInterface(MCAddress).mint(_address, tokenId);
+    d.mc().mint(_address, tokenId);
   }
 
   /**
@@ -411,28 +385,28 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   /**
    * 0x8456cb59
    */
-  function pause() external onlyDAO {
+  function pause() external onlyOwner {
     _pause();
-    PauseInterface(CLNYAddress).pause();
-    PauseInterface(MCAddress).pause();
-    if (collectionAddress != address(0)) {
-      PauseInterface(collectionAddress).pause();
+    d.clny().pause();
+    d.mc().pause();
+    if (address(d.collectionManager()) != address(0)) {
+      d.collectionManager().pause();
     }
   }
 
   /**
    * 0x3f4ba83a
    */
-  function unpause() external onlyDAO {
+  function unpause() external onlyOwner {
     _unpause();
-    PauseInterface(CLNYAddress).unpause();
-    PauseInterface(MCAddress).unpause();
-    if (collectionAddress != address(0)) {
-      PauseInterface(collectionAddress).unpause();
+    d.clny().unpause();
+    d.mc().unpause();
+    if (address(d.collectionManager()) != address(0)) {
+      d.collectionManager().unpause();
     }
   }
 
-  function airdrop(address receiver, uint256 tokenId) external whenNotPaused onlyDAO {
+  function airdrop(address receiver, uint256 tokenId) external whenNotPaused onlyOwner {
     mintLand(receiver, tokenId);
     emit Airdrop(receiver, tokenId);
   }
@@ -473,19 +447,19 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     if (level == MINT_AVATAR_LEVEL) {
       amount = AVATAR_MINT_COST * 10 ** 18;
       // artist and team minting royalties
-      TokenInterface(CLNYAddress).mint(
+      d.clny().mint(
         0x2581A6C674D84dAD92A81E8d3072C9561c21B935,
         AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
         REASON_CREATORS_ROYALTY
       );
-      TokenInterface(CLNYAddress).mint(
+      d.clny().mint(
         ARTIST1_ROYALTY_WALLET,
         AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
         REASON_ARTIST_ROYALTY
       );
     }
     require (amount > 0, 'Wrong level');
-    TokenInterface(CLNYAddress).burn(msg.sender, amount, reason);
+    d.clny().burn(msg.sender, amount, reason);
   }
 
   function getLastCheckout(uint256 tokenId) public view returns (uint256) {
@@ -512,7 +486,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   }
 
   function getEarningSpeed(uint256 tokenId) public view returns (uint256) {
-    require (TokenInterface(MCAddress).ownerOf(tokenId) != address(0)); // reverts itself
+    require (d.mc().ownerOf(tokenId) != address(0)); // reverts itself
     uint256 speed = 1; // bare land
     if (tokenData[tokenId].baseStation > 0) {
       speed = speed + 1; // base station gives +1
@@ -530,7 +504,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   }
 
   function getPassiveEarningSpeed(uint256 tokenId) public view returns (uint256) {
-    require (TokenInterface(MCAddress).ownerOf(tokenId) != address(0)); // reverts itself
+    require (d.mc().ownerOf(tokenId) != address(0)); // reverts itself
     uint256 speed = 1; // bare land
     if (tokenData[tokenId].baseStation > 0) {
       speed = speed + 1; // base station gives +1
@@ -758,44 +732,44 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   function claimEarned(uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
     require (tokenIds.length != 0, 'Empty array');
     for (uint8 i = 0; i < tokenIds.length; i++) {
-      require (msg.sender == TokenInterface(MCAddress).ownerOf(tokenIds[i]));
+      require (msg.sender == d.mc().ownerOf(tokenIds[i]));
       uint256 earned = getEarned(tokenIds[i]);
       tokenData[tokenIds[i]].fixedEarnings = 0;
       landMissionEarnings[tokenIds[i]] = 0;
       tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
-      TokenInterface(CLNYAddress).mint(msg.sender, earned, REASON_EARNING);
-      TokenInterface(CLNYAddress).mint(treasury, earned * 31 / 49, REASON_TREASURY);
-      TokenInterface(CLNYAddress).mint(liquidity, earned * 20 / 49, REASON_LP_POOL);
+      d.clny().mint(msg.sender, earned, REASON_EARNING);
+      d.clny().mint(d.treasury(), earned * 31 / 49, REASON_TREASURY);
+      d.clny().mint(d.liquidity(), earned * 20 / 49, REASON_LP_POOL);
     }
   }
 
-  function fixEarnings(uint256[] calldata tokenIds) external onlyDAO {
+  function fixEarnings(uint256[] calldata tokenIds) external onlyOwner {
     for (uint i = 0; i < tokenIds.length; i++) {
-      TokenInterface(MCAddress).ownerOf(tokenIds[i]); // reverts if not minted
+      d.mc().ownerOf(tokenIds[i]); // reverts if not minted
       fixEarnings(tokenIds[i]);
     }
   }
 
   
   function purchaseCryochamber() external {
-    ICryochamber(cryochamberAddress).purchaseCryochamber(msg.sender);
+    d.cryochamber().purchaseCryochamber(msg.sender);
 
-    uint256 cryochamberPrice = ICryochamber(cryochamberAddress).cryochamberPrice();
-    TokenInterface(CLNYAddress).burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
+    uint256 cryochamberPrice = d.cryochamber().cryochamberPrice();
+    d.clny().burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
 
   }
 
   function purchaseCryochamberEnergy(uint256 amount) external {
-    ICryochamber(cryochamberAddress).purchaseCryochamberEnergy(msg.sender, amount);
+    d.cryochamber().purchaseCryochamberEnergy(msg.sender, amount);
 
-    uint256 energyPrice = ICryochamber(cryochamberAddress).energyPrice();
-    TokenInterface(CLNYAddress).burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
+    uint256 energyPrice = d.cryochamber().energyPrice();
+    d.clny().burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
   }
 
   function renameAvatar(uint256 avatarId, string calldata _name) external {
-    require(martianColonists.ownerOf(avatarId) == msg.sender, 'You are not the owner');
-    ICollectionManager(collectionAddress).setNameByGameManager(avatarId, _name);
-    TokenInterface(CLNYAddress).burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
+    require(d.martianColonists().ownerOf(avatarId) == msg.sender, 'You are not the owner');
+    d.collectionManager().setNameByGameManager(avatarId, _name);
+    d.clny().burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
   }
 
 
@@ -803,11 +777,11 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
 
   function openLootbox(uint256 tokenId, uint256 maxPrice) external whenNotPaused {
 
-    require(TokenInterface(lootboxesAddress).ownerOf(tokenId) == msg.sender, "You aren't this lootbox owner");
+    require(d.lootboxes().ownerOf(tokenId) == msg.sender, "You aren't this lootbox owner");
 
-    IEnums.Rarity rarity = ILootboxes(lootboxesAddress).rarities(tokenId);
+    IEnums.Rarity rarity = d.lootboxes().rarities(tokenId);
 
-    (uint256 commonPrice, uint256 rarePrice, uint256 legendaryPrice) = ICollectionManager(collectionAddress).getLootboxOpeningPrice();
+    (uint256 commonPrice, uint256 rarePrice, uint256 legendaryPrice) = d.collectionManager().getLootboxOpeningPrice();
     uint256 openPrice;
     
     if (rarity == IEnums.Rarity.COMMON) {
@@ -824,12 +798,12 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
 
     require(openPrice < maxPrice, "open price too high");
 
-    TokenInterface(CLNYAddress).burn(msg.sender, openPrice, REASON_OPEN_LOOTBOX);
-    TokenInterface(CLNYAddress).mint(ARTIST1_ROYALTY_WALLET, openPrice * 3_000 / 100_000, REASON_ARTIST_ROYALTY); // 3% to the artist
-    TokenInterface(CLNYAddress).mint(ARTIST2_ROYALTY_WALLET, openPrice * 3_000 / 100_000, REASON_ARTIST_ROYALTY); // 3% to the artist
-    ILootboxes(lootboxesAddress).burn(tokenId);
+    d.clny().burn(msg.sender, openPrice, REASON_OPEN_LOOTBOX);
+    d.clny().mint(ARTIST1_ROYALTY_WALLET, openPrice * 3_000 / 100_000, REASON_ARTIST_ROYALTY); // 3% to the artist
+    d.clny().mint(ARTIST2_ROYALTY_WALLET, openPrice * 3_000 / 100_000, REASON_ARTIST_ROYALTY); // 3% to the artist
+    d.lootboxes().burn(tokenId);
 
-    ICollectionManager(collectionAddress).mintGear(msg.sender, rarity);
+    d.collectionManager().mintGear(msg.sender, rarity);
   }
 
   // for compatibility with Polygon
@@ -847,14 +821,15 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
 
   /**
    * 0x91cdd9f0
+   * TODO change to instant withdraw!!!
    */
-  function withdrawValue(uint256 value) external onlyDAO {
+  function withdrawValue(uint256 value) external onlyOwner {
     require (address(this).balance != 0, 'Nothing to withdraw');
-    (bool success, ) = payable(DAO).call{ value: value }('');
+    (bool success, ) = payable(d.owner()).call{ value: value }('');
     require(success, 'Withdraw failed');
   }
 
-  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
+  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
   }

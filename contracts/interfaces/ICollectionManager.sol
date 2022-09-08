@@ -11,4 +11,7 @@ interface ICollectionManager {
   function setLocks(uint256[] calldata tokenIds, uint256 transportId) external;
   function mintGear(address owner, IEnums.Rarity rarity) external;
   function getLootboxOpeningPrice() external view returns (uint256 common, uint256 rare, uint256 legendary);
+  function pause() external;
+  function unpause() external;
+  function mint(address receiver) external;
 }

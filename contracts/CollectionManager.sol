@@ -3,26 +3,21 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import './GameConnection.sol';
-import './interfaces/IMartianColonists.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import './interfaces/ICryochamber.sol';
 import './interfaces/ICollectionManager.sol';
-import './interfaces/ILootboxes.sol';
-import './interfaces/IOracle.sol';
 import './interfaces/IEnums.sol';
-import './interfaces/IGears.sol';
-import './interfaces/TokenInterface.sol';
+import './interfaces/IDependencies.sol';
 import './Constants.sol';
 
 
 contract CollectionManager is ICollectionManager, GameConnection, PausableUpgradeable, Constants {
   uint256 public maxTokenId;
 
-  IMartianColonists public collection;
+  address reserved0;
   mapping (uint256 => uint256) private xp;
 
-  ICryochamber public cryochambers;
-  address public gearsAddress;
+  address reserved1;
+  address reserved2;
 
   uint8 randomNonce;
 
@@ -39,20 +34,25 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   IGears.Gear[] public initialLegendaryGears;
   IGears.Gear[] public transportGears;
 
-  address oracleAddress;
+  address reserved3;
 
-  uint256[41] private ______mc_gap;
+  IDependencies public d;
+
+  uint256[40] private ______mc_gap;
 
   modifier onlyCryochamberManager {
-    require(msg.sender == address(cryochambers), 'Only CryochamberManager');
+    require(msg.sender == address(d.cryochamber()), 'Only CryochamberManager');
     _;
   }
 
-  function initialize(address _collection) external initializer {
-    GameConnection.__GameConnection_init(msg.sender);
+  modifier onlyOwner {
+    require(msg.sender == d.owner(), 'Only owner');
+    _;
+  }
+
+  function initialize() external initializer {
     PausableUpgradeable.__Pausable_init();
     maxTokenId = 0;
-    collection = IMartianColonists(_collection);
 
     // gears 
     initialCommonGears.push(IGears.Gear(IEnums.Rarity.COMMON, ROCKET_FUEL, CATEGORY_ENGINE, COMMON_GEAR_DURABILITY, false, true));
@@ -75,21 +75,12 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
 
   }
 
-  function setCryochamberManager(address cryochamberManager) external {
-    cryochambers = ICryochamber(cryochamberManager);
+  function setDependencies(IDependencies addr) external onlyOwner {
+    d = addr;
   }
-
-  function setGearsAddress(address _address) external onlyDAO {
-    gearsAddress = _address;
-  }
-
-  function setOracleAddress(address _address) external onlyDAO {
-    oracleAddress = _address;
-  }
-
 
   function _getXP(uint256 avatarId) private view returns(uint256) {
-    uint256 totalAvatarsCount = collection.totalSupply();
+    uint256 totalAvatarsCount = d.martianColonists().totalSupply();
     require(avatarId <= totalAvatarsCount, "wrong avatarId requested");
     return xp[avatarId] + 100; // 100 is a base for every avatar
   }
@@ -101,7 +92,7 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
       
       result[i] = _getXP(avatarIds[i]);
 
-      ICryochamber.CryoTime memory cryo = cryochambers.getAvatarCryoStatus(avatarIds[i]);
+      ICryochamber.CryoTime memory cryo = d.cryochamber().getAvatarCryoStatus(avatarIds[i]);
       
       if (cryo.endTime > 0 && uint64(block.timestamp) > cryo.endTime) {
         result[i] += cryo.reward;
@@ -112,7 +103,8 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   }
 
 
-  function addXP(uint256 avatarId, uint256 increment) external onlyGameManager {
+  function addXP(uint256 avatarId, uint256 increment) external {
+    require(msg.sender == address(d.gameManager()), 'Only GameManager');
     xp[avatarId] = xp[avatarId] + increment;
   }
 
@@ -121,13 +113,13 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   }
 
   function allMyTokens() external view returns(uint256[] memory) {
-    uint256 tokenCount = collection.balanceOf(msg.sender);
+    uint256 tokenCount = d.martianColonists().balanceOf(msg.sender);
     if (tokenCount == 0) {
       return new uint256[](0);
     } else {
       uint256[] memory result = new uint256[](tokenCount);
       for (uint256 i = 0; i < tokenCount; i++) {
-        result[i] = collection.tokenOfOwnerByIndex(msg.sender, i);
+        result[i] = d.martianColonists().tokenOfOwnerByIndex(msg.sender, i);
       }
       return result;
     }
@@ -139,12 +131,12 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   }
 
   function ableToMint() view public returns (bool) {
-    return collection.totalSupply() < maxTokenId;
+    return d.martianColonists().totalSupply() < maxTokenId;
   }
 
   function mint(address receiver) external onlyGameManager whenNotPaused {
     require (ableToMint(), 'cannot mint');
-    collection.mint(receiver);
+    d.martianColonists().mint(receiver);
   }
 
   function pause() external onlyGameManager {
@@ -156,23 +148,23 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   }
 
   function setName(uint256 tokenId, string memory _name) external {
-    require (collection.ownerOf(tokenId) == msg.sender, 'not your token');
+    require (d.martianColonists().ownerOf(tokenId) == msg.sender, 'not your token');
     require (bytes(_name).length > 0, 'empty name');
     require (bytes(_name).length <= 15, 'name too long');
-    require (bytes(collection.names(tokenId)).length == 0, 'name is already set');
-    collection.setName(tokenId, _name);
+    require (bytes(d.martianColonists().names(tokenId)).length == 0, 'name is already set');
+    d.martianColonists().setName(tokenId, _name);
   }
 
   function setNameByGameManager(uint256 tokenId, string memory _name) external onlyGameManager {
     require (bytes(_name).length <= 15, 'name too long');
-    require (keccak256(abi.encodePacked(_name)) != keccak256(abi.encodePacked(collection.names(tokenId))), 'same name');
-    collection.setName(tokenId, _name);
+    require (keccak256(abi.encodePacked(_name)) != keccak256(abi.encodePacked(d.martianColonists().names(tokenId))), 'same name');
+    d.martianColonists().setName(tokenId, _name);
   }
 
   function getNames(uint256[] calldata tokenIds) external view returns (string[] memory) {
     string[] memory result = new string[](tokenIds.length);
     for (uint256 i = 0; i < tokenIds.length; i++) {
-      result[i] = collection.names(tokenIds[i]);
+      result[i] = d.martianColonists().names(tokenIds[i]);
     }
     return result;
   }
@@ -265,18 +257,18 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     if (transportId == 0) {
       require(tokenIds.length <= 2, "you can't lock so many gears");
     } else {
-      ( , , uint256 category, , , ) = IGears(gearsAddress).gears(transportId); 
+      ( , , uint256 category, , , ) = d.gears().gears(transportId); 
       require(category == CATEGORY_TRANSPORT, "transportId is not transport");
 
-      require(msg.sender == TokenInterface(gearsAddress).ownerOf(transportId), "you are not transport owner");
+      require(msg.sender == d.gears().ownerOf(transportId), "you are not transport owner");
       require(tokenIds.length <= 3, "you can't lock so many gears");
     }
 
     // can not lock gears of the same categories
     uint256[] memory choosenCategories = new uint256[](3);
     for (uint i = 0; i < tokenIds.length; i++) {
-      require(msg.sender == TokenInterface(gearsAddress).ownerOf(tokenIds[i]), "you are not gear owner");
-      ( , , uint256 category, , , ) = IGears(gearsAddress).gears(tokenIds[i]);
+      require(msg.sender == d.gears().ownerOf(tokenIds[i]), "you are not gear owner");
+      ( , , uint256 category, , , ) = d.gears().gears(tokenIds[i]);
       require(category != CATEGORY_TRANSPORT, "can not lock transport");
       require(!isGearCategoryChoosenBefore(choosenCategories, category), "you can't lock gears of the same category");
       choosenCategories[i] = category;
@@ -288,22 +280,22 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
 
     if (prevLockedGears.set) {
       if (prevLockedGears.transportId > 0) {
-        IGears(gearsAddress).unlockGear(prevLockedGears.transportId);
+        d.gears().unlockGear(prevLockedGears.transportId);
       }
 
       for (uint i = 0; i < prevLockedGears.gearsId.length; i++) {
-        IGears(gearsAddress).unlockGear(prevLockedGears.gearsId[i]);
+        d.gears().unlockGear(prevLockedGears.gearsId[i]);
       }
     }
 
     // lock current gears
 
     if (transportId > 0) {
-      IGears(gearsAddress).lockGear(transportId);
+      d.gears().lockGear(transportId);
     }
 
     for (uint i = 0; i < tokenIds.length; i++) {
-      IGears(gearsAddress).lockGear(tokenIds[i]);
+      d.gears().lockGear(tokenIds[i]);
     }
 
     // update state by rewrite
@@ -312,7 +304,7 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
 
   function mintGear(address owner, IEnums.Rarity _lootBoxrarity) external onlyGameManager {
     IGears.Gear memory gear = calculateGear(_lootBoxrarity);
-    IGears(gearsAddress).mint(owner, gear.rarity, gear.gearType, gear.category, gear.durability);
+    d.gears().mint(owner, gear.rarity, gear.gearType, gear.category, gear.durability);
   }
 
   function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
@@ -321,13 +313,13 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   }
 
   function getLootboxOpeningPrice() external view returns (uint256 common, uint256 rare, uint256 legendary) {
-    (bool valid, uint256 clnyInUsd) = IOracle(oracleAddress).clnyInUsd();
+    (bool valid, uint256 clnyInUsd) = d.oracle().clnyInUsd();
     
     require(valid, "oracle price of clny is not valid");
     
-    common = COMMON_OPENING_PRICE_USD*clnyInUsd/100; // from cents to usd
-    rare = RARE_OPENING_PRICE_USD*clnyInUsd/100; 
-    legendary = LEGENDARY_OPENING_PRICE_USD*clnyInUsd/100;
+    common = COMMON_OPENING_PRICE_USD * clnyInUsd / 100; // from cents to usd
+    rare = RARE_OPENING_PRICE_USD * clnyInUsd / 100; 
+    legendary = LEGENDARY_OPENING_PRICE_USD * clnyInUsd / 100;
   }
 
 }

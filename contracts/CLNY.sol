@@ -9,7 +9,6 @@ pragma solidity >=0.8.0 <0.9.0;
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import './GameConnection.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 
 contract CLNY is ERC20, GameConnection, Pausable {

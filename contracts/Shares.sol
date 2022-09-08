@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.13;
 
-import './interfaces/TokenInterface.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './Constants.sol';
 import './interfaces/IShares.sol';
+import './interfaces/IDependencies.sol';
+
 
 abstract contract Shares is IShares, Constants {
   uint64 constant startCLNYDate = 1655391600; // 16 Jun 2022 14:30UTC - public launch
   uint256 public maxLandShares; // shares of land with max shares
 
-  uint256[19] private ______gap;
+  IDependencies public d; // dependencies
+
+  uint256[18] private ______gap;
   struct LandInfo {
     uint256 share;
     uint256 rewardDebt;
@@ -31,7 +33,7 @@ abstract contract Shares is IShares, Constants {
   }
 
   // Update reward variables to be up-to-date.
-  function updatePool(address CLNYAddress) internal {
+  function updatePool() internal {
     if (block.timestamp <= getLastRewardTime()) {
       return;
     }
@@ -42,7 +44,7 @@ abstract contract Shares is IShares, Constants {
     uint256 clnyReward = (block.timestamp - getLastRewardTime()) * clnyPerSecond;
     accColonyPerShare = accColonyPerShare + clnyReward * 1e12 / totalShare;
     lastRewardTime = block.timestamp;
-    TokenInterface(CLNYAddress).mint(address(this), clnyReward, REASON_SHARES_PREPARE_CLNY);
+    d.clny().mint(address(this), clnyReward, REASON_SHARES_PREPARE_CLNY);
   }
 
   function setInitialShare(uint256 tokenId) internal {
@@ -51,7 +53,7 @@ abstract contract Shares is IShares, Constants {
     totalShare = totalShare + 1;
   }
 
-  function addToShare(uint256 tokenId, uint256 _share, address CLNYAddress) internal {
+  function addToShare(uint256 tokenId, uint256 _share) internal {
     LandInfo storage land = landInfo[tokenId];
     uint256 _accColonyPerShare = accColonyPerShare;
     if (block.timestamp > getLastRewardTime() && totalShare != 0) {
@@ -60,7 +62,7 @@ abstract contract Shares is IShares, Constants {
     }
     uint256 earned = land.share * _accColonyPerShare / 1e12 - land.rewardDebt;
     totalShare = totalShare + _share;
-    updatePool(CLNYAddress);
+    updatePool();
     land.share = land.share + _share;
     land.rewardDebt = land.share * accColonyPerShare / 1e12 - earned;
     if (land.share > maxLandShares) maxLandShares = land.share;
@@ -72,49 +74,21 @@ abstract contract Shares is IShares, Constants {
   }
 
   // Safe CLNY transfer function, just in case if pool doesn't have enough CLNY (impossible though)
-  function safeClnyTransfer(address _to, uint256 _amount, IERC20 CLNY) internal {
-    uint256 clnyBal = CLNY.balanceOf(address(this));
+  function safeClnyTransfer(address _to, uint256 _amount) internal {
+    uint256 clnyBal = d.clny().balanceOf(address(this));
     bool result = false;
     if (_amount > clnyBal) {
-      result = CLNY.transfer(_to, clnyBal);
+      result = d.clny().transfer(_to, clnyBal);
     } else {
-      result = CLNY.transfer(_to, _amount);
+      result = d.clny().transfer(_to, _amount);
     }
     require(result, 'transfer failed');
   }
 
-  function claimClnyWithoutPoolUpdate(uint256 tokenId, address CLNY) internal returns (uint256 pending) {
+  function claimClnyWithoutPoolUpdate(uint256 tokenId) internal returns (uint256 pending) {
     LandInfo storage land = landInfo[tokenId];
     pending = land.share * accColonyPerShare / 1e12 - land.rewardDebt;
     land.rewardDebt = (land.share * accColonyPerShare) / 1e12;
-    safeClnyTransfer(msg.sender, pending, IERC20(CLNY));
-  }
-
-  function getPassiveEarningSpeed(uint256 tokenId) public view returns (uint256 shareCount) {
-    // shares from powerproduction are excluded from passive speed
-    uint256 shareCount = landInfo[tokenId].share;
-    shareCount = shareCount - tokenData[tokenId].powerProduction;
-    if (tokenData[tokenId].powerProduction == 3) {
-      shareCount = shareCount - 1; // one more share for pp lvl3
-    }
-  }
-
-  // View function to see pending ColonyToken on frontend.
-  /* 0xe9387504 */
-  function getEarned(uint256 landId) public view returns (uint256) {
-    if (lastRewardTime < startCLNYDate) {
-      return 0;
-    }
-    if (getLastRewardTime() == 0) {
-      return 0;
-    }
-    uint256 activeShares = getPassiveEarningSpeed(landId);
-    uint256 _accColonyPerShare = accColonyPerShare;
-    if (block.timestamp > getLastRewardTime() && totalShare != 0) {
-      uint256 clnyReward = (block.timestamp - getLastRewardTime()) * clnyPerSecond;
-      _accColonyPerShare = _accColonyPerShare + clnyReward * 1e12 / totalShare;
-    }
-    // we need to treat 0 as 1 because we migrate from allowlist and no-share minting
-    return (activeShares == 0 ? 1 : activeShares) * _accColonyPerShare / 1e12 - landInfo[landId].rewardDebt;
+    safeClnyTransfer(msg.sender, pending);
   }
 }
