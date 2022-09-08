@@ -90,6 +90,15 @@ abstract contract Shares is IShares, Constants {
     safeClnyTransfer(msg.sender, pending, IERC20(CLNY));
   }
 
+  function getPassiveEarningSpeed(uint256 tokenId) public view returns (uint256 shareCount) {
+    // shares from powerproduction are excluded from passive speed
+    uint256 shareCount = landInfo[tokenId].share;
+    shareCount = shareCount - tokenData[tokenId].powerProduction;
+    if (tokenData[tokenId].powerProduction == 3) {
+      shareCount = shareCount - 1; // one more share for pp lvl3
+    }
+  }
+
   // View function to see pending ColonyToken on frontend.
   /* 0xe9387504 */
   function getEarned(uint256 landId) public view returns (uint256) {
@@ -99,13 +108,13 @@ abstract contract Shares is IShares, Constants {
     if (getLastRewardTime() == 0) {
       return 0;
     }
-    LandInfo storage land = landInfo[landId];
+    uint256 activeShares = getPassiveEarningSpeed(landId);
     uint256 _accColonyPerShare = accColonyPerShare;
     if (block.timestamp > getLastRewardTime() && totalShare != 0) {
       uint256 clnyReward = (block.timestamp - getLastRewardTime()) * clnyPerSecond;
       _accColonyPerShare = _accColonyPerShare + clnyReward * 1e12 / totalShare;
     }
     // we need to treat 0 as 1 because we migrate from allowlist and no-share minting
-    return (land.share == 0 ? 1 : land.share) * _accColonyPerShare / 1e12 - land.rewardDebt;
+    return (activeShares == 0 ? 1 : activeShares) * _accColonyPerShare / 1e12 - landInfo[landId].rewardDebt;
   }
 }
