@@ -5,6 +5,11 @@ import './interfaces/IDependencies.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
 contract Dependencies is IDependencies, Ownable {
+  struct Dependency {
+    string name;
+    address _addr;
+  }
+
   address public treasury;
   address public liquidity;
   ICLNY public clny;
@@ -18,6 +23,7 @@ contract Dependencies is IDependencies, Ownable {
   IMissionManager public missionManager;
   IOracle public oracle;
   ISalesManager public salesManager;
+  address public backendSigner;
 
   function owner() public view override(Ownable, IDependencies) returns (address) {
     return super.owner();
@@ -73,5 +79,30 @@ contract Dependencies is IDependencies, Ownable {
 
   function setSalesManager(ISalesManager addr) external onlyOwner {
     salesManager = addr;
+  }
+
+  function setBackendSigner(address addr) external onlyOwner {
+    backendSigner = addr;
+  }
+
+  function getDependencies() external view returns (Dependency[] memory) {
+    Dependency[] memory deps = new Dependency[](20);
+    uint256 i = 0;
+    deps[i++] = Dependency('owner', owner());
+    deps[i++] = Dependency('treasury', treasury);
+    deps[i++] = Dependency('liquidity', liquidity);
+    deps[i++] = Dependency('clny', address(clny));
+    deps[i++] = Dependency('collectionManager', address(collectionManager));
+    deps[i++] = Dependency('cryochamber', address(cryochamber));
+    deps[i++] = Dependency('gameManager', address(gameManager));
+    deps[i++] = Dependency('gears', address(gears));
+    deps[i++] = Dependency('lootboxes', address(lootboxes));
+    deps[i++] = Dependency('martianColonists', address(martianColonists));
+    deps[i++] = Dependency('mc', address(mc));
+    deps[i++] = Dependency('missionManager', address(missionManager));
+    deps[i++] = Dependency('oracle', address(oracle));
+    deps[i++] = Dependency('salesManager', address(salesManager));
+    deps[i++] = Dependency('backendSigner', backendSigner);
+    return deps;
   }
 }

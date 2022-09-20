@@ -3,9 +3,12 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol';
 import './Shares.sol';
 import './interfaces/IGameManager.sol';
+import './interfaces/IOwnable.sol';
 import './interfaces/IEnums.sol';
+import './libraries/MissionLibrary.sol';
 
 
 /**
@@ -99,7 +102,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   }
 
   modifier onlyTokenOwner(uint256 tokenId) {
-    require(d.mc().ownerOf(tokenId) == msg.sender, "You aren't the token owner");
+    require(IOwnable(address(d.mc())).ownerOf(tokenId) == msg.sender, "You aren't the token owner");
     _;
   }
 
@@ -115,20 +118,9 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     clnyPerSecond = newSpeed;
   }
 
-  // function addToAllowlist(address[] calldata _addresses) external onlyOwner {
-  //   for (uint i = 0; i < _addresses.length; i++) {
-  //     allowlist[_addresses[i]] = true;
-  //   }
-  // }
-
-  // function setAllowListLimit(uint256 limit, bool listOn) external onlyOwner {
-  //   allowlistLimit = limit;
-  //   allowlistOnly = listOn;
-  // }
-
   function saleData() external view returns (bool allowed, uint256 minted, uint256 limit) {
     allowed = !allowlistOnly || allowlist[msg.sender];
-    minted = d.mc().totalSupply();
+    minted = IERC721Enumerable(address(d.mc())).totalSupply();
     limit = allowlistLimit;
   }
 
@@ -136,108 +128,8 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     d = addr;
   }
 
-  function stringToUint(string memory s) private pure returns (uint256) {
-    bytes memory b = bytes(s);
-    uint result = 0;
-    for (uint i = 0; i < b.length; i++) {
-      if (uint8(b[i]) >= 48 && uint8(b[i]) <= 57) {
-        result = result * 10 + (uint8(b[i]) - 48);
-      }
-    }
-    return result;
-  }
-
-  function _getSignerAddress(
-    string memory message,
-    uint8 v,
-    bytes32 r,
-    bytes32 s
-  ) private pure returns (address signer) {
-    string memory header = '\x19Ethereum Signed Message:\n000000';
-    uint256 lengthOffset;
-    uint256 length;
-    assembly {
-      length := mload(message)
-      lengthOffset := add(header, 57)
-    }
-
-    require(length <= 999999);
-
-    uint256 lengthLength = 0;
-    uint256 divisor = 100000;
-
-    while (divisor != 0) {
-      uint256 digit = length / divisor;
-      if (digit == 0) {
-        if (lengthLength == 0) {
-          divisor /= 10;
-          continue;
-        }
-      }
-
-      lengthLength++;
-      length -= digit * divisor;
-      divisor /= 10;
-      digit += 0x30;
-      lengthOffset++;
-
-      assembly {
-        mstore8(lengthOffset, digit)
-      }
-    }
-
-    if (lengthLength == 0) {
-      lengthLength = 1 + 0x19 + 1;
-    } else {
-      lengthLength += 1 + 0x19;
-    }
-
-    assembly {
-      mstore(header, lengthLength)
-    }
-
-    bytes32 check = keccak256(abi.encodePacked(header, message));
-
-    return ecrecover(check, v, r, s);
-  }
-
-  function _substring(string memory str, uint startIndex, uint endIndex) private pure returns (uint256 ) {
-    bytes memory strBytes = bytes(str);
-    bytes memory result = new bytes(endIndex-startIndex);
-    for(uint i = startIndex; i < endIndex; i++) {
-      result[i - startIndex] = strBytes[i];
-    }
-    return stringToUint(string(result));
-  }
-
-  function getAssetsFromFinishMissionMessage(string calldata message) private pure returns (uint256, uint256, uint256, uint256, uint256, uint256) {
-    // 0..<32 - random
-    // 32..<37 - avatar id
-    // 37..<42 - land id
-    // 42..<47 - avatar id (again)
-    // 47..<55 - xp reward like 00000020
-    // 55..<57 - lootbox
-    // 57..<61 - avatar mission rewards in CLNY * 100 / decimals (e.g. 100 = 1 CLNY)
-    // 61..<65 - avatar mission rewards in CLNY * 100 / decimals (e.g. 100 = 1 CLNY)
-    uint256 _avatar = _substring(message, 32, 37);
-    uint256 _avatar2 = _substring(message, 37, 42);
-    uint256 _land = _substring(message, 42, 47);
-    uint256 _xp = _substring(message, 47, 55);
-    uint256 _lootbox = _substring(message, 55, 57);
-    uint256 _avatarReward = _substring(message, 57, 61);
-    uint256 _landReward = _substring(message, 61, 65);
-    require(_avatar == _avatar2, 'check failed');
-    return (_avatar, _land, _xp, _lootbox, _avatarReward,_landReward);
-  }
-
-  function getLootboxRarity(uint256 _lootbox) private pure returns (IEnums.Rarity rarity) {
-    if (_lootbox == 1 || _lootbox == 23) return IEnums.Rarity.COMMON;
-    if (_lootbox == 2 || _lootbox == 24) return IEnums.Rarity.RARE;
-    if (_lootbox == 3 || _lootbox == 25) return IEnums.Rarity.LEGENDARY;
-  }
-
   function proceedFinishMissionMessage(string calldata message) private {
-    (uint256 _avatar, uint256 _land, uint256 _xp, uint256 _lootbox, uint256 _avatarReward, uint256 _landReward) = getAssetsFromFinishMissionMessage(message);
+    (uint256 _avatar, uint256 _land, uint256 _xp, uint256 _lootbox, uint256 _avatarReward, uint256 _landReward) = MissionLibrary.getAssetsFromFinishMissionMessage(message);
 
     require(_avatar > 0, "AvatarId is not valid");
     require(_land > 0 && _land <= 21000, "LandId is not valid");
@@ -250,7 +142,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     if (_lootbox >= 1 && _lootbox <= 3) {
       address avatarOwner = d.martianColonists().ownerOf(_avatar);
 
-      d.lootboxes().mint(avatarOwner, getLootboxRarity(_lootbox));
+      d.lootboxes().mint(avatarOwner, MissionLibrary.getLootboxRarity(_lootbox));
     } 
 
     if (_lootbox == 23) {
@@ -269,7 +161,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     landMissionEarnings[_land] += landOwnerClnyReward;
 
     uint256 avatarClnyReward = _avatarReward * 10**18 / 100;
-    d.clny().mint(d.martianColonists().ownerOf(_avatar), avatarClnyReward);
+    d.clny().mint(d.martianColonists().ownerOf(_avatar), avatarClnyReward, REASON_MISSION_REWARD);
 
     // one event for every reward type
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp
@@ -299,8 +191,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     bytes32 r,
     bytes32 s
   ) external {
-    address signerAddress = _getSignerAddress(message, v, r, s);
-    require(signerAddress == backendSigner, "Signature is not from server");
+    MissionLibrary.checkSigner(message, v, r, s, d.backendSigner());
 
     bytes32 signatureHashed = keccak256(abi.encodePacked(v, r, s));
     require (!usedSignatures[signatureHashed], 'signature has been used');
@@ -368,7 +259,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
     if (allowlistOnly) {
       require(allowlist[msg.sender], 'you are not in allowlist');
-      require(d.mc().totalSupply() < allowlistLimit, 'Presale limit has ended');
+      require(IERC721Enumerable(address(d.mc())).totalSupply() < allowlistLimit, 'Presale limit has ended');
     }
     setInitialShare(tokenId);
     d.mc().mint(_address, tokenId);
@@ -379,8 +270,6 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
    * Mints several tokens
    */
   function _claim(uint256[] calldata tokenIds, address referrer) internal whenNotPaused {
-    require (tokenIds.length != 0, "You can't claim 0 tokens");
-
     if (referrer != address(0)) {
       setReferrer(referrer);
     } else if (referrers[msg.sender] != address(0)) {
@@ -760,7 +649,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     updatePool();
 
     for (uint8 i = 0; i < tokenIds.length; i++) {
-      require (msg.sender == d.mc().ownerOf(tokenIds[i]));
+      require (msg.sender == IOwnable(address(d.mc())).ownerOf(tokenIds[i]));
       uint256 toUser = claimClnyWithoutPoolUpdate(tokenIds[i]);
       uint256 toTreasury = toUser * 31 / 49;
       uint256 toLiquidity = toUser * 20 / 49;

@@ -13,21 +13,21 @@ abstract contract GameConnection {
     DAO = _DAO;
   }
 
-  modifier onlyDAO {
-    require(msg.sender == DAO, 'Only DAO');
-    _;
-  }
+  // modifier onlyDAO {
+  //   require(msg.sender == DAO, 'Only DAO');
+  //   _;
+  // }
 
-  modifier onlyGameManager {
-    require(msg.sender == GameManager, 'Only GameManager');
-    _;
-  }
+  // modifier onlyGameManager {
+  //   require(msg.sender == GameManager, 'Only GameManager');
+  //   _;
+  // }
 
-  function setGameManager(address _GameManager) external onlyDAO {
-    GameManager = _GameManager;
-  }
+  // function setGameManager(address _GameManager) external onlyDAO {
+  //   GameManager = _GameManager;
+  // }
 
-  function transferDAO(address _DAO) external onlyDAO {
-    DAO = _DAO;
-  }
+  // function transferDAO(address _DAO) external onlyDAO {
+  //   DAO = _DAO;
+  // }
 }

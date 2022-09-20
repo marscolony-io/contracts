@@ -7,6 +7,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/ICollectionManager.sol';
 import './interfaces/IEnums.sol';
 import './interfaces/IDependencies.sol';
+import './interfaces/IOwnable.sol';
 import './Constants.sol';
 
 
@@ -47,6 +48,11 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
 
   modifier onlyOwner {
     require(msg.sender == d.owner(), 'Only owner');
+    _;
+  }
+
+  modifier onlyGameManager {
+    require(msg.sender == address(d.gameManager()), 'Only game manager');
     _;
   }
 
@@ -125,7 +131,7 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     }
   }
 
-  function setMaxTokenId(uint256 _maxTokenId) external onlyDAO {
+  function setMaxTokenId(uint256 _maxTokenId) external onlyOwner {
     require(_maxTokenId > maxTokenId, 'can only increase');
     maxTokenId = _maxTokenId;
   }
@@ -260,14 +266,14 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
       ( , , uint256 category, , , ) = d.gears().gears(transportId); 
       require(category == CATEGORY_TRANSPORT, "transportId is not transport");
 
-      require(msg.sender == d.gears().ownerOf(transportId), "you are not transport owner");
+      require(msg.sender == IOwnable(address(d.gears())).ownerOf(transportId), "you are not transport owner");
       require(tokenIds.length <= 3, "you can't lock so many gears");
     }
 
     // can not lock gears of the same categories
     uint256[] memory choosenCategories = new uint256[](3);
     for (uint i = 0; i < tokenIds.length; i++) {
-      require(msg.sender == d.gears().ownerOf(tokenIds[i]), "you are not gear owner");
+      require(msg.sender == IOwnable(address(d.gears())).ownerOf(tokenIds[i]), "you are not gear owner");
       ( , , uint256 category, , , ) = d.gears().gears(tokenIds[i]);
       require(category != CATEGORY_TRANSPORT, "can not lock transport");
       require(!isGearCategoryChoosenBefore(choosenCategories, category), "you can't lock gears of the same category");
@@ -307,7 +313,7 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     d.gears().mint(owner, gear.rarity, gear.gearType, gear.category, gear.durability);
   }
 
-  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
+  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
   }

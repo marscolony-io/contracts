@@ -7,7 +7,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import "@openzeppelin/contracts/utils/Strings.sol";
 import './interfaces/IGears.sol';
 
-contract Gears is ERC721Enumerable, IGears, Ownable {
+contract Gears is ERC721Enumerable, Ownable, IGears {
   using Strings for uint256;
 
   string private nftBaseURI;

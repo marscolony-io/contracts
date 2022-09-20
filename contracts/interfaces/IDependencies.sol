@@ -28,6 +28,7 @@ interface IDependencies {
     IMissionManager missionManager;
     IOracle oracle;
     ISalesManager salesManager;
+    address backendSigner;
   }
 
   function owner() external view returns (address);
@@ -45,4 +46,5 @@ interface IDependencies {
   function missionManager() external view returns (IMissionManager);
   function oracle() external view returns (IOracle);
   function salesManager() external view returns (ISalesManager);
+  function backendSigner() external view returns (address);
 }

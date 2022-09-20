@@ -4,15 +4,13 @@ pragma solidity >=0.8.0 <0.9.0;
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import './GameConnection.sol';
-import './interfaces/IMartianColonists.sol';
-import './interfaces/ICollectionManager.sol';
-import './interfaces/ICryochamber.sol';
+import './interfaces/IDependencies.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 
 contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber {
-  IMartianColonists public avatars;
-  ICollectionManager public collectionManager;
+  IDependencies public d;
+  address reserved1;
 
   uint256 public override cryochamberPrice;
   uint256 public override energyPrice;
@@ -34,11 +32,19 @@ contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber
 
   uint256[49] private ______gap;
 
-  function initialize(address _collection, address _collectionManager) external initializer {
-    GameConnection.__GameConnection_init(msg.sender);
+  modifier onlyOwner {
+    require(msg.sender == d.owner(), 'Only owner');
+    _;
+  }
+
+  modifier onlyGameManager {
+    require(msg.sender == address(d.gameManager()), 'Only game manager');
+    _;
+  }
+
+  function initialize(IDependencies _d) external initializer {
     PausableUpgradeable.__Pausable_init();
-    avatars = IMartianColonists(_collection);
-    collectionManager = ICollectionManager(_collectionManager);
+    d = _d;
 
     cryochamberPrice = 30 * 10 ** 18;
     energyPrice = 5 * 10 ** 18;
@@ -49,23 +55,23 @@ contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber
     xpAdditions = [500,560,627,702,786,881,986,1105,1237,1386,1552,1739,1947,2181,2443,2736,3065,3433,3844,4306,4823,5401,6050,6776,7589,8500,9520,10662,11941,13374,14979,16777,18790,21045,23571,26399,29567,33115,37089,41540,46525,52108,58361,65364,73208,81993,91833,102853,115195,129018,144501,161841,181262,203013,227375,254660,285219,319445,357779,400712,448798,502654,562972,630529,706193,790936,885848,992150,1111208,1244553,1393899,1561167,1748508,1958329,2193328,2456527,2751311,3081468,3451244,3865394,4329241,4848750,5430600,6082272,6812145,7629602,8545155,9570573,10719042,12005327,13445967,15059483,16866621,18890615,21157489,23696388,26539954,29724749,33291719,37286725];  
   }
 
-  function setCryochamberPrice(uint256 _price) external onlyDAO whenNotPaused {
+  function setCryochamberPrice(uint256 _price) external onlyOwner whenNotPaused {
     cryochamberPrice = _price;
   }
 
-  function setCryochamberCost(uint256 _cost) external onlyDAO whenNotPaused {
+  function setCryochamberCost(uint256 _cost) external onlyOwner whenNotPaused {
     cryoEnergyCost = _cost;
   }
 
-  function setEnergyPrice(uint256 _price) external onlyDAO whenNotPaused {
+  function setEnergyPrice(uint256 _price) external onlyOwner whenNotPaused {
     energyPrice = _price;
   }
 
-  function setInitialEnergy(uint256 _energy) external onlyDAO whenNotPaused {
+  function setInitialEnergy(uint256 _energy) external onlyOwner whenNotPaused {
     initialEnergy = _energy;
   }
 
-  function setCryoPeriodLength(uint64 _time) external onlyDAO whenNotPaused {
+  function setCryoPeriodLength(uint64 _time) external onlyOwner whenNotPaused {
     cryoPeriodLength = _time;
   }
 
@@ -109,7 +115,7 @@ contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber
   }
 
   function putAvatarInCryochamber(uint256 avatarId, address user) private {
-    require(avatars.ownerOf(avatarId) == msg.sender, "You are not an avatar owner");
+    require(d.martianColonists().ownerOf(avatarId) == msg.sender, "You are not an avatar owner");
     
     require(!isAvatarInCryoChamber(avatarId), "This avatar is in cryochamber already");
 
@@ -117,7 +123,7 @@ contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber
 
     CryoTime memory avatarCryo = cryos[avatarId];
     if (avatarCryo.endTime > 0 && avatarCryo.endTime <= uint64(block.timestamp)) {
-      collectionManager.addXPAfterCryo(avatarId, avatarCryo.reward);
+      d.collectionManager().addXPAfterCryo(avatarId, avatarCryo.reward);
     }
 
     decreaseCryochamberEnergy(user, cryoEnergyCost);
@@ -170,7 +176,7 @@ contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber
     uint256[] memory avatarArg = new uint256[](1);
     avatarArg[0] = avatarId;
 
-    uint256[] memory currentXps = collectionManager.getXP(avatarArg);
+    uint256[] memory currentXps = d.collectionManager().getXP(avatarArg);
     uint256 currentXp = currentXps[0];
 
     return cryoXpAddition(currentXp);

@@ -13,9 +13,10 @@ import './interfaces/ISalesManager.sol';
 import "./legacy/impl/RoyaltiesV2Impl.sol";
 import "./legacy/LibPart.sol";
 import "./legacy/LibRoyaltiesV2.sol";
+import './interfaces/IMC.sol';
 
 
-contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2Impl {
+contract MC is IMC, ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2Impl {
   string private nftBaseURI;
   ISalesManager public salesManager;
   address public GameManager;

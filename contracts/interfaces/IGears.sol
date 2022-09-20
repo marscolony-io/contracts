@@ -2,10 +2,9 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import './ILootboxes.sol';
-import './IOwnable.sol';
 import './IEnums.sol';
 
-interface IGears is IOwnable {
+interface IGears {
   struct Gear {
     IEnums.Rarity rarity;
     uint256 gearType;
@@ -21,4 +20,5 @@ interface IGears is IOwnable {
   function lockGear(uint256 tokenId) external;
   function unlockGear(uint256 tokenId) external;
   function gears(uint256 tokenId) external returns (IEnums.Rarity, uint256, uint256, uint256, bool, bool);
+  // function ownerOf(uint256 tokenId) external view returns (address owner);
 }
