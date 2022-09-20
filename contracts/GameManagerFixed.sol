@@ -96,15 +96,17 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   }
 
   // for compatibility with Polygon version
-  function saleData() external pure returns (bool allowed, uint256 minted, uint256 limit) {
-    return (true, 0, 0);
-  }
+  // function saleData() external pure returns (bool allowed, uint256 minted, uint256 limit) {
+  //   return (true, 0, 0);
+  // }
 
   function setDependencies(IDependencies addr) external onlyOwner {
     d = addr;
   }
 
   function proceedFinishMissionMessage(string calldata message) private {
+    IMartianColonists martianColonists = d.martianColonists();
+
     (
       uint256 _avatar,
       uint256 _land,
@@ -117,7 +119,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     d.collectionManager().addXP(_avatar, _xp);
 
     if (_lootbox >= 1 && _lootbox <= 3) {
-      address avatarOwner = d.martianColonists().ownerOf(_avatar);
+      address avatarOwner = martianColonists.ownerOf(_avatar);
 
       d.lootboxes().mint(avatarOwner, MissionLibrary.getLootboxRarity(_lootbox));
     } 
@@ -138,7 +140,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     landMissionEarnings[_land] += landOwnerClnyReward;
 
     uint256 avatarClnyReward = _avatarReward * 10 ** 18 / 100;
-    d.clny().mint(d.martianColonists().ownerOf(_avatar), avatarClnyReward, REASON_MISSION_REWARD);
+    d.clny().mint(martianColonists.ownerOf(_avatar), avatarClnyReward, REASON_MISSION_REWARD);
 
     // one event for every reward type
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp
@@ -148,15 +150,16 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   }
 
   function mintLootbox() external {
+    ILootboxes lootboxes = d.lootboxes();
     if (lootBoxesToMint[msg.sender].legendary > 0) {
       lootBoxesToMint[msg.sender].legendary--;
-      d.lootboxes().mint(msg.sender, IEnums.Rarity.LEGENDARY);
+      lootboxes.mint(msg.sender, IEnums.Rarity.LEGENDARY);
     } else if (lootBoxesToMint[msg.sender].rare > 0) {
       lootBoxesToMint[msg.sender].rare--;
-      d.lootboxes().mint(msg.sender, IEnums.Rarity.RARE);
+      lootboxes.mint(msg.sender, IEnums.Rarity.RARE);
     } else if (lootBoxesToMint[msg.sender].common > 0) {
       lootBoxesToMint[msg.sender].common--;
-      d.lootboxes().mint(msg.sender, IEnums.Rarity.COMMON);
+      lootboxes.mint(msg.sender, IEnums.Rarity.COMMON);
     } else {
       revert("you cannot mint lootbox");
     }
@@ -245,18 +248,20 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   }
 
   function mintAvatar() external nonReentrant {
+    ICLNY clny = d.clny();
+
     // artist and team minting royalties
-    d.clny().mint(
+    clny.mint(
       0x2581A6C674D84dAD92A81E8d3072C9561c21B935,
       AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
       REASON_CREATORS_ROYALTY
     );
-    d.clny().mint(
+    clny.mint(
       ARTIST1_ROYALTY_WALLET,
       AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
       REASON_ARTIST_ROYALTY
     );
-    d.clny().burn(msg.sender, AVATAR_MINT_COST * 10 ** 18, REASON_MINT_AVATAR);
+    clny.burn(msg.sender, AVATAR_MINT_COST * 10 ** 18, REASON_MINT_AVATAR);
 
     d.collectionManager().mint(msg.sender);
   }
@@ -601,6 +606,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
    * 0x42aa65f4
    */
   function claimEarned(uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
+    ICLNY clny = d.clny();
     uint256 earned = 0;
     for (uint256 i = 0; i < tokenIds.length; i++) {
       require (msg.sender == IOwnable(address(d.mc())).ownerOf(tokenIds[i]));
@@ -609,28 +615,32 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
       landMissionEarnings[tokenIds[i]] = 0;
       tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
     }
-    d.clny().mint(msg.sender, earned, REASON_EARNING);
-    d.clny().mint(d.treasury(), earned * 31 / 49, REASON_TREASURY);
-    d.clny().mint(d.liquidity(), earned * 20 / 49, REASON_LP_POOL);
+    clny.mint(msg.sender, earned, REASON_EARNING);
+    clny.mint(d.treasury(), earned * 31 / 49, REASON_TREASURY);
+    clny.mint(d.liquidity(), earned * 20 / 49, REASON_LP_POOL);
   }
 
   function fixEarnings(uint256[] calldata tokenIds) external onlyOwner {
-    for (uint i = 0; i < tokenIds.length; i++) {
+    for (uint256 i = 0; i < tokenIds.length; i++) {
       fixEarnings(tokenIds[i]);
     }
   }
   
   function purchaseCryochamber() external {
-    d.cryochamber().purchaseCryochamber(msg.sender);
+    ICryochamber cryochamber = d.cryochamber();
 
-    uint256 cryochamberPrice = d.cryochamber().cryochamberPrice();
+    cryochamber.purchaseCryochamber(msg.sender);
+
+    uint256 cryochamberPrice = cryochamber.cryochamberPrice();
     d.clny().burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
   }
 
   function purchaseCryochamberEnergy(uint256 amount) external {
-    d.cryochamber().purchaseCryochamberEnergy(msg.sender, amount);
+    ICryochamber cryochamber = d.cryochamber();
 
-    uint256 energyPrice = d.cryochamber().energyPrice();
+    cryochamber.purchaseCryochamberEnergy(msg.sender, amount);
+
+    uint256 energyPrice = cryochamber.energyPrice();
     d.clny().burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
   }
 
@@ -643,12 +653,15 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   // gears
 
   function openLootbox(uint256 tokenId, uint256 maxPrice) external whenNotPaused {
+    ICLNY clny = d.clny();
+    ILootboxes lootboxes = d.lootboxes();
+    ICollectionManager collectionManager = d.collectionManager();
 
-    require(d.lootboxes().ownerOf(tokenId) == msg.sender, "You aren't this lootbox owner");
+    require(lootboxes.ownerOf(tokenId) == msg.sender, "You aren't this lootbox owner");
 
-    IEnums.Rarity rarity = d.lootboxes().rarities(tokenId);
+    IEnums.Rarity rarity = lootboxes.rarities(tokenId);
 
-    (uint256 commonPrice, uint256 rarePrice, uint256 legendaryPrice) = d.collectionManager().getLootboxOpeningPrice();
+    (uint256 commonPrice, uint256 rarePrice, uint256 legendaryPrice) = collectionManager.getLootboxOpeningPrice();
     uint256 openPrice = commonPrice;
     
     if (rarity == IEnums.Rarity.RARE) {
@@ -661,12 +674,12 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
 
     require(openPrice < maxPrice, "open price too high");
 
-    d.clny().burn(msg.sender, openPrice, REASON_OPEN_LOOTBOX);
-    d.clny().mint(ARTIST1_ROYALTY_WALLET, openPrice * 3_000 / 100_000, REASON_ARTIST_ROYALTY); // 3% to the artist
-    d.clny().mint(ARTIST2_ROYALTY_WALLET, openPrice * 3_000 / 100_000, REASON_ARTIST_ROYALTY); // 3% to the artist
-    d.lootboxes().burn(tokenId);
+    clny.burn(msg.sender, openPrice, REASON_OPEN_LOOTBOX);
+    clny.mint(ARTIST1_ROYALTY_WALLET, openPrice * 3_000 / 100_000, REASON_ARTIST_ROYALTY); // 3% to the artist
+    clny.mint(ARTIST2_ROYALTY_WALLET, openPrice * 3_000 / 100_000, REASON_ARTIST_ROYALTY); // 3% to the artist
+    lootboxes.burn(tokenId);
 
-    d.collectionManager().mintGear(msg.sender, rarity);
+    collectionManager.mintGear(msg.sender, rarity);
   }
 
   // for compatibility with Polygon

@@ -24,24 +24,16 @@ abstract contract Shares is IShares, Constants {
   mapping (uint256 => LandInfo) public landInfo;
   // to add variables here reduce `______gm_gap_0` in GameManager
 
-  function getLastRewardTime() internal view returns (uint256) {
-    if (lastRewardTime < startCLNYDate) {
-      return startCLNYDate;
-    } else {
-      return lastRewardTime;
-    }
-  }
-
   // Update reward variables to be up-to-date.
   function updatePool() internal {
-    if (block.timestamp <= getLastRewardTime()) {
+    if (block.timestamp <= lastRewardTime) {
       return;
     }
     if (totalShare == 0) {
       lastRewardTime = block.timestamp;
       return;
     }
-    uint256 clnyReward = (block.timestamp - getLastRewardTime()) * clnyPerSecond;
+    uint256 clnyReward = (block.timestamp - lastRewardTime) * clnyPerSecond;
     accColonyPerShare = accColonyPerShare + clnyReward * 1e12 / totalShare;
     lastRewardTime = block.timestamp;
     d.clny().mint(address(this), clnyReward, REASON_SHARES_PREPARE_CLNY);
@@ -56,8 +48,8 @@ abstract contract Shares is IShares, Constants {
   function addToShare(uint256 tokenId, uint256 _share) internal {
     LandInfo storage land = landInfo[tokenId];
     uint256 _accColonyPerShare = accColonyPerShare;
-    if (block.timestamp > getLastRewardTime() && totalShare != 0) {
-      uint256 clnyReward = (block.timestamp - getLastRewardTime()) * clnyPerSecond;
+    if (block.timestamp > lastRewardTime && totalShare != 0) {
+      uint256 clnyReward = (block.timestamp - lastRewardTime) * clnyPerSecond;
       _accColonyPerShare = _accColonyPerShare + clnyReward * 1e12 / totalShare;
     }
     uint256 earned = land.share * _accColonyPerShare / 1e12 - land.rewardDebt;
@@ -65,30 +57,23 @@ abstract contract Shares is IShares, Constants {
     updatePool();
     land.share = land.share + _share;
     land.rewardDebt = land.share * accColonyPerShare / 1e12 - earned;
-    if (land.share > maxLandShares) maxLandShares = land.share;
-  }
-
-  function getShare(uint256 tokenId) external view returns (uint256) {
-    // TODO getShares(uint256[])
-    return landInfo[tokenId].share;
-  }
-
-  // Safe CLNY transfer function, just in case if pool doesn't have enough CLNY (impossible though)
-  function safeClnyTransfer(address _to, uint256 _amount) internal {
-    uint256 clnyBal = d.clny().balanceOf(address(this));
-    bool result = false;
-    if (_amount > clnyBal) {
-      result = d.clny().transfer(_to, clnyBal);
-    } else {
-      result = d.clny().transfer(_to, _amount);
+    if (land.share > maxLandShares) {
+      maxLandShares = land.share;
     }
-    require(result, 'transfer failed');
   }
 
-  function claimClnyWithoutPoolUpdate(uint256 tokenId) internal returns (uint256 pending) {
+  function claimClnyWithoutPoolUpdate(uint256 tokenId, ICLNY clny) internal returns (uint256 pending) {
     LandInfo storage land = landInfo[tokenId];
     pending = land.share * accColonyPerShare / 1e12 - land.rewardDebt;
     land.rewardDebt = (land.share * accColonyPerShare) / 1e12;
-    safeClnyTransfer(msg.sender, pending);
+
+    uint256 clnyBal = clny.balanceOf(address(this));
+    bool result = false;
+    if (pending > clnyBal) {
+      result = clny.transfer(msg.sender, clnyBal);
+    } else {
+      result = clny.transfer(msg.sender, pending);
+    }
+    require(result, 'transfer failed');
   }
 }

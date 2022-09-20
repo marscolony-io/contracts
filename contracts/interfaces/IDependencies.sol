@@ -47,4 +47,11 @@ interface IDependencies {
   function oracle() external view returns (IOracle);
   function salesManager() external view returns (ISalesManager);
   function backendSigner() external view returns (address);
+
+  function getTreasuryLiquidityClnyMc() external view returns (address, address, ICLNY, IMC);
+  function getCryochamberClny() external view returns (ICryochamber, ICLNY);
+  function getCollectionManagerClny() external view returns (ICollectionManager, ICLNY);
+  function getCollectionManagerClnyMc() external view returns (ICollectionManager, ICLNY, IMC);
+  function getCmMclLbClny() external view returns (ICollectionManager, IMartianColonists, ILootboxes, ICLNY);
+  function getCmMclClny() external view returns (ICollectionManager, IMartianColonists, ICLNY);
 }

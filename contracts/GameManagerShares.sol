@@ -118,31 +118,40 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     clnyPerSecond = newSpeed;
   }
 
-  function saleData() external view returns (bool allowed, uint256 minted, uint256 limit) {
-    allowed = !allowlistOnly || allowlist[msg.sender];
-    minted = IERC721Enumerable(address(d.mc())).totalSupply();
-    limit = allowlistLimit;
-  }
+  // function saleData() external view returns (bool allowed, uint256 minted, uint256 limit) {
+  //   allowed = !allowlistOnly || allowlist[msg.sender];
+  //   minted = IERC721Enumerable(address(d.mc())).totalSupply();
+  //   limit = allowlistLimit;
+  // }
 
   function setDependencies(IDependencies addr) external onlyOwner {
     d = addr;
   }
 
   function proceedFinishMissionMessage(string calldata message) private {
-    (uint256 _avatar, uint256 _land, uint256 _xp, uint256 _lootbox, uint256 _avatarReward, uint256 _landReward) = MissionLibrary.getAssetsFromFinishMissionMessage(message);
+    (
+      ICollectionManager collectionManager,
+      IMartianColonists martianColonists,
+      ILootboxes lootboxes,
+      ICLNY clny
+    ) = d.getCmMclLbClny();
 
-    require(_avatar > 0, "AvatarId is not valid");
-    require(_land > 0 && _land <= 21000, "LandId is not valid");
-    require(_xp >= 230 && _xp < 19971800, "XP increment is not valid");
-    require((_lootbox >= 0 && _lootbox <= 3) || (_lootbox >= 23 && _lootbox <= 25), "Lootbox code is not valid");
+    (
+      uint256 _avatar,
+      uint256 _land,
+      uint256 _xp,
+      uint256 _lootbox,
+      uint256 _avatarReward,
+      uint256 _landReward
+    ) = MissionLibrary.getAssetsFromFinishMissionMessage(message);
 
-    d.collectionManager().addXP(_avatar, _xp);
+    collectionManager.addXP(_avatar, _xp);
 
 
     if (_lootbox >= 1 && _lootbox <= 3) {
-      address avatarOwner = d.martianColonists().ownerOf(_avatar);
+      address avatarOwner = martianColonists.ownerOf(_avatar);
 
-      d.lootboxes().mint(avatarOwner, MissionLibrary.getLootboxRarity(_lootbox));
+      lootboxes.mint(avatarOwner, MissionLibrary.getLootboxRarity(_lootbox));
     } 
 
     if (_lootbox == 23) {
@@ -161,7 +170,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     landMissionEarnings[_land] += landOwnerClnyReward;
 
     uint256 avatarClnyReward = _avatarReward * 10**18 / 100;
-    d.clny().mint(d.martianColonists().ownerOf(_avatar), avatarClnyReward, REASON_MISSION_REWARD);
+    clny.mint(martianColonists.ownerOf(_avatar), avatarClnyReward, REASON_MISSION_REWARD);
 
     // one event for every reward type
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp
@@ -170,16 +179,17 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     emit MissionReward(_land, _avatar, 2, landOwnerClnyReward); // 2 - land owner CLNY reward
   }
 
-  function mintLootbox() public {
+  function mintLootbox() external {
+    ILootboxes lootboxes = d.lootboxes();
     if (lootBoxesToMint[msg.sender].legendary > 0) {
       lootBoxesToMint[msg.sender].legendary--;
-      d.lootboxes().mint(msg.sender, IEnums.Rarity.LEGENDARY);
+      lootboxes.mint(msg.sender, IEnums.Rarity.LEGENDARY);
     } else if (lootBoxesToMint[msg.sender].rare > 0) {
       lootBoxesToMint[msg.sender].rare--;
-      d.lootboxes().mint(msg.sender, IEnums.Rarity.RARE);
+      lootboxes.mint(msg.sender, IEnums.Rarity.RARE);
     } else if (lootBoxesToMint[msg.sender].common > 0) {
       lootBoxesToMint[msg.sender].common--;
-      d.lootboxes().mint(msg.sender, IEnums.Rarity.COMMON);
+      lootboxes.mint(msg.sender, IEnums.Rarity.COMMON);
     } else {
       revert("you cannot mint lootbox");
     }
@@ -230,13 +240,13 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     return feeWithDiscount;
   }
 
-  function getFee(uint256 tokenCount) public view returns (uint256) {
+  function getFee(uint256 tokenCount) external view returns (uint256) {
     return _getFee(tokenCount, address(0));
   }
 
   function getFee(uint256 tokenCount, address referrer) public view returns (uint256) {
     if (referrer == msg.sender) {
-      return getFee(tokenCount);
+      return _getFee(tokenCount, address(0));
     }
     return _getFee(tokenCount, referrer);
   }
@@ -251,18 +261,32 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   }
 
   function mintAvatar() external nonReentrant {
-    _deduct(MINT_AVATAR_LEVEL, REASON_MINT_AVATAR);
-    d.collectionManager().mint(msg.sender);
+    (ICollectionManager collectionManager, ICLNY clny) = d.getCollectionManagerClny();
+
+    // artist and team minting royalties
+    clny.mint(
+      0x2581A6C674D84dAD92A81E8d3072C9561c21B935,
+      AVATAR_MINT_COST * 3 / 100,
+      REASON_CREATORS_ROYALTY
+    );
+    clny.mint(
+      ARTIST1_ROYALTY_WALLET,
+      AVATAR_MINT_COST * 3 / 100,
+      REASON_ARTIST_ROYALTY
+    );
+    clny.burn(msg.sender, AVATAR_MINT_COST, REASON_MINT_AVATAR);
+    collectionManager.mint(msg.sender);
   }
 
   function mintLand(address _address, uint256 tokenId) private {
+    IMC mc = d.mc();
     require (tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
-    if (allowlistOnly) {
-      require(allowlist[msg.sender], 'you are not in allowlist');
-      require(IERC721Enumerable(address(d.mc())).totalSupply() < allowlistLimit, 'Presale limit has ended');
-    }
+    // if (allowlistOnly) {
+    //   require(allowlist[msg.sender], 'you are not in allowlist');
+    //   require(IERC721Enumerable(address(mc)).totalSupply() < allowlistLimit, 'Presale limit has ended');
+    // }
     setInitialShare(tokenId);
-    d.mc().mint(_address, tokenId);
+    mc.mint(_address, tokenId);
   }
 
 
@@ -280,7 +304,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
 
     require (msg.value == fee, 'Wrong claiming fee');
     updatePool();
-    for (uint8 i = 0; i < tokenIds.length; i++) {
+    for (uint256 i = 0; i < tokenIds.length; i++) {
       mintLand(msg.sender, tokenIds[i]);
     }
 
@@ -327,11 +351,12 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
    * 0x8456cb59
    */
   function pause() external onlyOwner {
+    (ICollectionManager collectionManager, ICLNY clny, IMC mc) = d.getCollectionManagerClnyMc();
     _pause();
-    d.clny().pause();
-    d.mc().pause();
-    if (address(d.collectionManager()) != address(0)) {
-      d.collectionManager().pause();
+    clny.pause();
+    mc.pause();
+    if (address(collectionManager) != address(0)) {
+      collectionManager.pause();
     }
   }
 
@@ -339,11 +364,12 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
    * 0x3f4ba83a
    */
   function unpause() external onlyOwner {
+    (ICollectionManager collectionManager, ICLNY clny, IMC mc) = d.getCollectionManagerClnyMc();
     _unpause();
-    d.clny().unpause();
-    d.mc().unpause();
-    if (address(d.collectionManager()) != address(0)) {
-      d.collectionManager().unpause();
+    clny.unpause();
+    mc.unpause();
+    if (address(collectionManager) != address(0)) {
+      collectionManager.unpause();
     }
   }
 
@@ -354,15 +380,13 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
 
   uint8 constant BASE_STATION = 0;
   /** these constants (for sure just `_deduct` function) can be changed while upgrading */
-  uint256 constant BASE_STATION_COST = 30;
-  uint256 constant AVATAR_MINT_COST = 90;
-  uint256 constant LEVEL_1_COST = 60;
-  uint256 constant LEVEL_2_COST = 120;
-  uint256 constant LEVEL_3_COST = 240;
+  uint256 constant BASE_STATION_COST = 30 * 10 ** 18;
+  uint256 constant AVATAR_MINT_COST = 90 * 10 ** 18;
+  uint256 constant LEVEL_1_COST = 60 * 10 ** 18;
+  uint256 constant LEVEL_2_COST = 120 * 10 ** 18;
+  uint256 constant LEVEL_3_COST = 240 * 10 ** 18;
   uint256 constant RENAME_AVATAR_COST = 25 * 10 ** 18;
-  uint8 constant MINT_AVATAR_LEVEL = 254;
-  uint8 constant PLACEMENT_LEVEL = 255;
-  uint256 constant PLACEMENT_COST = 5;
+  uint256 constant PLACEMENT_COST = 5 * 10 ** 18;
 
   /**
    * Burn CLNY token for building enhancements
@@ -371,33 +395,16 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   function _deduct(uint8 level, uint256 reason) private {
     uint256 amount = 0;
     if (level == BASE_STATION) {
-      amount = BASE_STATION_COST * 10 ** 18;
+      amount = BASE_STATION_COST;
     }
     if (level == 1) {
-      amount = LEVEL_1_COST * 10 ** 18;
+      amount = LEVEL_1_COST;
     }
     if (level == 2) {
-      amount = LEVEL_2_COST * 10 ** 18;
+      amount = LEVEL_2_COST;
     }
     if (level == 3) {
-      amount = LEVEL_3_COST * 10 ** 18;
-    }
-    if (level == PLACEMENT_LEVEL) {
-      amount = PLACEMENT_COST * 10 ** 18;
-    }
-    if (level == MINT_AVATAR_LEVEL) {
-      amount = AVATAR_MINT_COST * 10 ** 18;
-      // artist and team minting royalties
-      d.clny().mint(
-        0x2581A6C674D84dAD92A81E8d3072C9561c21B935,
-        AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
-        REASON_CREATORS_ROYALTY
-      );
-      d.clny().mint(
-        ARTIST1_ROYALTY_WALLET,
-        AVATAR_MINT_COST * 10 ** 18 * 3 / 100,
-        REASON_ARTIST_ROYALTY
-      );
+      amount = LEVEL_3_COST;
     }
     require (amount > 0, 'Wrong level');
     d.clny().burn(msg.sender, amount, reason);
@@ -412,19 +419,19 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     }
   }
 
-  // View function to see pending ColonyToken on frontend.
+  // View function to see pending ColonyToken on frontend
   /* 0xe9387504 */
   function getEarned(uint256 landId) public view returns (uint256) {
     if (lastRewardTime < startCLNYDate) {
       return 0;
     }
-    if (getLastRewardTime() == 0) {
+    if (lastRewardTime == 0) {
       return 0;
     }
     uint256 activeShares = getPassiveEarningSpeed(landId);
     uint256 _accColonyPerShare = accColonyPerShare;
-    if (block.timestamp > getLastRewardTime() && totalShare != 0) {
-      uint256 clnyReward = (block.timestamp - getLastRewardTime()) * clnyPerSecond;
+    if (block.timestamp > lastRewardTime && totalShare != 0) {
+      uint256 clnyReward = (block.timestamp - lastRewardTime) * clnyPerSecond;
       _accColonyPerShare = _accColonyPerShare + clnyReward * 1e12 / totalShare;
     }
     // we need to treat 0 as 1 because we migrate from allowlist and no-share minting
@@ -472,7 +479,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
       baseStationsPlacement[tokenId].y = y;
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
-      _deduct(PLACEMENT_LEVEL, REASON_PLACE);
+      d.clny().burn(msg.sender, PLACEMENT_COST, REASON_PLACE);
     } else {
       baseStationsPlacement[tokenId].x = x;
       baseStationsPlacement[tokenId].y = y;
@@ -516,7 +523,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
       transportPlacement[tokenId].y = y;
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
-      _deduct(PLACEMENT_LEVEL, REASON_PLACE);
+      d.clny().burn(msg.sender, PLACEMENT_COST, REASON_PLACE);
     } else {
       transportPlacement[tokenId].x = x;
       transportPlacement[tokenId].y = y;
@@ -560,7 +567,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
       robotAssemblyPlacement[tokenId].y = y;
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
-      _deduct(PLACEMENT_LEVEL, REASON_PLACE);
+      d.clny().burn(msg.sender, PLACEMENT_COST, REASON_PLACE);
     } else {
       robotAssemblyPlacement[tokenId].x = x;
       robotAssemblyPlacement[tokenId].y = y;
@@ -604,7 +611,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
       powerProductionPlacement[tokenId].y = y;
       // already placed -> new placement is for 5 clny
       // if users places back to 0, 0 it's ok not to deduct him 5 clny
-      _deduct(PLACEMENT_LEVEL, REASON_PLACE);
+      d.clny().burn(msg.sender, PLACEMENT_COST, REASON_PLACE);
     } else {
       powerProductionPlacement[tokenId].x = x;
       powerProductionPlacement[tokenId].y = y;
@@ -645,28 +652,35 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
    */
   function claimEarned(uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
     require (block.timestamp > startCLNYDate, 'CLNY not started');
-    require (tokenIds.length != 0, 'Empty array');
+
+    (
+      address treasury,
+      address liquidity,
+      ICLNY clny,
+      IMC mc
+    ) = d.getTreasuryLiquidityClnyMc();
+
     updatePool();
 
-    for (uint8 i = 0; i < tokenIds.length; i++) {
-      require (msg.sender == IOwnable(address(d.mc())).ownerOf(tokenIds[i]));
-      uint256 toUser = claimClnyWithoutPoolUpdate(tokenIds[i]);
-      uint256 toTreasury = toUser * 31 / 49;
-      uint256 toLiquidity = toUser * 20 / 49;
-      d.clny().mint(d.treasury(), toTreasury, REASON_TREASURY);
-      d.clny().mint(d.liquidity(), toLiquidity, REASON_LP_POOL);
+    uint256 toUser = 0;
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      require (msg.sender == IOwnable(address(mc)).ownerOf(tokenIds[i]));
+      toUser = toUser + claimClnyWithoutPoolUpdate(tokenIds[i], clny);
     }
+
+    clny.mint(treasury, toUser * 31 / 49, REASON_TREASURY);
+    clny.mint(liquidity, toUser * 20 / 49, REASON_LP_POOL);
   }
 
-  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
-    IERC20 tokenContract = IERC20(_tokenContract);
-    tokenContract.transfer(_whereTo, _amount);
-  }
+  // function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
+  //   IERC20 tokenContract = IERC20(_tokenContract);
+  //   tokenContract.transfer(_whereTo, _amount);
+  // }
 
   // referrers
 
   function setReferrerSettings(address referrer, uint64 discount, uint64 reward) external onlyOwner {
-    referrerSettings[referrer] = ReferrerSettings({discount: discount, reward: reward});
+    referrerSettings[referrer] = ReferrerSettings({ discount: discount, reward: reward });
   }
 
   function setReferrer(address referrer) private {
@@ -677,23 +691,30 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   }
 
   function purchaseCryochamber() external {
-    d.cryochamber().purchaseCryochamber(msg.sender);
+    (ICryochamber cryochamber, ICLNY clny) = d.getCryochamberClny();
+    cryochamber.purchaseCryochamber(msg.sender);
 
-    uint256 cryochamberPrice = d.cryochamber().cryochamberPrice();
-    d.clny().burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
-
+    uint256 cryochamberPrice = cryochamber.cryochamberPrice();
+    clny.burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
   }
 
   function purchaseCryochamberEnergy(uint256 amount) external {
-    d.cryochamber().purchaseCryochamberEnergy(msg.sender, amount);
+    (ICryochamber cryochamber, ICLNY clny) = d.getCryochamberClny();
+    cryochamber.purchaseCryochamberEnergy(msg.sender, amount);
 
-    uint256 energyPrice = d.cryochamber().energyPrice();
-    d.clny().burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
+    uint256 energyPrice = cryochamber.energyPrice();
+    clny.burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
   }
 
   function renameAvatar(uint256 avatarId, string calldata _name) external {
-    require(d.martianColonists().ownerOf(avatarId) == msg.sender, 'You are not the owner');
-    d.collectionManager().setNameByGameManager(avatarId, _name);
-    d.clny().burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
+    (
+      ICollectionManager collectionManager,
+      IMartianColonists martianColonists,
+      ICLNY clny
+    ) = d.getCmMclClny();
+
+    require(martianColonists.ownerOf(avatarId) == msg.sender, 'You are not the owner');
+    collectionManager.setNameByGameManager(avatarId, _name);
+    clny.burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
   }
 }

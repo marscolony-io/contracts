@@ -105,4 +105,28 @@ contract Dependencies is IDependencies, Ownable {
     deps[i++] = Dependency('backendSigner', backendSigner);
     return deps;
   }
+
+  function getTreasuryLiquidityClnyMc() external view returns (address, address, ICLNY, IMC) {
+    return (treasury, liquidity, clny, mc);
+  }
+
+  function getCryochamberClny() external view returns (ICryochamber, ICLNY) {
+    return (cryochamber, clny);
+  }
+
+  function getCollectionManagerClny() external view returns (ICollectionManager, ICLNY) {
+    return (collectionManager, clny);
+  }
+
+  function getCollectionManagerClnyMc() external view returns (ICollectionManager, ICLNY, IMC) {
+    return (collectionManager, clny, mc);
+  }
+
+  function getCmMclLbClny() external view returns (ICollectionManager, IMartianColonists, ILootboxes, ICLNY) {
+    return (collectionManager, martianColonists, lootboxes, clny);
+  }
+
+  function getCmMclClny() external view returns (ICollectionManager, IMartianColonists, ICLNY) {
+    return (collectionManager, martianColonists, clny);
+  }
 }
