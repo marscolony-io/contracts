@@ -2,9 +2,13 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import './interfaces/IDependencies.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
-contract Dependencies is IDependencies, Ownable {
+contract Dependencies is IDependencies, OwnableUpgradeable {
+  function initialize() external initializer {
+    __Ownable_init();
+  }
+
   struct Dependency {
     string name;
     address _addr;
@@ -24,8 +28,9 @@ contract Dependencies is IDependencies, Ownable {
   IOracle public oracle;
   ISalesManager public salesManager;
   address public backendSigner;
+  bool public sharesEconomy;
 
-  function owner() public view override(Ownable, IDependencies) returns (address) {
+  function owner() public view override(OwnableUpgradeable, IDependencies) returns (address) {
     return super.owner();
   }
 
@@ -83,6 +88,10 @@ contract Dependencies is IDependencies, Ownable {
 
   function setBackendSigner(address addr) external onlyOwner {
     backendSigner = addr;
+  }
+
+  function setSharesEconomy(bool val) external onlyOwner {
+    sharesEconomy = val;
   }
 
   function getDependencies() external view returns (Dependency[] memory) {

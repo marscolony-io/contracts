@@ -81,7 +81,8 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
 
   }
 
-  function setDependencies(IDependencies addr) external onlyOwner {
+  function setDependencies(IDependencies addr) external {
+    require (address(d) == address(0) || d.owner() == msg.sender);
     d = addr;
   }
 
@@ -154,23 +155,26 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   }
 
   function setName(uint256 tokenId, string memory _name) external {
-    require (d.martianColonists().ownerOf(tokenId) == msg.sender, 'not your token');
+    IMartianColonists martianColonists = d.martianColonists();
+    require (martianColonists.ownerOf(tokenId) == msg.sender, 'not your token');
     require (bytes(_name).length > 0, 'empty name');
     require (bytes(_name).length <= 15, 'name too long');
-    require (bytes(d.martianColonists().names(tokenId)).length == 0, 'name is already set');
-    d.martianColonists().setName(tokenId, _name);
+    require (bytes(martianColonists.names(tokenId)).length == 0, 'name is already set');
+    martianColonists.setName(tokenId, _name);
   }
 
   function setNameByGameManager(uint256 tokenId, string memory _name) external onlyGameManager {
+    IMartianColonists martianColonists = d.martianColonists();
     require (bytes(_name).length <= 15, 'name too long');
-    require (keccak256(abi.encodePacked(_name)) != keccak256(abi.encodePacked(d.martianColonists().names(tokenId))), 'same name');
-    d.martianColonists().setName(tokenId, _name);
+    require (keccak256(abi.encodePacked(_name)) != keccak256(abi.encodePacked(martianColonists.names(tokenId))), 'same name');
+    martianColonists.setName(tokenId, _name);
   }
 
   function getNames(uint256[] calldata tokenIds) external view returns (string[] memory) {
+    IMartianColonists martianColonists = d.martianColonists();
     string[] memory result = new string[](tokenIds.length);
     for (uint256 i = 0; i < tokenIds.length; i++) {
-      result[i] = d.martianColonists().names(tokenIds[i]);
+      result[i] = martianColonists.names(tokenIds[i]);
     }
     return result;
   }

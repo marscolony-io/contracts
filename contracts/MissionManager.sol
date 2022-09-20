@@ -46,7 +46,8 @@ contract MissionManager is GameConnection, PausableUpgradeable {
     d = _d;
   }
 
-  function setDependencies(IDependencies addr) external onlyOwner {
+  function setDependencies(IDependencies addr) external {
+    require (address(d) == address(0) || d.owner() == msg.sender);
     d = addr;
   }
 
@@ -63,7 +64,7 @@ contract MissionManager is GameConnection, PausableUpgradeable {
   function _calculateLandMissionsLimits(uint256 landId) private view returns (uint256 availableMissionCount) {
     uint256[] memory landIds = new uint256[](1);
     landIds[0] = landId;
-    IGameManager  gameManager = IGameManager(GameManager);
+    IGameManager gameManager = d.gameManager();
     IGameManager.AttributeData memory landAttributes = gameManager.getAttributesMany(landIds)[0];
 
     if (landAttributes.baseStation == 0) {
@@ -83,17 +84,19 @@ contract MissionManager is GameConnection, PausableUpgradeable {
 
   function getRevshareForLands(uint256[] memory tokenIds) view external returns (uint8[] memory) {
     uint8[] memory result = new uint8[](tokenIds.length);
+    IMC mc = d.mc();
     for (uint256 i = 0; i < tokenIds.length; i++) {
-      result[i] = getRevshare(IOwnable(address(d.mc())).ownerOf(tokenIds[i]));
+      result[i] = getRevshare(IOwnable(address(mc)).ownerOf(tokenIds[i]));
     }
     return result;
   } 
 
   function _getLandData(uint256 landId) private view returns (LandData memory) {
-    address landOwner = IOwnable(address(d.mc())).ownerOf(landId);
+    IMC mc = d.mc();
+    address landOwner = IOwnable(address(mc)).ownerOf(landId);
     bool isPrivate = accountMissionState[landOwner].isAccountPrivate;
     uint256 availableMissionCount = _calculateLandMissionsLimits(landId);
-    uint8 revshare = getRevshare(IOwnable(address(d.mc())).ownerOf(landId));
+    uint8 revshare = getRevshare(IOwnable(address(mc)).ownerOf(landId));
 
     return LandData(
       availableMissionCount,

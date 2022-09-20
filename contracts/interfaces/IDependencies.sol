@@ -29,6 +29,7 @@ interface IDependencies {
     IOracle oracle;
     ISalesManager salesManager;
     address backendSigner;
+    bool sharesEconomy;
   }
 
   function owner() external view returns (address);
@@ -47,6 +48,7 @@ interface IDependencies {
   function oracle() external view returns (IOracle);
   function salesManager() external view returns (ISalesManager);
   function backendSigner() external view returns (address);
+  function sharesEconomy() external view returns (bool);
 
   function getTreasuryLiquidityClnyMc() external view returns (address, address, ICLNY, IMC);
   function getCryochamberClny() external view returns (ICryochamber, ICLNY);

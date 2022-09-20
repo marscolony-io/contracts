@@ -124,7 +124,8 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   //   limit = allowlistLimit;
   // }
 
-  function setDependencies(IDependencies addr) external onlyOwner {
+  function setDependencies(IDependencies addr) external {
+    require (address(d) == address(0) || d.owner() == msg.sender);
     d = addr;
   }
 

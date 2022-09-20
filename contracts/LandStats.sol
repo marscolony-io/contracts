@@ -33,9 +33,7 @@ contract LandStats {
 
   IDependencies public d;
 
-  constructor (
-    IDependencies _d
-  ) {
+  constructor (IDependencies _d) {
     d = _d;
   }
 
@@ -70,19 +68,22 @@ contract LandStats {
   }
 
   function gelClnyStat() external view returns (ClnyStat memory result) {
-    IShares gm = IShares(address(d.gameManager()));
-    uint256 colonyDaySupply = gm.clnyPerSecond() * 24 * 60 * 60;
-    uint256 landsClaimed = IERC721Enumerable(address(d.mc())).totalSupply();
-    uint256 totalShare = gm.totalShare();
-    uint256 maxLandShares = gm.maxLandShares();
+    bool sharesEconomy = d.sharesEconomy();
+    if (sharesEconomy) {
+      IShares gm = IShares(address(d.gameManager()));
+      uint256 colonyDaySupply = gm.clnyPerSecond() * 24 * 60 * 60;
+      uint256 landsClaimed = IERC721Enumerable(address(d.mc())).totalSupply();
+      uint256 totalShare = gm.totalShare();
+      uint256 maxLandShares = gm.maxLandShares();
 
-    for (uint256 reason = 0; reason <= 150; reason++) {
-      result.burned += d.clny().burnedStats(reason);
-      result.minted += d.clny().mintedStats(reason);
+      for (uint256 reason = 0; reason <= 150; reason++) {
+        result.burned += d.clny().burnedStats(reason);
+        result.minted += d.clny().mintedStats(reason);
+      }
+      
+      result.avg = colonyDaySupply / landsClaimed;
+      result.max = ( colonyDaySupply / totalShare ) * maxLandShares;
     }
-    
-    result.avg = colonyDaySupply / landsClaimed;
-    result.max = ( colonyDaySupply / totalShare ) * maxLandShares;
-    return result;
+    // else - empty result yet
   }
 }

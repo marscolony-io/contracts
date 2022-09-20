@@ -55,6 +55,11 @@ contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber
     xpAdditions = [500,560,627,702,786,881,986,1105,1237,1386,1552,1739,1947,2181,2443,2736,3065,3433,3844,4306,4823,5401,6050,6776,7589,8500,9520,10662,11941,13374,14979,16777,18790,21045,23571,26399,29567,33115,37089,41540,46525,52108,58361,65364,73208,81993,91833,102853,115195,129018,144501,161841,181262,203013,227375,254660,285219,319445,357779,400712,448798,502654,562972,630529,706193,790936,885848,992150,1111208,1244553,1393899,1561167,1748508,1958329,2193328,2456527,2751311,3081468,3451244,3865394,4329241,4848750,5430600,6082272,6812145,7629602,8545155,9570573,10719042,12005327,13445967,15059483,16866621,18890615,21157489,23696388,26539954,29724749,33291719,37286725];  
   }
 
+  function setDependencies(IDependencies addr) external {
+    require (address(d) == address(0) || d.owner() == msg.sender);
+    d = addr;
+  }
+
   function setCryochamberPrice(uint256 _price) external onlyOwner whenNotPaused {
     cryochamberPrice = _price;
   }
@@ -212,5 +217,4 @@ contract CryochamberManager is GameConnection, PausableUpgradeable, ICryochamber
   function getAvatarCryoStatus(uint256 avatarId) public override view returns (CryoTime memory) {
     return cryos[avatarId];
   }
-
 }
