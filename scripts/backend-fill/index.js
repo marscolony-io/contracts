@@ -46,7 +46,7 @@ module.exports = async (callback) => {
       console.log(`claim ${userLandsCount} lands for user `, userId);
 
       while (userLandsIds.length < userLandsCount) {
-        const landId = Math.ceil(Math.random() * 21000);
+        const landId = Math.ceil(Math.random() * 20999);
         // console.log({ landId });
         if (claimedLands.has(landId)) continue;
 
@@ -166,22 +166,74 @@ module.exports = async (callback) => {
     // console.log("set revshare 90 for user4");
     // await msn.setAccountRevshare(90, { from: accounts[4] });
 
-    // mint gears
-    await gears.setCollectionManager(accounts[0], { from: accounts[0] });
-    await gears.mint(accounts[1], 0, 1, 1, 100);
-    await gears.mint(accounts[1], 0, 2, 1, 150);
-    await gears.lockGear(2);
+    // mint gears and lock for use in backend server tests
+    await gears.setCollectionManager(accounts[1], { from: accounts[0] });
+    await gears.mint(accounts[1], 0, 1, 1, 100, { from: accounts[1] });
+    await gears.mint(accounts[1], 0, 2, 1, 150, { from: accounts[1] });
+    await gears.lockGear(1, { from: accounts[1] });
+    await gears.lockGear(2, { from: accounts[1] });
+    await gears.setCollectionManager(collection.address, { from: accounts[0] });
 
     // oracle
     await oracle.addRelayer(accounts[0]);
 
-    /*
-    MISSION_MANAGER=0xC0633bcaB848D1738Ad22A05135C8E9EC9265092
-    GAME_MANAGER=0xc65F8BA708814653EDdCe0e9f75827fe309E29aD
-    AVATAR_MANAGER=0xdE165766CC7C48C556c8C20247b322Dd23EB313a
-    MC=0xc268D8b64ce7DB6Eb8C29562Ae538005Fded299A
-    MCLN=0xDEfafb07765D9D0F897260BE1389743A09802F20
-    */
+    // user to test mining mission
+
+    const ownerOf3 = await nft.ownerOf(3);
+    console.log("owner Of avatar 3", ownerOf3);
+
+    await gm.claim([21000], {
+      value: web3.utils.toWei((0.1).toString()),
+      from: ownerOf3,
+    });
+
+    const avatar3OwnerLand = 21000; // userLandsMap.get(ownerOf3);
+    console.log({ avatar3OwnerLand });
+
+    await gm.buildAndPlaceBaseStation(avatar3OwnerLand, 5, 7, {
+      from: ownerOf3,
+    });
+
+    await gm.buildTransport(avatar3OwnerLand, 1, { from: ownerOf3 });
+    await gm.buildRobotAssembly(avatar3OwnerLand, 1, { from: ownerOf3 });
+    await gm.buildPowerProduction(avatar3OwnerLand, 1, { from: ownerOf3 });
+
+    await gm.buildTransport(avatar3OwnerLand, 2, { from: ownerOf3 });
+    await gm.buildRobotAssembly(avatar3OwnerLand, 2, { from: ownerOf3 });
+    await gm.buildPowerProduction(avatar3OwnerLand, 2, { from: ownerOf3 });
+
+    await gm.buildTransport(avatar3OwnerLand, 3, { from: ownerOf3 });
+    await gm.buildRobotAssembly(avatar3OwnerLand, 3, { from: ownerOf3 });
+    await gm.buildPowerProduction(avatar3OwnerLand, 3, {
+      from: ownerOf3,
+    });
+
+    await gears.setCollectionManager(accounts[0], { from: accounts[0] });
+    await gears.mint(ownerOf3, 0, 0, 1, 1, { from: accounts[0] });
+    await gears.mint(ownerOf3, 0, 7, 3, 1, { from: accounts[0] });
+    await gears.mint(ownerOf3, 1, 5, 2, 150, { from: accounts[0] });
+    await gears.mint(ownerOf3, 2, 12, 4, 150, { from: accounts[0] });
+
+    await gears.setCollectionManager(collection.address, { from: accounts[0] });
+
+    const lastGearId = parseInt(await gears.totalSupply());
+    console.log({ lastGearId: lastGearId });
+
+    const gear = await gears.gears(lastGearId);
+    console.log({ gear: parseInt(gear.category) });
+
+    await collection.setLocks(
+      lastGearId,
+      lastGearId - 1,
+      lastGearId - 2,
+      lastGearId - 3,
+      {
+        from: ownerOf3,
+      }
+    );
+
+    // ---
+
     console.log(`copy lines below and paste to the backend's .test.env
 
 MISSION_MANAGER=${msn.address}
@@ -190,8 +242,10 @@ COLLECTION_MANAGER=${collection.address}
 MC=${mc.address}
 MCLN=${nft.address}
 CRYO=${cryo.address}
-GEAR=${gears.address}
+GEARS=${gears.address}
 ORACLE=${oracle.address}
+TEST_PLAYER=${ownerOf3}
+TEST_PLAYER_LAND=${avatar3OwnerLand}
 `);
 
     callback();

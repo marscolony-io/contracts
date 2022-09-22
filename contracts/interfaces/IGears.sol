@@ -19,5 +19,5 @@ interface IGears {
   function setBaseURI(string memory newURI) external;
   function lockGear(uint256 tokenId) external;
   function unlockGear(uint256 tokenId) external;
-  function gears(uint256 tokenId) external returns (IEnums.Rarity, uint256, uint256, uint256, bool, bool);
+  function gears(uint256 tokenId) external view returns (IEnums.Rarity, uint256, uint256, uint256, bool, bool);
 }

@@ -49,6 +49,4 @@ abstract contract Constants {
   uint256 constant RARE_OPENING_PRICE_USD = 400;
   uint256 constant LEGENDARY_OPENING_PRICE_USD = 800;
 
-
-
 }

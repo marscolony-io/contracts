@@ -25,12 +25,15 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   address public gearsAddress;
 
   struct GearLocks {
-    uint256 transportId;
-    uint256[] gearsId;
+    uint64 transportId;
+    uint64 gear1Id;
+    uint64 gear2Id;
+    uint64 gear3Id;
     bool set;
+    uint16 locks;
   }
 
-  mapping (address => GearLocks) gearLocks;
+  mapping (address => GearLocks) public gearLocks;
 
   IGears.Gear[] public initialCommonGears;
   IGears.Gear[] public initialRareGears;
@@ -39,7 +42,10 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
 
   address oracleAddress;
 
-  uint256[41] private ______mc_gap;
+  // from 0 to 100
+  mapping(address => uint8) public transportDamage; 
+
+  uint256[40] private ______mc_gap;
 
     modifier onlyCryochamberManager {
     require(msg.sender == address(cryochambers), 'Only CryochamberManager');
@@ -204,7 +210,7 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
 
   }
 
-   function randomNumber(uint modulo) private view returns (uint) {
+  function randomNumber(uint modulo) private view returns (uint) {
     return (uint(blockhash(block.number - 1)) + block.timestamp) % modulo;
   }
 
@@ -243,64 +249,118 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     return gear;
   }
 
-  function isGearCategoryChoosenBefore(uint256[] memory categories, uint256 category) private pure returns (bool) {
-    for (uint i = 0; i < categories.length; i++) {
-      if (categories[i] == category) {
-        return true;
-      }
-    }
-    return false;
+  function isUnique(uint64 idToCheck, uint64 id1, uint64 id2, uint64 id3) internal pure returns(bool) {
+    return idToCheck != id1 && idToCheck != id2 && idToCheck != id3;
   }
 
-  function setLocks(uint256[] calldata tokenIds, uint256 transportId) external {
+  function setLocks(uint64 transportId, uint64 gear1Id, uint64 gear2Id, uint64 gear3Id) external {
     
-    // if user doesn't lock special transport, he can lock up to 2 gears. otherwise up to 3 
-    if (transportId == 0) {
-      require(tokenIds.length <= 2, "you can't lock so many gears");
-    } else {
-      (IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability, bool locked, bool set) = IGears(gearsAddress).gears(transportId); 
-      require(category == CATEGORY_TRANSPORT, "transportId is not transport");
+    uint specialTransportType;
 
+    if (transportId != 0) {
       require(msg.sender == TokenInterface(gearsAddress).ownerOf(transportId), "you are not transport owner");
-      require(tokenIds.length <= 3, "you can't lock so many gears");
+      (, uint256 gearType, uint256 category, , , ) = IGears(gearsAddress).gears(transportId); 
+      require(category == CATEGORY_TRANSPORT, "transportId is not transport");
+      specialTransportType = gearType;
     }
 
-    // can not lock gears of the same categories
-    uint256[] memory choosenCategories = new uint256[](3);
-    for (uint i = 0; i < tokenIds.length; i++) {
-      require(msg.sender == TokenInterface(gearsAddress).ownerOf(tokenIds[i]), "you are not gear owner");
-      (IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability, bool locked, bool set) = IGears(gearsAddress).gears(tokenIds[i]);
-      require(category != CATEGORY_TRANSPORT, "can not lock transport");
-      require(!isGearCategoryChoosenBefore(choosenCategories, category), "you can't lock gears of the same category");
-      choosenCategories[i] = category;
+    uint256 gear1Category;
+    uint256 gear2Category;
+    uint256 gear3Category;
+
+    uint gearsCount;
+
+    if (gear1Id != 0) {
+      require(msg.sender == TokenInterface(gearsAddress).ownerOf(gear1Id), "you are not gear owner");
+      (, , uint256 category, , , ) = IGears(gearsAddress).gears(gear1Id);
+      require(category != CATEGORY_TRANSPORT, "can not lock transport as gear");
+      gear1Category = category;
+      gearsCount+=1;
     }
 
+    if (gear2Id != 0) {
+      require(msg.sender == TokenInterface(gearsAddress).ownerOf(gear2Id), "you are not gear owner");
+      (, , uint256 category, , , ) = IGears(gearsAddress).gears(gear2Id);
+      require(category != CATEGORY_TRANSPORT, "can not lock transport as gear");
+      gear2Category = category;
+      gearsCount+=1;
+    }
+
+    if (gear3Id != 0) {
+      require(msg.sender == TokenInterface(gearsAddress).ownerOf(gear3Id), "you are not gear owner");
+      (, , uint256 category, , , ) = IGears(gearsAddress).gears(gear3Id);
+      require(category != CATEGORY_TRANSPORT, "can not lock transport as gear");
+      gear3Category = category;
+      gearsCount+=1;
+    }
+
+        // if user doesn't lock special transport, he can lock up to 2 gears. otherwise up to 3 
+    if (specialTransportType != THE_NEBUCHADNEZZAR) {
+      require(gearsCount < 3, "can not lock 3 gears without special transport");
+    }
+
+
+    if (gear1Id != 0 && gear2Id != 0) {
+      require(gear1Category != gear2Category, "you can't lock gears of the same category");
+    }
+
+    if (gear1Id != 0 && gear3Id != 0) {
+      require(gear1Category != gear3Category, "you can't lock gears of the same category");
+    }
+
+    if (gear2Id != 0 && gear3Id != 0) {
+      require(gear2Category != gear3Category, "you can't lock gears of the same category");
+    }
 
     // unlock prev locked transport and gear
     GearLocks memory prevLockedGears = gearLocks[msg.sender];
 
     if (prevLockedGears.set) {
-      if (prevLockedGears.transportId > 0) {
+      if (prevLockedGears.transportId != 0 && prevLockedGears.transportId != transportId) {
         IGears(gearsAddress).unlockGear(prevLockedGears.transportId);
       }
 
-      for (uint i = 0; i < prevLockedGears.gearsId.length; i++) {
-        IGears(gearsAddress).unlockGear(prevLockedGears.gearsId[i]);
+      if (isUnique(prevLockedGears.gear1Id, gear1Id, gear2Id, gear3Id)) {
+        IGears(gearsAddress).unlockGear(prevLockedGears.gear1Id);
       }
+
+      if (isUnique(prevLockedGears.gear2Id, gear1Id, gear2Id, gear3Id)) {
+        IGears(gearsAddress).unlockGear(prevLockedGears.gear2Id);
+      }
+
+      if (isUnique(prevLockedGears.gear3Id, gear1Id, gear2Id, gear3Id)) {
+        IGears(gearsAddress).unlockGear(prevLockedGears.gear3Id);
+      }
+    }
+
+    // update state by rewrite
+    uint16 locks = prevLockedGears.locks;
+    if (locks == type(uint16).max) {
+      locks = 0;
+    } else {
+      locks++;
     }
 
     // lock current gears
 
-    if (transportId > 0) {
+    if (transportId != 0 && transportId != prevLockedGears.transportId ) {
       IGears(gearsAddress).lockGear(transportId);
     }
 
-    for (uint i = 0; i < tokenIds.length; i++) {
-      IGears(gearsAddress).lockGear(tokenIds[i]);
+    if (gear1Id != 0 && isUnique(gear1Id, prevLockedGears.gear1Id, prevLockedGears.gear2Id, prevLockedGears.gear3Id)) {
+      IGears(gearsAddress).lockGear(gear1Id);
     }
 
-    // update state by rewrite
-    gearLocks[msg.sender] = GearLocks(transportId, tokenIds, true);
+    if (gear2Id != 0 && isUnique(gear2Id, prevLockedGears.gear1Id, prevLockedGears.gear2Id, prevLockedGears.gear3Id)) {
+      IGears(gearsAddress).lockGear(gear2Id);
+    }
+
+    if (gear3Id != 0 && isUnique(gear3Id, prevLockedGears.gear1Id, prevLockedGears.gear2Id, prevLockedGears.gear3Id)) {
+      IGears(gearsAddress).lockGear(gear3Id);
+    }
+
+    gearLocks[msg.sender] = GearLocks(transportId, gear1Id, gear2Id, gear3Id, true, locks);
+
   }
 
   function mintGear(address owner, IEnums.Rarity _lootBoxrarity) external onlyGameManager {
@@ -321,6 +381,47 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     common = COMMON_OPENING_PRICE_USD*clnyInUsd/100; // from cents to usd
     rare = RARE_OPENING_PRICE_USD*clnyInUsd/100; 
     legendary = LEGENDARY_OPENING_PRICE_USD*clnyInUsd/100;
+  }
+
+  function getLockedGears(address user) external view returns (uint256[] memory, IGears.Gear[] memory, uint locksCount) {
+    GearLocks memory locks = gearLocks[user];
+
+    if (!locks.set) {
+      return (new uint256[](0), new IGears.Gear[](0), 0);
+    }
+
+    uint256[] memory ids = new uint256[](4);
+    IGears.Gear[] memory gearsResult = new IGears.Gear[](4);
+     
+    ids[0] = locks.transportId;
+    ids[1] = locks.gear1Id;
+    ids[2] = locks.gear2Id;
+    ids[3] = locks.gear3Id;
+     
+    (IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability, bool locked, bool set) = IGears(gearsAddress).gears(locks.transportId);
+    gearsResult[0] = IGears.Gear(rarity, gearType, category, durability,locked, set);
+
+    (rarity, gearType, category, durability, locked, set) = IGears(gearsAddress).gears(locks.gear1Id);
+    gearsResult[1] = IGears.Gear(rarity, gearType, category, durability, locked, set);
+
+    (rarity, gearType, category, durability, locked, set) = IGears(gearsAddress).gears(locks.gear2Id);
+    gearsResult[2] = IGears.Gear(rarity, gearType, category, durability,locked, set);
+
+    (rarity, gearType, category, durability, locked, set) = IGears(gearsAddress).gears(locks.gear3Id);
+    gearsResult[3] = IGears.Gear(rarity, gearType, category, durability,locked, set);
+      
+    return (ids, gearsResult, locks.locks);
+  }
+
+  function increaseTransortDamage(address transport, uint8 _damage) external onlyGameManager {
+    uint8 damage = transportDamage[transport];
+    
+    if(damage + _damage > 100) {
+      transportDamage[transport] = 100;
+      return;
+    }
+
+    transportDamage[transport] = damage + _damage;
   }
 
 }

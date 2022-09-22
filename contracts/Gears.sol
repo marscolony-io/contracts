@@ -99,6 +99,7 @@ contract Gears is ERC721Enumerable, IGears, Ownable {
     return (result, resultGears);
   }
 
+
   function allTokensPaginate(uint256 _from, uint256 _to) external view returns(uint256[] memory, Gear[] memory) {
     uint256 tokenCount = ERC721Enumerable.totalSupply();
     if (tokenCount <= _from || _from > _to || tokenCount == 0) {
