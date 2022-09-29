@@ -12,7 +12,6 @@ contract("CollectionManager", (accounts) => {
   let gm;
   let clny;
   let collection;
-  let avatars;
   let nft;
 
   const ROYALTY1 = "0x352c478CD91BA54615Cc1eDFbA4A3E7EC9f60EE1";
@@ -23,7 +22,7 @@ contract("CollectionManager", (accounts) => {
     clny = await CLNY.deployed();
     collection = await CollectionManager.deployed();
     nft = await NFT.deployed();
-    await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
+    await gm.setPrice(web3.utils.toWei("0.1"), { from: owner });
     await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });
     await time.increase(60 * 60 * 24 * 365);
@@ -41,7 +40,7 @@ contract("CollectionManager", (accounts) => {
       Math.round(
         (parseInt(supplyAfterMint) - parseInt(supplyBefore)) * 1e-18 * 10
       )
-    ).to.be.equal(-291);
+    ).to.be.equal(-282);
     // const royalty1 = parseInt(await clny.balanceOf(ROYALTY1));
     const royalty2 = parseInt(await clny.balanceOf(ROYALTY2));
     // expect(royalty1).to.be.equal(0.6 * 1e18);
@@ -63,7 +62,7 @@ contract("CollectionManager", (accounts) => {
     await expectRevert(gm.mintAvatar({ from: user1 }), "cannot mint");
     await expectRevert(
       collection.setMaxTokenId(15, { from: user1 }),
-      "Only DAO"
+      "Only owner"
     );
     await collection.setMaxTokenId(15, { from: owner });
     expect(await collection.ableToMint()).to.be.true;
@@ -88,7 +87,7 @@ contract("CollectionManager", (accounts) => {
   it("rename avatar", async () => {
     await expectRevert(
       collection.setNameByGameManager(1, "test", { from: user1 }),
-      "Only GameManager"
+      "Only game manager"
     );
     await expectRevert(
       gm.renameAvatar(1, "test", { from: user2 }),
@@ -116,10 +115,5 @@ contract("CollectionManager", (accounts) => {
     expect(Array.isArray(xp)).to.be.true;
     expect(xp.length).to.be.equal(2);
     expect(parseInt(xp[0])).to.be.equal(100);
-  });
-
-  it("airdrops avatar", async () => {
-    await nft.airdrop(user1);
-    await expectRevert(nft.airdrop(user2, { from: user1 }), 'Only DAO');
   });
 });

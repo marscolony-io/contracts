@@ -12,6 +12,8 @@ const CollectionManager = artifacts.require("CollectionManager");
 const MissionManager = artifacts.require("MissionManager");
 const CryochamberManager = artifacts.require("CryochamberManager");
 const MissionLibrary = artifacts.require("MissionLibrary");
+const Oracle = artifacts.require("Oracle");
+const WETH = artifacts.require("WETH"); // mock for Oracle
 
 const ECONOMY = {
   SHARES: 1,
@@ -27,8 +29,13 @@ module.exports = async (deployer, network, [owner, , , , , , treasury, liquidity
   await deployer.deploy(MissionLibrary);
   await deployer.link(await MissionLibrary.deployed(), GameManager);
 
+  if (network === "development") {
+    const AnotherGameManager = economy === ECONOMY.SHARES ? GameManagerFixed : GameManagerShares;
+    await deployer.link(await MissionLibrary.deployed(), AnotherGameManager);
+    await deployProxy(AnotherGameManager, [d.address], { deployer, unsafeAllow: ['external-library-linking'] });
+  }
+
   await deployer.deploy(CLNY, 'CLNY', d.address);
-  console.log(await d.owner());
   await d.setClny(CLNY.address, { from: owner });
   await deployer.deploy(MC, 'https://meta.marscolony.io/', d.address);
   await d.setMc(MC.address);
@@ -50,7 +57,8 @@ module.exports = async (deployer, network, [owner, , , , , , treasury, liquidity
   await deployProxy(CryochamberManager, [d.address], { deployer });
   await d.setCryochamber(CryochamberManager.address);
 
-  // TODO oracle
+  await deployer.deploy(WETH);
+  await deployer.deploy(Oracle, WETH.address, CLNY.address, liquidity);
 
   await d.setTreasury(treasury);
   await d.setLiquidity(liquidity);

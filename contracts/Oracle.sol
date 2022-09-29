@@ -86,5 +86,4 @@ contract Oracle is Ownable, IOracle {
   function stop() external onlyRelayerOrOwner {
     lastUpdateTime = 0;
   }
-  
 }

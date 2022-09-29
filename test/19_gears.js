@@ -14,7 +14,7 @@ const ORACLE = artifacts.require("Oracle");
 const WETH = artifacts.require("Oracle");
 
 contract("Gears", (accounts) => {
-  const [owner, user1, user2] = accounts;
+  const [owner, user1, user2, , , , , liquidity] = accounts;
 
   let gm;
   let gears;
@@ -52,13 +52,13 @@ contract("Gears", (accounts) => {
     await gm.mintAvatar({ from: user1 });
     await gm.mintAvatar({ from: user1 });
     await gm.mintAvatar({ from: user1 });
-    await cm.setOracleAddress(oracle.address);
+    await d.setOracle(oracle.address);
 
     await oracle.addRelayer(owner, { from: owner });
 
-    await clny.setGameManager(owner, { from: owner });
+    await d.setGameManager(owner, { from: owner });
     await clny.mint(
-      "0xcd818813F038A4d1a27c84d24d74bBC21551FA83",
+      liquidity,
       new BN("2000000000000000000000"), // same as mocked weth, so rate should be 1/1
       1,
       {
@@ -84,7 +84,7 @@ contract("Gears", (accounts) => {
     });
 
     it("Mints if called by collection manager", async () => {
-      await gears.setCollectionManager(owner);
+      await d.setCollectionManager(owner);
       await gears.setBaseURI(baseUri);
       await gears.mint(user1, 1, 1, 1, 1);
       await gears.mint(user2, 1, 1, 1, 1);
@@ -463,10 +463,8 @@ contract("Gears", (accounts) => {
     });
 
     it("can be opened by owner", async () => {
-      await lootboxes.setGameManager(gm.address);
-      await clny.setGameManager(gm.address);
-      await gears.setCollectionManager(cm.address);
-      await cm.setGameManager(gm.address);
+      await d.setGameManager(gm.address);
+      await d.setCollectionManager(cm.address);
 
       const totalMintedGears = await gears.totalSupply();
       console.log("total minted gears", totalMintedGears.toString());
@@ -610,7 +608,7 @@ contract("Gears", (accounts) => {
       user2gearId = parseInt(await gears.lastTokenMinted(user2));
       // console.log({ user2gearId });
 
-      await gears.setCollectionManager(cm.address);
+      await d.setCollectionManager(cm.address);
     });
 
     it("can not lock more than 3 gears with transport", async () => {
