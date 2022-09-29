@@ -6,7 +6,7 @@ const MC = artifacts.require('MC');
 const CLNY = artifacts.require('CLNY');
 
 contract('Pause', (accounts) => {
-  const [DAO, user1] = accounts;
+  const [owner, user1] = accounts;
 
   let gm;
   let mc;
@@ -21,8 +21,8 @@ contract('Pause', (accounts) => {
 
   it('Pause', async () => {
     const tx = gm.pause({ from: user1 });
-    truffleAssert.reverts(tx, 'Only DAO');
-    await gm.pause({ from: DAO });
+    truffleAssert.reverts(tx, 'Only owner');
+    await gm.pause({ from: owner });
     const paused = await gm.paused();
     assert.equal(paused, true);
     const mcPaused = await mc.paused();
@@ -33,8 +33,8 @@ contract('Pause', (accounts) => {
   
   it('Unpause', async () => {
     const tx = gm.unpause({ from: user1 });
-    truffleAssert.reverts(tx, 'Only DAO');
-    await gm.unpause({ from: DAO });
+    truffleAssert.reverts(tx, 'Only owner');
+    await gm.unpause({ from: owner });
     const paused = await gm.paused();
     assert.isFalse(paused);
     const mcPaused = await mc.paused();

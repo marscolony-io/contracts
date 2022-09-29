@@ -212,7 +212,8 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     usedSignatures[signatureHashed] = true;
   }
 
-  function initialize() public initializer {
+  function initialize(IDependencies _d) public initializer {
+    d = _d;
     __Pausable_init();
     maxTokenId = 21000;
     price = 250 ether;
@@ -673,11 +674,6 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     clny.mint(liquidity, toUser * 20 / 49, REASON_LP_POOL);
   }
 
-  // function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
-  //   IERC20 tokenContract = IERC20(_tokenContract);
-  //   tokenContract.transfer(_whereTo, _amount);
-  // }
-
   // referrers
 
   function setReferrerSettings(address referrer, uint64 discount, uint64 reward) external onlyOwner {
@@ -717,5 +713,11 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     require(martianColonists.ownerOf(avatarId) == msg.sender, 'You are not the owner');
     collectionManager.setNameByGameManager(avatarId, _name);
     clny.burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
+  }
+
+
+  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
+    IERC20 tokenContract = IERC20(_tokenContract);
+    tokenContract.transfer(_whereTo, _amount);
   }
 }

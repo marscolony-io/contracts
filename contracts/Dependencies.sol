@@ -50,7 +50,7 @@ contract Dependencies is IDependencies, OwnableUpgradeable {
     collectionManager = addr;
   }
 
-  function setCyochamber(ICryochamber addr) external onlyOwner {
+  function setCryochamber(ICryochamber addr) external onlyOwner {
     cryochamber = addr;
   }
 

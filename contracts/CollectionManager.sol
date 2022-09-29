@@ -56,7 +56,8 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     _;
   }
 
-  function initialize() external initializer {
+  function initialize(IDependencies _d) external initializer {
+    d = _d;
     PausableUpgradeable.__Pausable_init();
     maxTokenId = 0;
 

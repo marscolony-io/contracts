@@ -29,6 +29,10 @@ contract CLNY is ERC20, Pausable {
     _;
   }
 
+  function setDependencies(IDependencies addr) external onlyOwner {
+    d = addr;
+  }
+
   mapping (uint256 => uint256) public burnedStats;
   mapping (uint256 => uint256) public mintedStats;
 

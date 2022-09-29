@@ -2,16 +2,16 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import "@openzeppelin/contracts/utils/Strings.sol";
-import './interfaces/IGears.sol';
+import './interfaces/IDependencies.sol';
 
-contract Gears is ERC721Enumerable, Ownable, IGears {
+contract Gears is ERC721Enumerable, IGears {
   using Strings for uint256;
 
   string private nftBaseURI;
-  address public collectionManager;
+  IDependencies public d;
+  
   mapping (uint256 => Gear) public gears;
   mapping (address => uint256) public lastTokenMinted;
   uint256 public nextIdToMint = 1;
@@ -19,21 +19,31 @@ contract Gears is ERC721Enumerable, Ownable, IGears {
 
 
   modifier onlyCollectionManager {
-    require(msg.sender == collectionManager, 'only collection manager');
+    require(msg.sender == address(d.collectionManager()), 'only collection manager');
+    _;
+  }
+
+  modifier onlyOwner {
+    require(msg.sender == d.owner(), 'Only owner');
     _;
   }
 
   modifier onlyTokenOwnerOrCollectionManager(uint256 tokenId) {
-    require(msg.sender == ownerOf(tokenId) || msg.sender == collectionManager, 'only token owner or collection manager');
+    require(msg.sender == ownerOf(tokenId) || msg.sender == address(d.collectionManager()), 'only token owner or collection manager');
     _;
   }
 
-  constructor (string memory _nftBaseURI) ERC721('Mining Mission Gear', 'MGR') {
-    nftBaseURI = _nftBaseURI;
+  function setDependencies(IDependencies addr) external onlyOwner {
+    d = addr;
   }
 
-  function setCollectionManager(address _collectionManager) external onlyOwner {
-    collectionManager = _collectionManager;
+  function owner() public view returns (address) {
+    return d.owner();
+  }
+
+  constructor (string memory _nftBaseURI, IDependencies _d) ERC721('Mining Mission Gear', 'MGR') {
+    d = _d;
+    nftBaseURI = _nftBaseURI;
   }
 
   function _baseURI() internal view virtual override returns (string memory) {

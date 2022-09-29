@@ -220,7 +220,8 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   //   return result;
   // }
 
-  function initialize() public initializer {
+  function initialize(IDependencies _d) public initializer {
+    d = _d;
     __Pausable_init();
     maxTokenId = 21000;
     price = 250 ether;
@@ -696,8 +697,8 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     return 0;
   }
 
-  // function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
-  //   IERC20 tokenContract = IERC20(_tokenContract);
-  //   tokenContract.transfer(_whereTo, _amount);
-  // }
+  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
+    IERC20 tokenContract = IERC20(_tokenContract);
+    tokenContract.transfer(_whereTo, _amount);
+  }
 }

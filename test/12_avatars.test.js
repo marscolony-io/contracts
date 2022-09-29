@@ -7,7 +7,7 @@ const CollectionManager = artifacts.require("CollectionManager");
 const NFT = artifacts.require("MartianColonists");
 
 contract("CollectionManager", (accounts) => {
-  const [DAO, user1, user2] = accounts;
+  const [owner, user1, user2] = accounts;
 
   let gm;
   let clny;
@@ -65,7 +65,7 @@ contract("CollectionManager", (accounts) => {
       collection.setMaxTokenId(15, { from: user1 }),
       "Only DAO"
     );
-    await collection.setMaxTokenId(15, { from: DAO });
+    await collection.setMaxTokenId(15, { from: owner });
     expect(await collection.ableToMint()).to.be.true;
     await gm.mintAvatar({ from: user1 });
 

@@ -5,7 +5,7 @@ const GameManagerFixed = artifacts.require('GameManagerFixed');
 const CLNY = artifacts.require('CLNY');
 
 contract('Build and set position test', (accounts) => {
-  const [DAO, , , user1, user2] = accounts;
+  const [owner, , , user1, user2] = accounts;
 
   let gm;
   let clny;
@@ -16,8 +16,8 @@ contract('Build and set position test', (accounts) => {
   });
 
   it('Airdrop plots for testing', async () => {
-    await gm.airdrop(user1, 1, { from: DAO });
-    await gm.airdrop(user1, 2, { from: DAO });
+    await gm.airdrop(user1, 1, { from: owner });
+    await gm.airdrop(user1, 2, { from: owner });
     await time.increase(60 * 60 * 24 * 365.25 * 1000); // wait 10 years
     await gm.claimEarned([1], { from: user1 }); // claim 3652.5 clny
   });
@@ -117,10 +117,10 @@ contract('Build and set position test', (accounts) => {
   });
 
   it('Get enhancements (deprecated)', async () => {
-    const enh = await gm.getEnhancements(1, { from: user1 });
-    expect(parseInt(enh['0'])).to.be.equal(1);
-    expect(parseInt(enh['1'])).to.be.equal(3);
-    expect(parseInt(enh['2'])).to.be.equal(3);
-    expect(parseInt(enh['3'])).to.be.equal(3);
+    const enh = (await gm.getAttributesMany([1], { from: user1 }))[0];
+    expect(parseInt(enh['baseStation'])).to.be.equal(1);
+    expect(parseInt(enh['transport'])).to.be.equal(3);
+    expect(parseInt(enh['robotAssembly'])).to.be.equal(3);
+    expect(parseInt(enh['powerProduction'])).to.be.equal(3);
   });
 });

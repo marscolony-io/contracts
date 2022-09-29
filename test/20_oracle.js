@@ -8,7 +8,7 @@ const CLNY = artifacts.require("CLNY");
 const CollectionManager = artifacts.require("CollectionManager");
 
 contract("Gears", (accounts) => {
-  const [DAO, user1, user2, user3] = accounts;
+  const [owner, user1, user2, user3] = accounts;
 
   let oracle;
   let clny;
@@ -112,7 +112,7 @@ contract("Gears", (accounts) => {
 
     it("can be invoked by owner", async () => {
       await oracle.actualize("2000000000000000", { from: user2 });
-      await oracle.stop({ from: DAO });
+      await oracle.stop({ from: owner });
       const wethInUsd = await oracle.wethInUsd();
       expect(wethInUsd["valid"]).to.be.equal(false);
     });

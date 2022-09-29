@@ -1,32 +1,29 @@
 
 const { assert } = require('chai');
-const truffleAssert = require('truffle-assertions');
+const { expectRevert } = require('openzeppelin-test-helpers');
 
 const MC = artifacts.require('MC');
+const Dependencies = artifacts.require('Dependencies');
 
 contract('MC', (accounts) => {
-  const [DAO, user1, user2] = accounts;
+  const [owner, user1, user2] = accounts;
 
   let mc;
+  let d;
 
   before(async () => {
     mc = await MC.deployed();
+    d = await Dependencies.deployed();
   });
 
-  it('Set DAO as game manager from DAO', async () => {
-    await mc.setGameManager(DAO, { from: DAO });
+  it('Set owner as game manager from owner', async () => {
+    await d.setGameManager(owner, { from: owner });
   });
 
-  const GM = DAO; // GameManager is set here
-
-  it('Reverts when setting GM not from DAO', async () => {
-    const tx = mc.setGameManager(user1, { from: user1 });
-    await truffleAssert.reverts(tx, 'Ownable: caller is not the owner');
-  });
+  const GM = owner; // GameManager is set here
 
   it('Reverts when minting directly in mc not from GameManager', async () => {
-    const tx = mc.mint(user1, 456, { from: user1 });
-    await truffleAssert.reverts(tx, 'Only GameManager');
+    await expectRevert(mc.mint(user1, 456, { from: user1 }), 'Only game manager');
   });
 
   it('allMyTokens - zero', async () => {
@@ -43,40 +40,36 @@ contract('MC', (accounts) => {
     assert.equal(tokenURI, 'https://meta.marscolony.io/456');
   });
 
-  it('Cannot pause not from DAO', async () => {
-    const tx = mc.pause({ from: user1 });
-    await truffleAssert.reverts(tx, 'Only GameManager');
+  it('Cannot pause not from owner', async () => {
+    await expectRevert(mc.pause({ from: user1 }), 'Only game manager');
   });
 
-  it('Can pause from DAO', async () => {
-    await mc.pause({ from: DAO });
+  it('Can pause from owner', async () => {
+    await mc.pause({ from: owner });
   });
 
   // Paused from here
 
   it('Reverts when mints from GM while paused', async () => {
-    const tx = mc.mint(user1, 457, { from: GM });
-    await truffleAssert.reverts(tx, 'Pausable: paused');
+    await expectRevert(mc.mint(user1, 457, { from: GM }), 'Pausable: paused');
   });
 
   it('Unpause and check minting', async () => {
-    const tx = mc.unpause({ from: user1 });
-    await truffleAssert.reverts(tx, 'Only GameManager');
-    await mc.unpause({ from: DAO });
+    await expectRevert(mc.unpause({ from: user1 }), 'Only game manager');
+    await mc.unpause({ from: owner });
     await mc.mint(user1, 457, { from: GM });
   });
 
   // Already unpaused below
 
-  it('DAO changes base URI', async () => {
-    await mc.setBaseURI('https://yahoo.com/', { from: DAO });
+  it('Owner changes base URI', async () => {
+    await mc.setBaseURI('https://yahoo.com/', { from: owner });
     const tokenURI = await mc.tokenURI(456);
     assert.equal(tokenURI, 'https://yahoo.com/456');
   });
 
-  it('Not DAO cannot change base URI', async () => {
-    const tx = mc.setBaseURI('https://google.com/', { from: user1 });
-    await truffleAssert.reverts(tx, 'Ownable: caller is not the owner');
+  it('Not owner cannot change base URI', async () => {
+    await expectRevert(mc.setBaseURI('https://google.com/', { from: user1 }), 'Only owner');
   });
 
   it('Check allTokensPaginate view function', async () => {

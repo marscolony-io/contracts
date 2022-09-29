@@ -3,6 +3,7 @@ const truffleAssert = require("truffle-assertions");
 const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
 
 const GameManagerFixed = artifacts.require("GameManagerFixed");
+const Dependencies = artifacts.require("Dependencies");
 const GEARS = artifacts.require("Gears");
 const LOOTBOXES = artifacts.require("Lootboxes");
 const AVATARS = artifacts.require("MartianColonists");
@@ -13,7 +14,7 @@ const ORACLE = artifacts.require("Oracle");
 const WETH = artifacts.require("Oracle");
 
 contract("Gears", (accounts) => {
-  const [DAO, user1, user2] = accounts;
+  const [owner, user1, user2] = accounts;
 
   let gm;
   let gears;
@@ -24,6 +25,7 @@ contract("Gears", (accounts) => {
   let clny;
   let oracle;
   let wethAddress;
+  let d;
 
   const baseUri = "baseuri.test/";
 
@@ -38,9 +40,10 @@ contract("Gears", (accounts) => {
     oracle = await ORACLE.deployed();
     wethAddress = (await WETH.deployed()).address;
     clny = await CLNY.deployed();
+    d = await Dependencies.deployed();
 
     await cm.setMaxTokenId(5);
-    await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
+    await gm.setPrice(web3.utils.toWei("0.1"), { from: owner });
     await gm.claim([1], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });
     await time.increase(60 * 60 * 24 * 365 * 10);
@@ -51,20 +54,20 @@ contract("Gears", (accounts) => {
     await gm.mintAvatar({ from: user1 });
     await cm.setOracleAddress(oracle.address);
 
-    await oracle.addRelayer(DAO, { from: DAO });
+    await oracle.addRelayer(owner, { from: owner });
 
-    await clny.setGameManager(DAO, { from: DAO });
+    await clny.setGameManager(owner, { from: owner });
     await clny.mint(
       "0xcd818813F038A4d1a27c84d24d74bBC21551FA83",
       new BN("2000000000000000000000"), // same as mocked weth, so rate should be 1/1
       1,
       {
-        from: DAO,
+        from: owner,
       }
     );
 
     // set weth price to $1,
-    await oracle.actualize("1000000000000000000", { from: DAO });
+    await oracle.actualize("1000000000000000000", { from: owner });
   });
 
   describe("Mint", function() {
@@ -81,7 +84,7 @@ contract("Gears", (accounts) => {
     });
 
     it("Mints if called by collection manager", async () => {
-      await gears.setCollectionManager(DAO);
+      await gears.setCollectionManager(owner);
       await gears.setBaseURI(baseUri);
       await gears.mint(user1, 1, 1, 1, 1);
       await gears.mint(user2, 1, 1, 1, 1);
@@ -427,7 +430,7 @@ contract("Gears", (accounts) => {
 
     it("CollectionManager can burn even locked token", async () => {
       await gears.lockGear(1);
-      await gears.burn(1, { from: DAO });
+      await gears.burn(1, { from: owner });
       await expectRevert(
         gears.ownerOf(1),
         "ERC721: owner query for nonexistent token"
@@ -436,7 +439,7 @@ contract("Gears", (accounts) => {
   });
 
   // describe("airdrop", () => {
-  //   it("dao can make airdrop", async () => {
+  //   it("owner can make airdrop", async () => {
   //     const lastTokenId = await gears.nextIdToMint();
   //     await gears.airdrop(user1, 0, 15, 4, 100);
   //     const gear = await gears.gears(lastTokenId);
@@ -449,12 +452,12 @@ contract("Gears", (accounts) => {
 
   describe("gamemanager open lootbox", () => {
     it("can not be opened by not owner", async () => {
-      await lootboxes.setGameManager(DAO);
+      await d.setGameManager(owner);
 
-      await lootboxes.mint(user1, 1, { from: DAO });
-      await lootboxes.mint(user1, 1, { from: DAO });
+      await lootboxes.mint(user1, 1, { from: owner });
+      await lootboxes.mint(user1, 1, { from: owner });
       await expectRevert(
-        gm.openLootbox(1, 0, { from: DAO }),
+        gm.openLootbox(1, 0, { from: owner }),
         "You aren't this lootbox owner"
       );
     });
@@ -525,7 +528,7 @@ contract("Gears", (accounts) => {
           : openPrices["legendary"];
 
       // price of one and clny increase
-      await oracle.actualize("200000000000000000", { from: DAO });
+      await oracle.actualize("200000000000000000", { from: owner });
 
       await expectRevert(
         gm.openLootbox(2, openPrice.add(new BN(1)), { from: user1 }),
@@ -584,7 +587,7 @@ contract("Gears", (accounts) => {
     let user2gearId;
 
     it("mint gears and transports for next tests", async () => {
-      await gears.setCollectionManager(DAO);
+      await d.setCollectionManager(owner);
       await gears.mint(user1, 2, 12, 4, 100);
       user1transportId = parseInt(await gears.lastTokenMinted(user1));
       // console.log({ user1transportId });

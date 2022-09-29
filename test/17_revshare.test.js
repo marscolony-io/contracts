@@ -6,14 +6,14 @@ const MSN = artifacts.require("MissionManager");
 const GameManagerFixed = artifacts.require("GameManagerFixed");
 
 contract("MissionsManager", (accounts) => {
-    const [DAO, user1, user2] = accounts;
+    const [owner, user1, user2] = accounts;
   
     let msn;
 
     before(async () => {
         msn = await MSN.deployed();
         gm = await GameManagerFixed.deployed();
-        await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
+        await gm.setPrice(web3.utils.toWei("0.1"), { from: owner });
         await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
         await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });
         await msn.setAccountRevshare(40, { from: user2 });

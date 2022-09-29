@@ -3,6 +3,10 @@ const WETH = artifacts.require("WETH");
 const CLNY = artifacts.require("CLNY");
 
 module.exports = async (deployer, network) => {
+  if (network === "development") {
+    return; // this file for manual migrations; pass in tests
+  }
+  
   let weth;
   let wclny;
   let lpool;

@@ -4,7 +4,7 @@ const { time } = require('openzeppelin-test-helpers');
 const GameManagerFixed = artifacts.require('GameManagerFixed');
 
 contract('Attributes', (accounts) => {
-  const [DAO, user1] = accounts;
+  const [owner, user1] = accounts;
 
   let gm;
   let mc;
@@ -14,9 +14,9 @@ contract('Attributes', (accounts) => {
   });
 
   it('Initial speed and earnings', async () => {
-    await gm.airdrop(user1, 1, { from: DAO });
-    await gm.airdrop(user1, 2, { from: DAO });
-    await gm.airdrop(user1, 3, { from: DAO });
+    await gm.airdrop(user1, 1, { from: owner });
+    await gm.airdrop(user1, 2, { from: owner });
+    await gm.airdrop(user1, 3, { from: owner });
 
     const {
       baseStation,
