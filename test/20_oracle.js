@@ -3,21 +3,23 @@ const truffleAssert = require("truffle-assertions");
 const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
 
 const ORACLE = artifacts.require("Oracle");
-const WETH = artifacts.require("Oracle");
+const Dependencies = artifacts.require("Dependencies");
 const CLNY = artifacts.require("CLNY");
 const CollectionManager = artifacts.require("CollectionManager");
 
 contract("Gears", (accounts) => {
-  const [DAO, user1, user2, user3] = accounts;
+  const [owner, user1, user2, user3, , , , liquidity] = accounts;
 
   let oracle;
   let clny;
   let collectionManager;
+  let d;
 
   before(async () => {
     oracle = await ORACLE.deployed();
     clny = await CLNY.deployed();
     collectionManager = await CollectionManager.deployed();
+    d = await Dependencies.deployed();
   });
 
   describe("Relayers", function() {
@@ -92,7 +94,7 @@ contract("Gears", (accounts) => {
       // const isValid = await oracle.isRateValid();
       // console.log({ isValid });
       expect(wethInUsd["valid"]).to.be.equal(true);
-      expect(parseInt(wethInUsd["rate"])).to.be.equal(2000000000000000);
+      expect(parseInt(wethInUsd["rate"])).to.be.equal(500000000000000000000); // back rate
     });
 
     it("isRateValid invalid case", async () => {
@@ -112,7 +114,7 @@ contract("Gears", (accounts) => {
 
     it("can be invoked by owner", async () => {
       await oracle.actualize("2000000000000000", { from: user2 });
-      await oracle.stop({ from: DAO });
+      await oracle.stop({ from: owner });
       const wethInUsd = await oracle.wethInUsd();
       expect(wethInUsd["valid"]).to.be.equal(false);
     });
@@ -128,9 +130,9 @@ contract("Gears", (accounts) => {
   describe("CLNY price", () => {
     it("response with actual clny price", async () => {
       // send some clny to liq pool to get clny/weth price
-      await clny.setGameManager(accounts[0], { from: accounts[0] });
+      await d.setGameManager(accounts[0], { from: accounts[0] });
       await clny.mint(
-        "0xcd818813F038A4d1a27c84d24d74bBC21551FA83",
+        liquidity,
         new BN("2000000000000000000000"), // same as mocked weth, so rate should be 1/1
         1,
         {
@@ -150,19 +152,19 @@ contract("Gears", (accounts) => {
 
   describe("Lootbox opening price for frontend", () => {
     it("show opening prices for rarities", async () => {
-      await collectionManager.setOracleAddress(oracle.address);
+      await d.setOracle(oracle.address);
       const prices = await collectionManager.getLootboxOpeningPrice();
       // console.log(prices["common"].toString());
       // console.log(prices["rare"].toString());
       // console.log(prices["legendary"].toString());
       expect(prices["common"]).to.bignumber.be.equal(
-        new BN("1000000000000000000")
-      );
-      expect(prices["rare"]).to.bignumber.be.equal(
         new BN("2000000000000000000")
       );
+      expect(prices["rare"]).to.bignumber.be.equal(
+        new BN("4000000000000000000")
+      );
       expect(prices["legendary"]).to.bignumber.be.equal(
-        new BN("3000000000000000000")
+        new BN("8000000000000000000")
       );
     });
 

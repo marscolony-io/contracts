@@ -3,17 +3,25 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import './GameConnection.sol';
-import './interfaces/IMartianColonists.sol';
-import './interfaces/ICollectionManager.sol';
-import './interfaces/IGameManager.sol';
-import './interfaces/TokenInterface.sol';
+import './interfaces/IDependencies.sol';
+import './interfaces/IOwnable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 
 contract MissionManager is GameConnection, PausableUpgradeable {
-  IMartianColonists public collection;
-  ICollectionManager public collectionManager;
-  TokenInterface public MC;
+  address reserved0;
+  address reserved1;
+  address reserved2;
+
+  modifier onlyOwner {
+    require(msg.sender == d.owner(), 'Only owner');
+    _;
+  }
+
+  modifier onlyGameManager {
+    require(msg.sender == address(d.gameManager()), 'Only game manager');
+    _;
+  }
 
   struct AccountMissionState {
     bool isAccountPrivate; // don't allow missions on my lands
@@ -29,14 +37,18 @@ contract MissionManager is GameConnection, PausableUpgradeable {
     uint8 revshare;
   }
 
-  uint256[50] private ______gap;
+  IDependencies public d;
 
-  function initialize(IMartianColonists _collection, ICollectionManager _collectionManager, TokenInterface _MC) external initializer {
-    GameConnection.__GameConnection_init(msg.sender);
+  uint256[49] private ______gap;
+
+  function initialize(IDependencies _d) external initializer {
     PausableUpgradeable.__Pausable_init();
-    collection = _collection;
-    collectionManager = _collectionManager;
-    MC = _MC;
+    d = _d;
+  }
+
+  function setDependencies(IDependencies addr) external {
+    require (address(d) == address(0) || d.owner() == msg.sender);
+    d = addr;
   }
 
   function setAccountPrivacy(bool _isPrivate) external {
@@ -52,7 +64,7 @@ contract MissionManager is GameConnection, PausableUpgradeable {
   function _calculateLandMissionsLimits(uint256 landId) private view returns (uint256 availableMissionCount) {
     uint256[] memory landIds = new uint256[](1);
     landIds[0] = landId;
-    IGameManager  gameManager = IGameManager(GameManager);
+    IGameManager gameManager = d.gameManager();
     IGameManager.AttributeData memory landAttributes = gameManager.getAttributesMany(landIds)[0];
 
     if (landAttributes.baseStation == 0) {
@@ -72,17 +84,19 @@ contract MissionManager is GameConnection, PausableUpgradeable {
 
   function getRevshareForLands(uint256[] memory tokenIds) view external returns (uint8[] memory) {
     uint8[] memory result = new uint8[](tokenIds.length);
+    IMC mc = d.mc();
     for (uint256 i = 0; i < tokenIds.length; i++) {
-      result[i] = getRevshare(MC.ownerOf(tokenIds[i]));
+      result[i] = getRevshare(IOwnable(address(mc)).ownerOf(tokenIds[i]));
     }
     return result;
   } 
 
   function _getLandData(uint256 landId) private view returns (LandData memory) {
-    address landOwner = MC.ownerOf(landId);
+    IMC mc = d.mc();
+    address landOwner = IOwnable(address(mc)).ownerOf(landId);
     bool isPrivate = accountMissionState[landOwner].isAccountPrivate;
     uint256 availableMissionCount = _calculateLandMissionsLimits(landId);
-    uint8 revshare = getRevshare(MC.ownerOf(landId));
+    uint8 revshare = getRevshare(IOwnable(address(mc)).ownerOf(landId));
 
     return LandData(
       availableMissionCount,
@@ -112,7 +126,7 @@ contract MissionManager is GameConnection, PausableUpgradeable {
     _unpause();
   }
 
-  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
+  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
   }

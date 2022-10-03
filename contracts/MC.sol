@@ -8,28 +8,41 @@ import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
-import './interfaces/ISalesManager.sol';
 import "./legacy/impl/RoyaltiesV2Impl.sol";
 import "./legacy/LibPart.sol";
 import "./legacy/LibRoyaltiesV2.sol";
+import './interfaces/IMC.sol';
+import './interfaces/IDependencies.sol';
 
 
-contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2Impl {
+contract MC is IMC, ERC721Enumerable, Pausable, ReentrancyGuard, RoyaltiesV2Impl {
   string private nftBaseURI;
-  ISalesManager public salesManager;
-  address public GameManager;
+  IDependencies public d;
   bool migrationOpen = true;
 
   bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a; // royalties
 
-  constructor (string memory _nftBaseURI) ERC721('MarsColony', 'MC') {
+  constructor (string memory _nftBaseURI, IDependencies _d) ERC721('MarsColony', 'MC') {
+    d = _d;
     nftBaseURI = _nftBaseURI;
   }
 
-  modifier onlyGameManager {
-    require(msg.sender == GameManager, 'Only GameManager');
+  modifier onlyOwner {
+    require(msg.sender == d.owner(), 'Only owner');
     _;
+  }
+
+  modifier onlyGameManager {
+    require(msg.sender == address(d.gameManager()), 'Only game manager');
+    _;
+  }
+
+  function owner() public view returns (address) {
+    return d.owner();
+  }
+
+  function setDependencies(IDependencies addr) external onlyOwner {
+    d = addr;
   }
 
   function setRoyalties(address payable _royaltiesRecipientAddress, uint96 _percentageBasisPoints) public onlyOwner {
@@ -94,15 +107,8 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2
     _unpause();
   }
 
-  function setGameManager(address _GameManager) external onlyOwner {
-    GameManager = _GameManager;
-  }
-
-  function setSalesManager(ISalesManager _address) external onlyOwner {
-    salesManager = _address;
-  }
-
   function _afterTokenTransfer(address from, address to, uint256 tokenId) internal virtual override {
+    ISalesManager salesManager = d.salesManager();
     super._afterTokenTransfer(from, to, tokenId);
     if (address(salesManager) != address(0)) {
       salesManager.mcTransferHook(from, to, tokenId);
@@ -150,7 +156,7 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2
 
   /** for the in-game marketplace */
   function trade(address _from, address _to, uint256 _tokenId) external whenNotPaused nonReentrant {
-    require (msg.sender == address(salesManager), 'only SalesManager');
+    require (msg.sender == address(d.salesManager()), 'only SalesManager');
     _safeTransfer(_from, _to, _tokenId, '');
   }
 

@@ -10,7 +10,7 @@ const NFT = artifacts.require("MartianColonists");
 const CryochamberManager = artifacts.require("CryochamberManager");
 
 contract("CryochamberManager", (accounts) => {
-  const [DAO, user1, user2] = accounts;
+  const [owner, user1, user2] = accounts;
 
   let gm;
   let clny;
@@ -27,7 +27,7 @@ contract("CryochamberManager", (accounts) => {
     nft = await NFT.deployed();
     cryo = await CryochamberManager.deployed();
     await collection.setMaxTokenId(5);
-    await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
+    await gm.setPrice(web3.utils.toWei("0.1"), { from: owner });
     await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([101], { value: web3.utils.toWei("0.1"), from: user2 });
     await time.increase(time.duration.years(1));

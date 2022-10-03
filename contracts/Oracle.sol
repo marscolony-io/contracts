@@ -74,17 +74,16 @@ contract Oracle is Ownable, IOracle {
   function clnyInUsd() external view returns (bool valid, uint256 rate) {
     uint256 wethInLiq = IERC20(weth).balanceOf(lpool);
     uint256 clnyInLiq = IERC20(wclny).balanceOf(lpool);
-    uint256 wethPrice = wethInLiq * 1e18 / clnyInLiq;
-    return (isRateValid(), (wethPrice * wethUsdRate)/1e18);
+    uint256 clnyInWeth = clnyInLiq * 1e18 / wethInLiq;
+    return (isRateValid(), (clnyInWeth * wethUsdRate) / 1e18);
   }
 
   function actualize(uint256 price) external onlyRelayer {
     lastUpdateTime = block.timestamp;
-    wethUsdRate = price;
+    wethUsdRate = 1e18 * 1e18 / price;
   }
 
   function stop() external onlyRelayerOrOwner {
     lastUpdateTime = 0;
   }
-  
 }

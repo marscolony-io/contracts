@@ -8,7 +8,7 @@ const MCL = artifacts.require("MartianColonists");
 const CLNY = artifacts.require("CLNY");
 
 contract("Withdraw tokens", (accounts) => {
-  const [DAO, user1, user2] = accounts;
+  const [owner, user1, user2] = accounts;
 
   let gm;
   let mc;
@@ -22,7 +22,7 @@ contract("Withdraw tokens", (accounts) => {
     clny = await CLNY.deployed();
     cm = await CM.deployed();
     mcl = await MCL.deployed();
-    await gm.setPrice(web3.utils.toWei("1"), { from: DAO });
+    await gm.setPrice(web3.utils.toWei("1"), { from: owner });
     const fee = await gm.getFee(1);
     await gm.claim([100], { value: fee, from: user1 });
     await time.increase(60 * 60 * 24 * 365);
@@ -49,50 +49,50 @@ contract("Withdraw tokens", (accounts) => {
       clny.withdrawToken(clny.address, user2, web3.utils.toWei("1"), {
         from: user1,
       }),
-      "Only DAO"
+      "Only owner"
     );
     await clny.withdrawToken(clny.address, user2, web3.utils.toWei("1"), {
-      from: DAO,
+      from: owner,
     });
 
     await expectRevert(
       mc.withdrawToken(clny.address, user2, web3.utils.toWei("1"), {
         from: user1,
       }),
-      "Ownable: caller is not the owner"
+      "Only owner"
     );
     await mc.withdrawToken(clny.address, user2, web3.utils.toWei("1"), {
-      from: DAO,
+      from: owner,
     });
 
     await expectRevert(
       gm.withdrawToken(clny.address, user2, web3.utils.toWei("1"), {
         from: user1,
       }),
-      "Only DAO"
+      "Only owner"
     );
     await gm.withdrawToken(clny.address, user2, web3.utils.toWei("1"), {
-      from: DAO,
+      from: owner,
     });
 
     await expectRevert(
       cm.withdrawToken(clny.address, user2, web3.utils.toWei("1"), {
         from: user1,
       }),
-      "Only DAO"
+      "Only owner"
     );
     await cm.withdrawToken(clny.address, user2, web3.utils.toWei("1"), {
-      from: DAO,
+      from: owner,
     });
 
     await expectRevert(
       mcl.withdrawToken(clny.address, user2, web3.utils.toWei("1"), {
         from: user1,
       }),
-      "caller is not the owner"
+      "Only owner"
     );
     await mcl.withdrawToken(clny.address, user2, web3.utils.toWei("1"), {
-      from: DAO,
+      from: owner,
     });
 
     const clnyBalances2 = [

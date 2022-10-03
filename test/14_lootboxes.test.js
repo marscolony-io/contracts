@@ -7,15 +7,17 @@ const LBX = artifacts.require("Lootboxes");
 const AVATARS = artifacts.require("MartianColonists");
 const CM = artifacts.require("CollectionManager");
 const MC = artifacts.require("MC");
+const Dependencies = artifacts.require("Dependencies");
 
 contract("Lootboxes", (accounts) => {
-  const [DAO, user1, user2] = accounts;
+  const [owner, user1, user2] = accounts;
 
   let gm;
   let lbx;
   let avatars;
   let cm;
   let mc;
+  let d;
 
   const baseUri = "baseuri.test/";
 
@@ -27,9 +29,10 @@ contract("Lootboxes", (accounts) => {
     avatars = await AVATARS.deployed();
     cm = await CM.deployed();
     mc = await MC.deployed();
+    d = await Dependencies.deployed();
 
     await cm.setMaxTokenId(5);
-    await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
+    await gm.setPrice(web3.utils.toWei("0.1"), { from: owner });
     await gm.claim([1], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });
     await time.increase(60 * 60 * 24 * 365);
@@ -42,11 +45,11 @@ contract("Lootboxes", (accounts) => {
 
   describe("Mint", function() {
     it("Reverts if mint called not by mission manager", async () => {
-      await truffleAssert.reverts(lbx.mint(user2, 1), "only game manager");
+      await truffleAssert.reverts(lbx.mint(user2, 1), "Only game manager");
     });
 
     it("Mints if called by mission manager", async () => {
-      await lbx.setGameManager(DAO);
+      await d.setGameManager(owner);
       await lbx.setBaseURI(baseUri);
       await lbx.mint(user1, 0);
       nextToMint++;
@@ -97,12 +100,12 @@ contract("Lootboxes", (accounts) => {
 
   describe("Burn", function() {
     it("Reverts if burn called not by game manager", async () => {
-      await lbx.setGameManager(user1);
-      await truffleAssert.reverts(lbx.burn(1), "only game manager");
+      await d.setGameManager(user1);
+      await truffleAssert.reverts(lbx.burn(1), "Only game manager");
     });
 
     it("Burn lootbox", async () => {
-      await lbx.setGameManager(DAO);
+      await d.setGameManager(owner);
       expect(await lbx.totalSupply()).to.be.a.bignumber.that.equals(
         new BN("5")
       );
@@ -121,11 +124,11 @@ contract("Lootboxes", (accounts) => {
     };
 
     it("Set message sender to backend sender", async () => {
-      await gm.setBackendSigner(signer.address);
+      await d.setBackendSigner(signer.address);
     });
 
     it("Mint avatar owner lootbox with common rarity ", async () => {
-      await lbx.setGameManager(gm.address);
+      await d.setGameManager(gm.address);
       const totalSupplyBefore = await lbx.totalSupply();
 
       const rarity = "01";
@@ -155,7 +158,7 @@ contract("Lootboxes", (accounts) => {
     });
 
     it("Mint avatar owner lootbox with legendary rarity ", async () => {
-      await lbx.setGameManager(gm.address);
+      await d.setGameManager(gm.address);
 
       const rarity = "03";
 
@@ -258,7 +261,7 @@ contract("Lootboxes", (accounts) => {
 
   describe("Last owned token URI", async () => {
     it("Checks the function", async () => {
-      await lbx.setGameManager(DAO);
+      await d.setGameManager(owner);
       await lbx.mint(user1, 0);
       nextToMint++;
       const balanceOf = +(await lbx.balanceOf(user1));
@@ -305,11 +308,11 @@ contract("Lootboxes", (accounts) => {
 
   describe("GameManager burns a token", async () => {
     it("Not a GameManager can't burn", async () => {
-      await expectRevert(lbx.burn(5, { from: user1 }), "only game manager");
+      await expectRevert(lbx.burn(5, { from: user1 }), "Only game manager");
     });
     it("GameManager can burn", async () => {
-      // DAO is GM
-      await lbx.burn(5, { from: DAO });
+      // owner is GM
+      await lbx.burn(5, { from: owner });
       await expectRevert(
         lbx.ownerOf(5),
         "ERC721: owner query for nonexistent token"

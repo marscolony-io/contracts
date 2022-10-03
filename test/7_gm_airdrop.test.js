@@ -5,7 +5,7 @@ const GameManagerFixed = artifacts.require('GameManagerFixed');
 const MC = artifacts.require('MC');
 
 contract('Airdrop', (accounts) => {
-  const [DAO, user1] = accounts;
+  const [owner, user1] = accounts;
 
   let gm;
   let mc;
@@ -16,9 +16,9 @@ contract('Airdrop', (accounts) => {
   });
 
   it('Do airdrop', async () => {
-    const tx = await gm.airdrop(user1, 1, { from: DAO });
-    const owner = await mc.ownerOf.call(1);
-    assert(owner === user1);
+    const tx = await gm.airdrop(user1, 1, { from: owner });
+    const mcOwner = await mc.ownerOf.call(1);
+    assert(mcOwner === user1);
     const mcTx = await truffleAssert.createTransactionResult(mc, tx.tx);
     truffleAssert.eventEmitted(mcTx, 'Transfer', (ev) => {
       return ev.from === '0x0000000000000000000000000000000000000000'
@@ -27,8 +27,8 @@ contract('Airdrop', (accounts) => {
     });
   });
   
-  it('Try airdrop not from DAO', async () => {
+  it('Try airdrop not from owner', async () => {
     const tx = gm.airdrop(user1, 2, { from: user1 });
-    truffleAssert.reverts(tx, 'Only DAO');
+    truffleAssert.reverts(tx, 'Only owner');
   });
 });

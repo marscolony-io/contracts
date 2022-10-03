@@ -2,37 +2,47 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import "@openzeppelin/contracts/utils/Strings.sol";
-import './interfaces/ILootboxes.sol';
+import './interfaces/IDependencies.sol';
 import './interfaces/IEnums.sol';
 
 
-contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
+contract Lootboxes is ERC721Enumerable, ILootboxes {
   using Strings for uint256;
 
   string private nftBaseURI;
-  address public gameManager;
+  IDependencies public d;
+
   mapping (uint256 => IEnums.Rarity) public rarities;
   mapping (address => uint256) private lastTokenMinted;
   bool lock;
 
   uint256 private nextIdToMint = 1;
 
-  modifier onlyGameManager {
-    require(msg.sender == gameManager, 'only game manager');
+  modifier onlyOwner {
+    require(msg.sender == d.owner(), 'Only owner');
     _;
   }
 
-  constructor (string memory _nftBaseURI) ERC721('Utility crates', 'UCR') {
+  modifier onlyGameManager {
+    require(msg.sender == address(d.gameManager()), 'Only game manager');
+    _;
+  }
+
+  constructor (string memory _nftBaseURI, IDependencies _d) ERC721('Utility crates', 'UCR') {
+    d = _d;
     nftBaseURI = _nftBaseURI;
   }
 
-  function setGameManager(address _gameManager) external onlyOwner {
-    gameManager = _gameManager;
+  function setDependencies(IDependencies addr) external onlyOwner {
+    d = addr;
   }
 
+  function owner() public view returns (address) {
+    return d.owner();
+  }
+  
   function _baseURI() internal view virtual override returns (string memory) {
     return nftBaseURI;
   }
