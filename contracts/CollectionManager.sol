@@ -461,37 +461,59 @@ contract CollectionManager is
         uint64 gear2Id,
         uint64 gear3Id
     ) external {
+        uint256 specialTransportType;
         // if user doesn't lock special transport, he can lock up to 2 gears. otherwise up to 3
-        if (transportId == 0) {
-            require(tokenIds.length <= 2, "you can't lock so many gears");
-        } else {
-            (, , uint256 category, , , ) = d.gears().gears(transportId);
+        if (transportId != 0) {
+            require(
+                msg.sender == IOwnable(address(d.gears())).ownerOf(transportId),
+                "you are not transport owner"
+            );
+
+            (, uint256 gearType, uint256 category, , , ) = d.gears().gears(
+                transportId
+            );
             require(
                 category == CATEGORY_TRANSPORT,
                 "transportId is not transport"
             );
 
-            require(
-                msg.sender == IOwnable(address(d.gears())).ownerOf(transportId),
-                "you are not transport owner"
-            );
-            require(tokenIds.length <= 3, "you can't lock so many gears");
+            specialTransportType = gearType;
         }
 
         // can not lock gears of the same categories
-        uint256[] memory choosenCategories = new uint256[](3);
-        for (uint256 i = 0; i < tokenIds.length; i++) {
+
+        uint256 gear1Category;
+        uint256 gear2Category;
+        uint256 gear3Category;
+
+        uint256 gearsCount;
+
+        if (gear1Id != 0) {
             require(
-                msg.sender == IOwnable(address(d.gears())).ownerOf(tokenIds[i]),
+                msg.sender == IOwnable(address(d.gears())).ownerOf(gear1Id),
                 "you are not gear owner"
             );
-            (, , uint256 category, , , ) = d.gears().gears(tokenIds[i]);
-            require(category != CATEGORY_TRANSPORT, "can not lock transport");
+            (, , uint256 category, , , ) = d.gears().gears(gear1Id);
             require(
-                !isGearCategoryChoosenBefore(choosenCategories, category),
-                "you can't lock gears of the same category"
+                category != CATEGORY_TRANSPORT,
+                "can not lock transport as gear"
             );
-            choosenCategories[i] = category;
+            gear1Category = category;
+            gearsCount += 1;
+        }
+
+        if (gear2Id != 0) {
+            require(
+                msg.sender == IOwnable(address(d.gears())).ownerOf(gear2Id),
+                "you are not gear owner"
+            );
+            (, , uint256 category, , , ) = d.gears().gears(gear2Id);
+            require(
+                category != CATEGORY_TRANSPORT,
+                "can not lock transport as gear"
+            );
+            gear2Category = category;
+            gearsCount += 1;
         }
 
         if (gear3Id != 0) {
@@ -553,11 +575,11 @@ contract CollectionManager is
             }
 
             if (isUnique(prevLockedGears.gear2Id, gear1Id, gear2Id, gear3Id)) {
-                IGears(gearsAddress).unlockGear(prevLockedGears.gear2Id);
+                d.gears().unlockGear(prevLockedGears.gear2Id);
             }
 
             if (isUnique(prevLockedGears.gear3Id, gear1Id, gear2Id, gear3Id)) {
-                IGears(gearsAddress).unlockGear(prevLockedGears.gear3Id);
+                d.gears().unlockGear(prevLockedGears.gear3Id);
             }
         }
 
@@ -596,7 +618,7 @@ contract CollectionManager is
                 prevLockedGears.gear3Id
             )
         ) {
-            IGears(gearsAddress).lockGear(gear2Id);
+            d.gears().lockGear(gear2Id);
         }
 
         if (
@@ -608,7 +630,7 @@ contract CollectionManager is
                 prevLockedGears.gear3Id
             )
         ) {
-            IGears(gearsAddress).lockGear(gear3Id);
+            d.gears().lockGear(gear3Id);
         }
 
         gearLocks[msg.sender] = GearLocks(
@@ -692,7 +714,7 @@ contract CollectionManager is
             uint256 durability,
             bool locked,
             bool set
-        ) = IGears(gearsAddress).gears(locks.transportId);
+        ) = d.gears().gears(locks.transportId);
         gearsResult[0] = IGears.Gear(
             rarity,
             gearType,
@@ -702,9 +724,9 @@ contract CollectionManager is
             set
         );
 
-        (rarity, gearType, category, durability, locked, set) = IGears(
-            gearsAddress
-        ).gears(locks.gear1Id);
+        (rarity, gearType, category, durability, locked, set) = d.gears().gears(
+            locks.gear1Id
+        );
         gearsResult[1] = IGears.Gear(
             rarity,
             gearType,
@@ -714,9 +736,9 @@ contract CollectionManager is
             set
         );
 
-        (rarity, gearType, category, durability, locked, set) = IGears(
-            gearsAddress
-        ).gears(locks.gear2Id);
+        (rarity, gearType, category, durability, locked, set) = d.gears().gears(
+            locks.gear2Id
+        );
         gearsResult[2] = IGears.Gear(
             rarity,
             gearType,
@@ -726,9 +748,9 @@ contract CollectionManager is
             set
         );
 
-        (rarity, gearType, category, durability, locked, set) = IGears(
-            gearsAddress
-        ).gears(locks.gear3Id);
+        (rarity, gearType, category, durability, locked, set) = d.gears().gears(
+            locks.gear3Id
+        );
         gearsResult[3] = IGears.Gear(
             rarity,
             gearType,
