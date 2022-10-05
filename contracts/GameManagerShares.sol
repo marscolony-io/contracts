@@ -413,12 +413,13 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   }
 
   function getPassiveEarningSpeed(uint256 tokenId) public view returns (uint256 shareCount) {
+    return landInfo[tokenId].share;
     // shares from powerproduction are excluded from passive speed
-    shareCount = landInfo[tokenId].share;
-    shareCount = shareCount - tokenData[tokenId].powerProduction;
-    if (tokenData[tokenId].powerProduction == 3) {
-      shareCount = shareCount - 1; // one more share for pp lvl3
-    }
+    // shareCount = landInfo[tokenId].share;
+    // shareCount = shareCount - tokenData[tokenId].powerProduction;
+    // if (tokenData[tokenId].powerProduction == 3) {
+    //   shareCount = shareCount - 1; // one more share for pp lvl3
+    // }
   }
 
   // View function to see pending ColonyToken on frontend

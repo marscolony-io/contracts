@@ -268,16 +268,35 @@ contract CollectionManager is
         uint256 tokenCount = d.martianColonists().balanceOf(msg.sender);
         if (tokenCount == 0) {
             return new uint256[](0);
-        } else {
-            uint256[] memory result = new uint256[](tokenCount);
-            for (uint256 i = 0; i < tokenCount; i++) {
-                result[i] = d.martianColonists().tokenOfOwnerByIndex(
-                    msg.sender,
-                    i
-                );
-            }
-            return result;
         }
+
+        uint256[] memory result = new uint256[](tokenCount);
+        for (uint256 i = 0; i < tokenCount; i++) {
+            result[i] = d.martianColonists().tokenOfOwnerByIndex(msg.sender, i);
+        }
+        return result;
+    }
+
+    function allMyTokensPaginate(uint256 _from, uint256 _to)
+        external
+        view
+        returns (uint256[] memory)
+    {
+        uint256 tokenCount = d.martianColonists().balanceOf(msg.sender);
+        if (tokenCount <= _from || _from > _to || tokenCount == 0) {
+            return (new uint256[](0));
+        }
+
+        uint256 to = (tokenCount - 1 > _to) ? _to : tokenCount - 1;
+        uint256[] memory result = new uint256[](to - _from + 1);
+        for (uint256 i = _from; i <= to; i++) {
+            result[i - _from] = d.martianColonists().tokenOfOwnerByIndex(
+                msg.sender,
+                i
+            );
+        }
+
+        return result;
     }
 
     function setMaxTokenId(uint256 _maxTokenId) external onlyOwner {
@@ -377,8 +396,9 @@ contract CollectionManager is
                 initialLegendaryGears.length + transportGears.length,
                 nonce
             );
-            if (modulo < initialLegendaryGears.length)
+            if (modulo < initialLegendaryGears.length) {
                 return initialLegendaryGears[modulo];
+            }
             return transportGears[modulo - initialLegendaryGears.length];
         }
     }

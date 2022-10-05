@@ -54,8 +54,8 @@ module.exports = {
         });
       },
       network_id: 137,
-      gasPrice: 350 * 1e9,
-      maxGasFees: 350 * 1e9,
+      gasPrice: 50 * 1e9,
+      maxGasFees: 50 * 1e9,
       maxPriorityFees: 60 * 1e9,
       // gas: 5000000
     },
@@ -70,7 +70,7 @@ module.exports = {
           networkCheckTimeout: 200000,
         });
       },
-      gas: 1300000,
+      // gas: 2600000,
       network_id: 80001,
       gasPrice: 13 * 1e9,
       maxGasFees: 33 * 1e9,
