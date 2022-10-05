@@ -8,6 +8,7 @@ const CollectionManager = artifacts.require("CollectionManager");
 const GEARS = artifacts.require("Gears");
 const ORACLE = artifacts.require("Oracle");
 const CryochamberManager = artifacts.require("CryochamberManager");
+const Dependencies = artifacts.require("Dependencies");
 
 module.exports = async (callback) => {
   try {
@@ -23,6 +24,7 @@ module.exports = async (callback) => {
     let collection = await CollectionManager.deployed();
     const gears = await GEARS.deployed();
     const oracle = await ORACLE.deployed();
+    const d = await Dependencies.deployed();
 
     const totalLandsInitialCount = await mc.totalSupply();
     console.log("initial lands count:" + totalLandsInitialCount.toString());
@@ -30,7 +32,7 @@ module.exports = async (callback) => {
     // await time.increase(60 * 60 * 24 * 10);
 
     // claim all lands
-    await clny.setGameManager(accounts[0], { from: accounts[0] });
+    // await clny.setGameManager(accounts[0], { from: accounts[0] });
     await gm.setPrice(web3.utils.toWei("0.1"), { from: accounts[0] });
 
     const claimedLands = new Set();
@@ -89,6 +91,8 @@ module.exports = async (callback) => {
     console.log(userLandsMap);
 
     //  mint clny to users
+    await d.setGameManager(accounts[0], { from: accounts[0] });
+
     for (const account of accounts) {
       await clny.mint(account, "100000000000000000000000", 1, {
         from: accounts[0],
@@ -98,7 +102,7 @@ module.exports = async (callback) => {
       console.log("clny minted", account, userBalance.toString());
     }
 
-    await clny.setGameManager(gm.address, { from: accounts[0] });
+    await d.setGameManager(gm.address, { from: accounts[0] });
 
     // mint avatars
 
@@ -144,12 +148,15 @@ module.exports = async (callback) => {
           }
         }
 
-        const enh = await gm.getEnhancements(landId, { from: account });
+        const attr = (
+          await gm.getAttributesMany([landId], { from: account })
+        )[0];
+        console.log("land attr", attr);
         console.log("land " + landId + " has been built with units: ", {
-          base: enh["0"].toString(),
-          transport: enh["1"].toString(),
-          robot: enh["2"].toString(),
-          power: enh["3"].toString(),
+          base: attr.baseStation,
+          transport: attr.transport,
+          robot: attr.robotAssembly,
+          power: attr.powerProduction,
         });
       }
     }
@@ -167,12 +174,14 @@ module.exports = async (callback) => {
     // await msn.setAccountRevshare(90, { from: accounts[4] });
 
     // mint gears and lock for use in backend server tests
-    await gears.setCollectionManager(accounts[1], { from: accounts[0] });
+    await d.setCollectionManager(accounts[1], { from: accounts[0] });
     await gears.mint(accounts[1], 0, 1, 1, 100, { from: accounts[1] });
     await gears.mint(accounts[1], 0, 2, 1, 150, { from: accounts[1] });
     await gears.lockGear(1, { from: accounts[1] });
     await gears.lockGear(2, { from: accounts[1] });
-    await gears.setCollectionManager(collection.address, { from: accounts[0] });
+    await d.setCollectionManager(collection.address, {
+      from: accounts[0],
+    });
 
     // oracle
     await oracle.addRelayer(accounts[0]);
@@ -189,6 +198,7 @@ module.exports = async (callback) => {
 
     const avatar3OwnerLand = 21000; // userLandsMap.get(ownerOf3);
     console.log({ avatar3OwnerLand });
+    claimedLands.add(21000);
 
     await gm.buildAndPlaceBaseStation(avatar3OwnerLand, 5, 7, {
       from: ownerOf3,
@@ -208,13 +218,15 @@ module.exports = async (callback) => {
       from: ownerOf3,
     });
 
-    await gears.setCollectionManager(accounts[0], { from: accounts[0] });
+    await d.setCollectionManager(accounts[0], { from: accounts[0] });
     await gears.mint(ownerOf3, 0, 0, 1, 1, { from: accounts[0] });
     await gears.mint(ownerOf3, 0, 7, 3, 1, { from: accounts[0] });
     await gears.mint(ownerOf3, 1, 5, 2, 150, { from: accounts[0] });
     await gears.mint(ownerOf3, 2, 12, 4, 150, { from: accounts[0] });
 
-    await gears.setCollectionManager(collection.address, { from: accounts[0] });
+    await d.setCollectionManager(collection.address, {
+      from: accounts[0],
+    });
 
     const lastGearId = parseInt(await gears.totalSupply());
     console.log({ lastGearId: lastGearId });
@@ -231,6 +243,14 @@ module.exports = async (callback) => {
         from: ownerOf3,
       }
     );
+
+    // claim all other lands for test server hot restart delays
+    for (let i = 1; i < 21000; i++) {
+      if (!claimedLands.has(i)) {
+        console.log("airdrop", i);
+        await gm.airdrop(accounts[9], i);
+      }
+    }
 
     // ---
 

@@ -10,12 +10,7 @@ import "./interfaces/IDependencies.sol";
 import "./interfaces/IOwnable.sol";
 import "./Constants.sol";
 
-contract CollectionManager is
-    ICollectionManager,
-    GameConnection,
-    PausableUpgradeable,
-    Constants
-{
+contract CollectionManager is ICollectionManager, GameConnection, PausableUpgradeable, Constants {
     uint256 public maxTokenId;
 
     address reserved0;
@@ -52,10 +47,7 @@ contract CollectionManager is
     uint256[39] private ______mc_gap;
 
     modifier onlyCryochamberManager() {
-        require(
-            msg.sender == address(d.cryochamber()),
-            "Only CryochamberManager"
-        );
+        require(msg.sender == address(d.cryochamber()), "Only CryochamberManager");
         _;
     }
 
@@ -76,115 +68,44 @@ contract CollectionManager is
 
         // gears
         initialCommonGears.push(
-            IGears.Gear(
-                IEnums.Rarity.COMMON,
-                ROCKET_FUEL,
-                CATEGORY_ENGINE,
-                COMMON_GEAR_DURABILITY,
-                false,
-                true
-            )
+            IGears.Gear(IEnums.Rarity.COMMON, ROCKET_FUEL, CATEGORY_ENGINE, COMMON_GEAR_DURABILITY, false, true)
+        );
+        initialCommonGears.push(
+            IGears.Gear(IEnums.Rarity.COMMON, TITANIUM_DRILL, CATEGORY_DRILL, COMMON_GEAR_DURABILITY, false, true)
+        );
+        initialCommonGears.push(
+            IGears.Gear(IEnums.Rarity.COMMON, SMALL_AREA_SCANNER, CATEGORY_SCANNER, COMMON_GEAR_DURABILITY, false, true)
         );
         initialCommonGears.push(
             IGears.Gear(
-                IEnums.Rarity.COMMON,
-                TITANIUM_DRILL,
-                CATEGORY_DRILL,
-                COMMON_GEAR_DURABILITY,
-                false,
-                true
-            )
-        );
-        initialCommonGears.push(
-            IGears.Gear(
-                IEnums.Rarity.COMMON,
-                SMALL_AREA_SCANNER,
-                CATEGORY_SCANNER,
-                COMMON_GEAR_DURABILITY,
-                false,
-                true
-            )
-        );
-        initialCommonGears.push(
-            IGears.Gear(
-                IEnums.Rarity.COMMON,
-                ULTRASONIC_TRANSMITTER,
-                CATEGORY_TRANSMITTER,
-                COMMON_GEAR_DURABILITY,
-                false,
-                true
+                IEnums.Rarity.COMMON, ULTRASONIC_TRANSMITTER, CATEGORY_TRANSMITTER, COMMON_GEAR_DURABILITY, false, true
             )
         );
 
         initialRareGears.push(
-            IGears.Gear(
-                IEnums.Rarity.RARE,
-                ENGINE_FURIOUS,
-                CATEGORY_ENGINE,
-                RARE_GEAR_DURABILITY,
-                false,
-                true
-            )
+            IGears.Gear(IEnums.Rarity.RARE, ENGINE_FURIOUS, CATEGORY_ENGINE, RARE_GEAR_DURABILITY, false, true)
+        );
+        initialRareGears.push(
+            IGears.Gear(IEnums.Rarity.RARE, DIAMOND_DRILL, CATEGORY_DRILL, RARE_GEAR_DURABILITY, false, true)
+        );
+        initialRareGears.push(
+            IGears.Gear(IEnums.Rarity.RARE, MEDIUM_AREA_SCANNER, CATEGORY_SCANNER, RARE_GEAR_DURABILITY, false, true)
         );
         initialRareGears.push(
             IGears.Gear(
-                IEnums.Rarity.RARE,
-                DIAMOND_DRILL,
-                CATEGORY_DRILL,
-                RARE_GEAR_DURABILITY,
-                false,
-                true
-            )
-        );
-        initialRareGears.push(
-            IGears.Gear(
-                IEnums.Rarity.RARE,
-                MEDIUM_AREA_SCANNER,
-                CATEGORY_SCANNER,
-                RARE_GEAR_DURABILITY,
-                false,
-                true
-            )
-        );
-        initialRareGears.push(
-            IGears.Gear(
-                IEnums.Rarity.RARE,
-                INFRARED_TRANSMITTER,
-                CATEGORY_TRANSMITTER,
-                RARE_GEAR_DURABILITY,
-                false,
-                true
+                IEnums.Rarity.RARE, INFRARED_TRANSMITTER, CATEGORY_TRANSMITTER, RARE_GEAR_DURABILITY, false, true
             )
         );
 
         initialLegendaryGears.push(
-            IGears.Gear(
-                IEnums.Rarity.LEGENDARY,
-                WD_40,
-                CATEGORY_ENGINE,
-                LEGENDARY_GEAR_DURABILITY,
-                false,
-                true
-            )
+            IGears.Gear(IEnums.Rarity.LEGENDARY, WD_40, CATEGORY_ENGINE, LEGENDARY_GEAR_DURABILITY, false, true)
+        );
+        initialLegendaryGears.push(
+            IGears.Gear(IEnums.Rarity.LEGENDARY, LASER_DRILL, CATEGORY_DRILL, LEGENDARY_GEAR_DURABILITY, false, true)
         );
         initialLegendaryGears.push(
             IGears.Gear(
-                IEnums.Rarity.LEGENDARY,
-                LASER_DRILL,
-                CATEGORY_DRILL,
-                LEGENDARY_GEAR_DURABILITY,
-                false,
-                true
-            )
-        );
-        initialLegendaryGears.push(
-            IGears.Gear(
-                IEnums.Rarity.LEGENDARY,
-                LARGE_AREA_SCANNER,
-                CATEGORY_SCANNER,
-                LEGENDARY_GEAR_DURABILITY,
-                false,
-                true
+                IEnums.Rarity.LEGENDARY, LARGE_AREA_SCANNER, CATEGORY_SCANNER, LEGENDARY_GEAR_DURABILITY, false, true
             )
         );
         initialLegendaryGears.push(
@@ -200,23 +121,11 @@ contract CollectionManager is
 
         transportGears.push(
             IGears.Gear(
-                IEnums.Rarity.LEGENDARY,
-                THE_NEBUCHADNEZZAR,
-                CATEGORY_TRANSPORT,
-                TRANSPORT_GEAR_DURABILITY,
-                false,
-                true
+                IEnums.Rarity.LEGENDARY, THE_NEBUCHADNEZZAR, CATEGORY_TRANSPORT, TRANSPORT_GEAR_DURABILITY, false, true
             )
         );
         transportGears.push(
-            IGears.Gear(
-                IEnums.Rarity.LEGENDARY,
-                THE_WRAITH,
-                CATEGORY_TRANSPORT,
-                TRANSPORT_GEAR_DURABILITY,
-                false,
-                true
-            )
+            IGears.Gear(IEnums.Rarity.LEGENDARY, THE_WRAITH, CATEGORY_TRANSPORT, TRANSPORT_GEAR_DURABILITY, false, true)
         );
     }
 
@@ -231,19 +140,13 @@ contract CollectionManager is
         return xp[avatarId] + 100; // 100 is a base for every avatar
     }
 
-    function getXP(uint256[] memory avatarIds)
-        public
-        view
-        returns (uint256[] memory)
-    {
+    function getXP(uint256[] memory avatarIds) public view returns (uint256[] memory) {
         uint256[] memory result = new uint256[](avatarIds.length);
 
         for (uint256 i = 0; i < avatarIds.length; i++) {
             result[i] = _getXP(avatarIds[i]);
 
-            ICryochamber.CryoTime memory cryo = d
-                .cryochamber()
-                .getAvatarCryoStatus(avatarIds[i]);
+            ICryochamber.CryoTime memory cryo = d.cryochamber().getAvatarCryoStatus(avatarIds[i]);
 
             if (cryo.endTime > 0 && uint64(block.timestamp) > cryo.endTime) {
                 result[i] += cryo.reward;
@@ -257,10 +160,7 @@ contract CollectionManager is
         xp[avatarId] = xp[avatarId] + increment;
     }
 
-    function addXPAfterCryo(uint256 avatarId, uint256 increment)
-        external
-        onlyCryochamberManager
-    {
+    function addXPAfterCryo(uint256 avatarId, uint256 increment) external onlyCryochamberManager {
         xp[avatarId] = xp[avatarId] + increment;
     }
 
@@ -277,11 +177,7 @@ contract CollectionManager is
         return result;
     }
 
-    function allMyTokensPaginate(uint256 _from, uint256 _to)
-        external
-        view
-        returns (uint256[] memory)
-    {
+    function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns (uint256[] memory) {
         uint256 tokenCount = d.martianColonists().balanceOf(msg.sender);
         if (tokenCount <= _from || _from > _to || tokenCount == 0) {
             return (new uint256[](0));
@@ -290,10 +186,7 @@ contract CollectionManager is
         uint256 to = (tokenCount - 1 > _to) ? _to : tokenCount - 1;
         uint256[] memory result = new uint256[](to - _from + 1);
         for (uint256 i = _from; i <= to; i++) {
-            result[i - _from] = d.martianColonists().tokenOfOwnerByIndex(
-                msg.sender,
-                i
-            );
+            result[i - _from] = d.martianColonists().tokenOfOwnerByIndex(msg.sender, i);
         }
 
         return result;
@@ -323,38 +216,24 @@ contract CollectionManager is
 
     function setName(uint256 tokenId, string memory _name) external {
         IMartianColonists martianColonists = d.martianColonists();
-        require(
-            martianColonists.ownerOf(tokenId) == msg.sender,
-            "not your token"
-        );
+        require(martianColonists.ownerOf(tokenId) == msg.sender, "not your token");
         require(bytes(_name).length > 0, "empty name");
         require(bytes(_name).length <= 15, "name too long");
-        require(
-            bytes(martianColonists.names(tokenId)).length == 0,
-            "name is already set"
-        );
+        require(bytes(martianColonists.names(tokenId)).length == 0, "name is already set");
         martianColonists.setName(tokenId, _name);
     }
 
-    function setNameByGameManager(uint256 tokenId, string memory _name)
-        external
-        onlyGameManager
-    {
+    function setNameByGameManager(uint256 tokenId, string memory _name) external onlyGameManager {
         IMartianColonists martianColonists = d.martianColonists();
         require(bytes(_name).length <= 15, "name too long");
         require(
-            keccak256(abi.encodePacked(_name)) !=
-                keccak256(abi.encodePacked(martianColonists.names(tokenId))),
+            keccak256(abi.encodePacked(_name)) != keccak256(abi.encodePacked(martianColonists.names(tokenId))),
             "same name"
         );
         martianColonists.setName(tokenId, _name);
     }
 
-    function getNames(uint256[] calldata tokenIds)
-        external
-        view
-        returns (string[] memory)
-    {
+    function getNames(uint256[] calldata tokenIds) external view returns (string[] memory) {
         IMartianColonists martianColonists = d.martianColonists();
         string[] memory result = new string[](tokenIds.length);
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -365,15 +244,12 @@ contract CollectionManager is
 
     // gears
 
-    function getRandomizedGear(
-        IEnums.Rarity _lootboxRarity,
-        IEnums.Rarity _gearRarity,
-        uint256 nonce
-    ) public view returns (IGears.Gear memory gear) {
-        if (
-            _lootboxRarity == IEnums.Rarity.RARE &&
-            _gearRarity == IEnums.Rarity.LEGENDARY
-        ) {
+    function getRandomizedGear(IEnums.Rarity _lootboxRarity, IEnums.Rarity _gearRarity, uint256 nonce)
+        public
+        view
+        returns (IGears.Gear memory gear)
+    {
+        if (_lootboxRarity == IEnums.Rarity.RARE && _gearRarity == IEnums.Rarity.LEGENDARY) {
             // exclude transports
             uint256 modulo = randomNumber(initialLegendaryGears.length, nonce);
             return initialLegendaryGears[modulo];
@@ -392,10 +268,7 @@ contract CollectionManager is
         if (_gearRarity == IEnums.Rarity.LEGENDARY) {
             // choose from legendary and transports arrays
 
-            uint256 modulo = randomNumber(
-                initialLegendaryGears.length + transportGears.length,
-                nonce
-            );
+            uint256 modulo = randomNumber(initialLegendaryGears.length + transportGears.length, nonce);
             if (modulo < initialLegendaryGears.length) {
                 return initialLegendaryGears[modulo];
             }
@@ -403,23 +276,16 @@ contract CollectionManager is
         }
     }
 
-    function randomNumber(uint256 modulo, uint256 nonce)
-        private
-        view
-        returns (uint256)
-    {
-        return
-            (uint256(blockhash(block.number - 1)) +
-                block.timestamp *
-                nonce +
-                uint256(uint160(msg.sender)) +
-                nonce) % modulo;
+    function randomNumber(uint256 modulo, uint256 nonce) private view returns (uint256) {
+        return (uint256(blockhash(block.number - 1)) + block.timestamp * nonce + uint256(uint160(msg.sender)) + nonce)
+            % modulo;
     }
 
-    function getRandomizedGearRarity(
-        IEnums.Rarity _lootBoxRarity,
-        uint256 nonce
-    ) private view returns (IEnums.Rarity gearRarity) {
+    function getRandomizedGearRarity(IEnums.Rarity _lootBoxRarity, uint256 nonce)
+        private
+        view
+        returns (IEnums.Rarity gearRarity)
+    {
         uint256 randomOf100 = randomNumber(100, nonce);
 
         if (_lootBoxRarity == IEnums.Rarity.COMMON) {
@@ -449,53 +315,24 @@ contract CollectionManager is
         }
     }
 
-    function calculateGear(IEnums.Rarity _lootBoxRarity)
-        public
-        view
-        returns (IGears.Gear memory)
-    {
-        IEnums.Rarity gearRarity = getRandomizedGearRarity(
-            _lootBoxRarity,
-            block.timestamp % 71
-        );
-        IGears.Gear memory gear = getRandomizedGear(
-            _lootBoxRarity,
-            gearRarity,
-            (block.timestamp % 71) + 1
-        );
+    function calculateGear(IEnums.Rarity _lootBoxRarity) public view returns (IGears.Gear memory) {
+        IEnums.Rarity gearRarity = getRandomizedGearRarity(_lootBoxRarity, block.timestamp % 71);
+        IGears.Gear memory gear = getRandomizedGear(_lootBoxRarity, gearRarity, (block.timestamp % 71) + 1);
         return gear;
     }
 
-    function isUnique(
-        uint64 idToCheck,
-        uint64 id1,
-        uint64 id2,
-        uint64 id3
-    ) internal pure returns (bool) {
+    function isUnique(uint64 idToCheck, uint64 id1, uint64 id2, uint64 id3) internal pure returns (bool) {
         return idToCheck != id1 && idToCheck != id2 && idToCheck != id3;
     }
 
-    function setLocks(
-        uint64 transportId,
-        uint64 gear1Id,
-        uint64 gear2Id,
-        uint64 gear3Id
-    ) external {
+    function setLocks(uint64 transportId, uint64 gear1Id, uint64 gear2Id, uint64 gear3Id) external {
         uint256 specialTransportType;
         // if user doesn't lock special transport, he can lock up to 2 gears. otherwise up to 3
         if (transportId != 0) {
-            require(
-                msg.sender == IOwnable(address(d.gears())).ownerOf(transportId),
-                "you are not transport owner"
-            );
+            require(msg.sender == IOwnable(address(d.gears())).ownerOf(transportId), "you are not transport owner");
 
-            (, uint256 gearType, uint256 category, , , ) = d.gears().gears(
-                transportId
-            );
-            require(
-                category == CATEGORY_TRANSPORT,
-                "transportId is not transport"
-            );
+            (, uint256 gearType, uint256 category,,,) = d.gears().gears(transportId);
+            require(category == CATEGORY_TRANSPORT, "transportId is not transport");
 
             specialTransportType = gearType;
         }
@@ -509,84 +346,51 @@ contract CollectionManager is
         uint256 gearsCount;
 
         if (gear1Id != 0) {
-            require(
-                msg.sender == IOwnable(address(d.gears())).ownerOf(gear1Id),
-                "you are not gear owner"
-            );
-            (, , uint256 category, , , ) = d.gears().gears(gear1Id);
-            require(
-                category != CATEGORY_TRANSPORT,
-                "can not lock transport as gear"
-            );
+            require(msg.sender == IOwnable(address(d.gears())).ownerOf(gear1Id), "you are not gear owner");
+            (,, uint256 category,,,) = d.gears().gears(gear1Id);
+            require(category != CATEGORY_TRANSPORT, "can not lock transport as gear");
             gear1Category = category;
             gearsCount += 1;
         }
 
         if (gear2Id != 0) {
-            require(
-                msg.sender == IOwnable(address(d.gears())).ownerOf(gear2Id),
-                "you are not gear owner"
-            );
-            (, , uint256 category, , , ) = d.gears().gears(gear2Id);
-            require(
-                category != CATEGORY_TRANSPORT,
-                "can not lock transport as gear"
-            );
+            require(msg.sender == IOwnable(address(d.gears())).ownerOf(gear2Id), "you are not gear owner");
+            (,, uint256 category,,,) = d.gears().gears(gear2Id);
+            require(category != CATEGORY_TRANSPORT, "can not lock transport as gear");
             gear2Category = category;
             gearsCount += 1;
         }
 
         if (gear3Id != 0) {
-            require(
-                msg.sender == IOwnable(address(d.gears())).ownerOf(gear3Id),
-                "you are not gear owner"
-            );
-            (, , uint256 category, , , ) = d.gears().gears(gear3Id);
-            require(
-                category != CATEGORY_TRANSPORT,
-                "can not lock transport as gear"
-            );
+            require(msg.sender == IOwnable(address(d.gears())).ownerOf(gear3Id), "you are not gear owner");
+            (,, uint256 category,,,) = d.gears().gears(gear3Id);
+            require(category != CATEGORY_TRANSPORT, "can not lock transport as gear");
             gear3Category = category;
             gearsCount += 1;
         }
 
         // if user doesn't lock special transport, he can lock up to 2 gears. otherwise up to 3
         if (specialTransportType != THE_NEBUCHADNEZZAR) {
-            require(
-                gearsCount < 3,
-                "can not lock 3 gears without special transport"
-            );
+            require(gearsCount < 3, "can not lock 3 gears without special transport");
         }
 
         if (gear1Id != 0 && gear2Id != 0) {
-            require(
-                gear1Category != gear2Category,
-                "you can't lock gears of the same category"
-            );
+            require(gear1Category != gear2Category, "you can't lock gears of the same category");
         }
 
         if (gear1Id != 0 && gear3Id != 0) {
-            require(
-                gear1Category != gear3Category,
-                "you can't lock gears of the same category"
-            );
+            require(gear1Category != gear3Category, "you can't lock gears of the same category");
         }
 
         if (gear2Id != 0 && gear3Id != 0) {
-            require(
-                gear2Category != gear3Category,
-                "you can't lock gears of the same category"
-            );
+            require(gear2Category != gear3Category, "you can't lock gears of the same category");
         }
 
         // unlock prev locked transport and gear
         GearLocks memory prevLockedGears = gearLocks[msg.sender];
 
         if (prevLockedGears.set) {
-            if (
-                prevLockedGears.transportId != 0 &&
-                prevLockedGears.transportId != transportId
-            ) {
+            if (prevLockedGears.transportId != 0 && prevLockedGears.transportId != transportId) {
                 d.gears().unlockGear(prevLockedGears.transportId);
             }
 
@@ -618,83 +422,37 @@ contract CollectionManager is
         }
 
         if (
-            gear1Id != 0 &&
-            isUnique(
-                gear1Id,
-                prevLockedGears.gear1Id,
-                prevLockedGears.gear2Id,
-                prevLockedGears.gear3Id
-            )
+            gear1Id != 0 && isUnique(gear1Id, prevLockedGears.gear1Id, prevLockedGears.gear2Id, prevLockedGears.gear3Id)
         ) {
             d.gears().lockGear(gear1Id);
         }
 
         if (
-            gear2Id != 0 &&
-            isUnique(
-                gear2Id,
-                prevLockedGears.gear1Id,
-                prevLockedGears.gear2Id,
-                prevLockedGears.gear3Id
-            )
+            gear2Id != 0 && isUnique(gear2Id, prevLockedGears.gear1Id, prevLockedGears.gear2Id, prevLockedGears.gear3Id)
         ) {
             d.gears().lockGear(gear2Id);
         }
 
         if (
-            gear3Id != 0 &&
-            isUnique(
-                gear3Id,
-                prevLockedGears.gear1Id,
-                prevLockedGears.gear2Id,
-                prevLockedGears.gear3Id
-            )
+            gear3Id != 0 && isUnique(gear3Id, prevLockedGears.gear1Id, prevLockedGears.gear2Id, prevLockedGears.gear3Id)
         ) {
             d.gears().lockGear(gear3Id);
         }
 
-        gearLocks[msg.sender] = GearLocks(
-            transportId,
-            gear1Id,
-            gear2Id,
-            gear3Id,
-            true,
-            locks
-        );
+        gearLocks[msg.sender] = GearLocks(transportId, gear1Id, gear2Id, gear3Id, true, locks);
     }
 
-    function mintGear(address owner, IEnums.Rarity _lootBoxrarity)
-        external
-        onlyGameManager
-    {
+    function mintGear(address owner, IEnums.Rarity _lootBoxrarity) external onlyGameManager {
         IGears.Gear memory gear = calculateGear(_lootBoxrarity);
-        d.gears().mint(
-            owner,
-            gear.rarity,
-            gear.gearType,
-            gear.category,
-            gear.durability
-        );
+        d.gears().mint(owner, gear.rarity, gear.gearType, gear.category, gear.durability);
     }
 
-    function withdrawToken(
-        address _tokenContract,
-        address _whereTo,
-        uint256 _amount
-    ) external onlyOwner {
+    function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
         IERC20 tokenContract = IERC20(_tokenContract);
         tokenContract.transfer(_whereTo, _amount);
     }
 
-    function getLootboxOpeningPrice()
-        external
-        view
-        returns (
-            uint256 common,
-            uint256 rare,
-            uint256 legendary
-        )
-    {
+    function getLootboxOpeningPrice() external view returns (uint256 common, uint256 rare, uint256 legendary) {
         (bool valid, uint256 clnyInUsd) = d.oracle().clnyInUsd();
 
         require(valid, "oracle price of clny is not valid");
@@ -707,11 +465,7 @@ contract CollectionManager is
     function getLockedGears(address user)
         external
         view
-        returns (
-            uint256[] memory,
-            IGears.Gear[] memory,
-            uint256 locksCount
-        )
+        returns (uint256[] memory, IGears.Gear[] memory, uint256 locksCount)
     {
         GearLocks memory locks = gearLocks[user];
 
@@ -727,66 +481,23 @@ contract CollectionManager is
         ids[2] = locks.gear2Id;
         ids[3] = locks.gear3Id;
 
-        (
-            IEnums.Rarity rarity,
-            uint256 gearType,
-            uint256 category,
-            uint256 durability,
-            bool locked,
-            bool set
-        ) = d.gears().gears(locks.transportId);
-        gearsResult[0] = IGears.Gear(
-            rarity,
-            gearType,
-            category,
-            durability,
-            locked,
-            set
-        );
+        (IEnums.Rarity rarity, uint256 gearType, uint256 category, uint256 durability, bool locked, bool set) =
+            d.gears().gears(locks.transportId);
+        gearsResult[0] = IGears.Gear(rarity, gearType, category, durability, locked, set);
 
-        (rarity, gearType, category, durability, locked, set) = d.gears().gears(
-            locks.gear1Id
-        );
-        gearsResult[1] = IGears.Gear(
-            rarity,
-            gearType,
-            category,
-            durability,
-            locked,
-            set
-        );
+        (rarity, gearType, category, durability, locked, set) = d.gears().gears(locks.gear1Id);
+        gearsResult[1] = IGears.Gear(rarity, gearType, category, durability, locked, set);
 
-        (rarity, gearType, category, durability, locked, set) = d.gears().gears(
-            locks.gear2Id
-        );
-        gearsResult[2] = IGears.Gear(
-            rarity,
-            gearType,
-            category,
-            durability,
-            locked,
-            set
-        );
+        (rarity, gearType, category, durability, locked, set) = d.gears().gears(locks.gear2Id);
+        gearsResult[2] = IGears.Gear(rarity, gearType, category, durability, locked, set);
 
-        (rarity, gearType, category, durability, locked, set) = d.gears().gears(
-            locks.gear3Id
-        );
-        gearsResult[3] = IGears.Gear(
-            rarity,
-            gearType,
-            category,
-            durability,
-            locked,
-            set
-        );
+        (rarity, gearType, category, durability, locked, set) = d.gears().gears(locks.gear3Id);
+        gearsResult[3] = IGears.Gear(rarity, gearType, category, durability, locked, set);
 
         return (ids, gearsResult, locks.locks);
     }
 
-    function increaseTransortDamage(address transport, uint8 _damage)
-        external
-        onlyGameManager
-    {
+    function increaseTransortDamage(address transport, uint8 _damage) external onlyGameManager {
         uint8 damage = transportDamage[transport];
 
         if (damage + _damage > 100) {
