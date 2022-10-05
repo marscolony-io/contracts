@@ -121,13 +121,14 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   }
 
   function allMyTokens() external view returns(uint256[] memory) {
-    uint256 tokenCount = d.martianColonists().balanceOf(msg.sender);
+    IMartianColonists martianColonists = d.martianColonists();
+    uint256 tokenCount = martianColonists.balanceOf(msg.sender);
     if (tokenCount == 0) {
       return new uint256[](0);
     } else {
       uint256[] memory result = new uint256[](tokenCount);
       for (uint256 i = 0; i < tokenCount; i++) {
-        result[i] = d.martianColonists().tokenOfOwnerByIndex(msg.sender, i);
+        result[i] = martianColonists.tokenOfOwnerByIndex(msg.sender, i);
       }
       return result;
     }

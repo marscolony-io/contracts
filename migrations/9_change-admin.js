@@ -9,9 +9,9 @@ module.exports = async (deployer, network, addresses) => {
     return; // this file for manual migrations; pass in tests
   }
 
-  const oldPA = await ProxyAdmin.at('0xBb459C6066331fd3e92A54828DAA696e0661c902');
-  console.log(await oldPA.getProxyImplementation('0x4E57E44c73Ff97563338ECa2585339b91BBfd1f3'));
+  const oldPA = await ProxyAdmin.at('0x07a83B70C5109757bac760a28477Cba2E2536B26');
+  console.log(await oldPA.getProxyImplementation('0x862A44AC752b5D0F6727aaE2A334D302F8324560'));
 
-  // await oldPA.changeProxyAdmin('0x4E57E44c73Ff97563338ECa2585339b91BBfd1f3', '0xBb459C6066331fd3e92A54828DAA696e0661c902');
+  await oldPA.changeProxyAdmin('0x862A44AC752b5D0F6727aaE2A334D302F8324560', '0xBb459C6066331fd3e92A54828DAA696e0661c902');
 
 };
