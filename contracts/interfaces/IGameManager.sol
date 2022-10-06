@@ -58,8 +58,5 @@ interface IGameManager {
       uint32
     );
 
-  function getAttributesMany(uint256[] calldata tokenIds)
-    external
-    view
-    returns (AttributeData[] memory);
+  function getAttributesMany(uint256[] calldata tokenIds) external view returns (AttributeData[] memory);
 }

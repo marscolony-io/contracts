@@ -76,10 +76,7 @@ interface IDependencies {
 
   function getCryochamberClny() external view returns (ICryochamber, ICLNY);
 
-  function getCollectionManagerClny()
-    external
-    view
-    returns (ICollectionManager, ICLNY);
+  function getCollectionManagerClny() external view returns (ICollectionManager, ICLNY);
 
   function getCollectionManagerClnyMc()
     external
