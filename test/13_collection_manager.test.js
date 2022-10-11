@@ -58,9 +58,9 @@ contract("CollectionManager", (accounts) => {
     expect(parseInt(totalAvatarsSupply)).to.be.equal(1);
 
     await d.setCollectionManager(DAO);
-    await nft.setName(0, "avatar");
+    await nft.setName(1, "avatar");
 
-    await collection.addXP(0, 100);
+    await collection.addXP(1, 100);
 
     const result = await collection.allTokensPaginate(0, 1000);
     console.log("all tokens paginate response", result);

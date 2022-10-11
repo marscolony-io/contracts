@@ -216,10 +216,11 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
         AvatarData[] memory avatarsResult = new AvatarData[](to - _from + 1);
 
         for (uint256 i = _from; i <= to; i++) {
-            ids[i - _from] = martianColonists.tokenByIndex(i);
-            uint256 avatarXp = xp[i];
-            string memory avatarName = martianColonists.names(i);
-            address owner = martianColonists.ownerOf(i + 1);
+            uint256 tokenId = martianColonists.tokenByIndex(i);
+            ids[i - _from] = tokenId;
+            uint256 avatarXp = xp[tokenId];
+            string memory avatarName = martianColonists.names(tokenId);
+            address owner = martianColonists.ownerOf(tokenId);
             avatarsResult[i - _from] = AvatarData(avatarName, avatarXp, owner);
         }
         return (ids, avatarsResult);
