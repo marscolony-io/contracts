@@ -50,6 +50,7 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     struct AvatarData {
         string name;
         uint256 xp;
+        address owner;
     }
 
     modifier onlyCryochamberManager() {
@@ -218,7 +219,8 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
             ids[i - _from] = martianColonists.tokenByIndex(i);
             uint256 avatarXp = xp[i];
             string memory avatarName = martianColonists.names(i);
-            avatarsResult[i - _from] = AvatarData(avatarName, avatarXp);
+            address owner = martianColonists.ownerOf(i + 1);
+            avatarsResult[i - _from] = AvatarData(avatarName, avatarXp, owner);
         }
         return (ids, avatarsResult);
     }

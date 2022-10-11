@@ -244,7 +244,20 @@ module.exports = async (callback) => {
       }
     );
 
-    // claim all other lands for test server hot restart delays
+    // set avatar name and xp to test avatars sync to db for profiles
+    const avatarsSupply = await nft.totalSupply();
+    console.log("avatars supply", parseInt(avatarsSupply));
+
+    await d.setCollectionManager(accounts[0], { from: accounts[0] });
+    await d.setGameManager(accounts[0], { from: accounts[0] });
+
+    for (let i = 0; i < parseInt(avatarsSupply); i++) {
+      await nft.setName(i, Math.random().toString(), { from: accounts[0] });
+      await collection.addXP(i, Math.floor(Math.random() * 100));
+    }
+
+    await d.setCollectionManager(collection.address, { from: accounts[0] });
+    await d.setGameManager(gm.address, { from: accounts[0] });
 
     // ---
 

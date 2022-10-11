@@ -62,11 +62,12 @@ contract("CollectionManager", (accounts) => {
 
     await collection.addXP(0, 100);
 
-    const result = await collection.allTokensPaginate(0, 3);
+    const result = await collection.allTokensPaginate(0, 1000);
     console.log("all tokens paginate response", result);
     expect(result[0].length).to.be.equal(1);
     expect(result[1].length).to.be.equal(1);
     expect(result[1][0].name).to.be.equal("avatar");
     expect(result[1][0].xp).to.be.bignumber.equal(new BN("100"));
+    expect(result[1][0].owner).to.be.equal(user1);
   });
 });
