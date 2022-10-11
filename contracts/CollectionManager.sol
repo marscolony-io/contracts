@@ -2,6 +2,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "./GameConnection.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/ICollectionManager.sol";
@@ -45,6 +46,11 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     mapping(address => uint8) public transportDamage;
 
     uint256[39] private ______mc_gap;
+
+    struct AvatarData {
+        string name;
+        uint256 xp;
+    }
 
     modifier onlyCryochamberManager() {
         require(msg.sender == address(d.cryochamber()), "Only CryochamberManager");
@@ -165,20 +171,22 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     }
 
     function allMyTokens() external view returns (uint256[] memory) {
-        uint256 tokenCount = d.martianColonists().balanceOf(msg.sender);
+        IMartianColonists martianColonists = d.martianColonists();
+        uint256 tokenCount = martianColonists.balanceOf(msg.sender);
         if (tokenCount == 0) {
             return new uint256[](0);
         }
 
         uint256[] memory result = new uint256[](tokenCount);
         for (uint256 i = 0; i < tokenCount; i++) {
-            result[i] = d.martianColonists().tokenOfOwnerByIndex(msg.sender, i);
+            result[i] = martianColonists.tokenOfOwnerByIndex(msg.sender, i);
         }
         return result;
     }
 
     function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns (uint256[] memory) {
-        uint256 tokenCount = d.martianColonists().balanceOf(msg.sender);
+        IMartianColonists martianColonists = d.martianColonists();
+        uint256 tokenCount = martianColonists.balanceOf(msg.sender);
         if (tokenCount <= _from || _from > _to || tokenCount == 0) {
             return (new uint256[](0));
         }
@@ -186,10 +194,33 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
         uint256 to = (tokenCount - 1 > _to) ? _to : tokenCount - 1;
         uint256[] memory result = new uint256[](to - _from + 1);
         for (uint256 i = _from; i <= to; i++) {
-            result[i - _from] = d.martianColonists().tokenOfOwnerByIndex(msg.sender, i);
+            result[i - _from] = martianColonists.tokenOfOwnerByIndex(msg.sender, i);
         }
 
         return result;
+    }
+
+    function allTokensPaginate(uint256 _from, uint256 _to)
+        external
+        view
+        returns (uint256[] memory, AvatarData[] memory)
+    {
+        IMartianColonists martianColonists = d.martianColonists();
+        uint256 tokenCount = martianColonists.totalSupply();
+        if (tokenCount <= _from || _from > _to || tokenCount == 0) {
+            return (new uint256[](0), new AvatarData[](0));
+        }
+        uint256 to = (tokenCount - 1 > _to) ? _to : tokenCount - 1;
+        uint256[] memory ids = new uint256[](to - _from + 1);
+        AvatarData[] memory avatarsResult = new AvatarData[](to - _from + 1);
+
+        for (uint256 i = _from; i <= to; i++) {
+            ids[i - _from] = martianColonists.tokenByIndex(i);
+            uint256 avatarXp = xp[i];
+            string memory avatarName = martianColonists.names(i);
+            avatarsResult[i - _from] = AvatarData(avatarName, avatarXp);
+        }
+        return (ids, avatarsResult);
     }
 
     function setMaxTokenId(uint256 _maxTokenId) external onlyOwner {

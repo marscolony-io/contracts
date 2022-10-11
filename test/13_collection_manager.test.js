@@ -51,4 +51,22 @@ contract("CollectionManager", (accounts) => {
 
     expect(damage).to.bignumber.be.equal(new BN(100));
   });
+
+  it("avatars all tokens paginate", async () => {
+    const totalAvatarsSupply = await nft.totalSupply();
+    console.log("total avatars supply", parseInt(totalAvatarsSupply));
+    expect(parseInt(totalAvatarsSupply)).to.be.equal(1);
+
+    await d.setCollectionManager(DAO);
+    await nft.setName(0, "avatar");
+
+    await collection.addXP(0, 100);
+
+    const result = await collection.allTokensPaginate(0, 3);
+    console.log("all tokens paginate response", result);
+    expect(result[0].length).to.be.equal(1);
+    expect(result[1].length).to.be.equal(1);
+    expect(result[1][0].name).to.be.equal("avatar");
+    expect(result[1][0].xp).to.be.bignumber.equal(new BN("100"));
+  });
 });

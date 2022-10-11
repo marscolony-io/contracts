@@ -245,12 +245,6 @@ module.exports = async (callback) => {
     );
 
     // claim all other lands for test server hot restart delays
-    for (let i = 1; i < 21000; i++) {
-      if (!claimedLands.has(i)) {
-        console.log("airdrop", i);
-        await gm.airdrop(accounts[9], i);
-      }
-    }
 
     // ---
 
