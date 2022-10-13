@@ -562,27 +562,28 @@ contract("Gears", (accounts) => {
   });
 
   describe("Gears locks by collection manager", () => {
-    it("can not lock more than 2 gears without special transport", async () => {
-      await expectRevert(
-        cm.setLocks([4, 5, 6], 0, { from: user1 }),
-        "you can't lock so many gears"
-      );
-    });
+    // it("can not lock more than 2 gears without special transport", async () => {
+    //   await expectRevert(
+    //     cm.setLocks([4, 5, 6], 0, { from: user1 }),
+    //     "you can't lock so many gears"
+    //   );
+    // });
 
-    it("revert if not a transport sent as transport", async () => {
-      await expectRevert(
-        cm.setLocks([4, 5, 6], 1, { from: user1 }),
-        "transportId is not transport"
-      );
-    });
+    // it("revert if not a transport sent as transport", async () => {
+    //   await expectRevert(
+    //     cm.setLocks(4, 5, 1, { from: user1 }),
+    //     "transportId is not transport"
+    //   );
+    // });
 
     let user1transportId;
-    let firstGearId;
-    let secondGearId;
-    let thirdGearId;
+    let user1gear1;
+    let user1gearSameCategoryAs1;
+    let user1gear2;
+    let user1gear3;
 
     let user2transportId;
-    let user2gearId;
+    let user2gear;
 
     it("mint gears and transports for next tests", async () => {
       await d.setCollectionManager(owner);
@@ -591,101 +592,213 @@ contract("Gears", (accounts) => {
       // console.log({ user1transportId });
 
       await gears.mint(user1, 2, 1, 1, 100);
-      firstGearId = parseInt(await gears.lastTokenMinted(user1));
+      user1gear1 = parseInt(await gears.lastTokenMinted(user1));
 
-      await gears.mint(user1, 2, 1, 1, 100);
-      secondGearId = parseInt(await gears.lastTokenMinted(user1));
+      await gears.mint(user1, 2, 2, 1, 100);
+      user1gearSameCategoryAs1 = parseInt(await gears.lastTokenMinted(user1));
+
+      await gears.mint(user1, 2, 3, 2, 100);
+      user1gear2 = parseInt(await gears.lastTokenMinted(user1));
       // console.log({ secondGearId });
 
-      await gears.mint(user1, 2, 2, 2, 100);
-      thirdGearId = parseInt(await gears.lastTokenMinted(user1));
+      await gears.mint(user1, 2, 4, 3, 100);
+      user1gear3 = parseInt(await gears.lastTokenMinted(user1));
 
       await gears.mint(user2, 2, 12, 4, 100);
       user2transportId = parseInt(await gears.lastTokenMinted(user2));
       // console.log({ user2transportId });
 
       await gears.mint(user2, 2, 1, 1, 100);
-      user2gearId = parseInt(await gears.lastTokenMinted(user2));
+      user2gear = parseInt(await gears.lastTokenMinted(user2));
       // console.log({ user2gearId });
 
       await d.setCollectionManager(cm.address);
     });
 
-    it("can not lock more than 3 gears with transport", async () => {
-      await expectRevert(
-        cm.setLocks([4, 5, 6, 5], user1transportId, { from: user1 }),
-        "you can't lock so many gears"
-      );
-    });
+    // it("can not lock more than 3 gears with transport", async () => {
+    //   await expectRevert(
+    //     cm.setLocks([4, 5, 6, 5], user1transportId, { from: user1 }),
+    //     "you can't lock so many gears"
+    //   );
+    // });
 
     it("can not lock if not a transport owner", async () => {
       await expectRevert(
-        cm.setLocks([2, 3], user2transportId, {
+        cm.setLocks(user2transportId, 0, 0, 0, {
           from: user1,
         }),
         "you are not transport owner"
       );
     });
 
-    it("can not lock if not a gear owner", async () => {
-      const ownerOfGear2 = await gears.ownerOf(user2gearId);
-      // console.log({ ownerOfGear2, user2 });
+    it("can not lock if not a transport", async () => {
       await expectRevert(
-        cm.setLocks([firstGearId, user2gearId], 0, {
+        cm.setLocks(user1gear1, 0, 0, 0, {
+          from: user1,
+        }),
+        "transportId is not transport"
+      );
+    });
+
+    it("can not lock if not a gear owner for any slots", async () => {
+      await expectRevert(
+        cm.setLocks(0, user2gear, 0, 0, {
+          from: user1,
+        }),
+        "you are not gear owner"
+      );
+
+      await expectRevert(
+        cm.setLocks(0, 0, user2gear, 0, {
+          from: user1,
+        }),
+        "you are not gear owner"
+      );
+
+      await expectRevert(
+        cm.setLocks(0, 0, 0, user2gear, {
+          from: user1,
+        }),
+        "you are not gear owner"
+      );
+
+      await expectRevert(
+        cm.setLocks(0, 0, 0, user2gear, {
           from: user1,
         }),
         "you are not gear owner"
       );
     });
 
-    it("can not lock transport in gears slots", async () => {
-      // const ownerOfGear2 = await gears.ownerOf(user2gearId);
-      // console.log({ ownerOfGear2, user2 });
+    it("can not lock transport in gear slots", async () => {
       await expectRevert(
-        cm.setLocks([firstGearId, user1transportId], 0, {
+        cm.setLocks(0, user1transportId, 0, 0, {
           from: user1,
         }),
-        "can not lock transport"
+        "can not lock transport as gear"
+      );
+      await expectRevert(
+        cm.setLocks(0, 0, user1transportId, 0, {
+          from: user1,
+        }),
+        "can not lock transport as gear"
+      );
+      await expectRevert(
+        cm.setLocks(0, 0, 0, user1transportId, {
+          from: user1,
+        }),
+        "can not lock transport as gear"
       );
     });
 
     it("can not lock gears of the same category", async () => {
       await expectRevert(
-        cm.setLocks([firstGearId, firstGearId], 0, {
+        cm.setLocks(0, user1gear1, user1gearSameCategoryAs1, 0, {
+          from: user1,
+        }),
+        "you can't lock gears of the same category"
+      );
+      await expectRevert(
+        cm.setLocks(0, user1gear1, 0, user1gearSameCategoryAs1, {
+          from: user1,
+        }),
+        "you can't lock gears of the same category"
+      );
+
+      await expectRevert(
+        cm.setLocks(0, 0, user1gear1, user1gearSameCategoryAs1, {
           from: user1,
         }),
         "you can't lock gears of the same category"
       );
     });
 
+    it("can not lock 3 gears if no transport locked", async () => {
+      await expectRevert(
+        cm.setLocks(0, user1gear1, user1gear2, user1gear3, {
+          from: user1,
+        }),
+        "can not lock 3 gears without special transport"
+      );
+    });
+
     it("lock gears", async () => {
-      await cm.setLocks([firstGearId, thirdGearId], user1transportId, {
+      await cm.setLocks(user1transportId, user1gear1, user1gear2, user1gear3, {
         from: user1,
       });
 
-      const gear1 = await gears.gears(firstGearId);
-      const gear2 = await gears.gears(thirdGearId);
+      const gear1 = await gears.gears(user1gear1);
+      const gear2 = await gears.gears(user1gear2);
+      const gear3 = await gears.gears(user1gear3);
       const transport = await gears.gears(user1transportId);
 
       expect(gear1.locked).to.be.equal(true);
       expect(gear2.locked).to.be.equal(true);
+      expect(gear3.locked).to.be.equal(true);
       expect(transport.locked).to.be.equal(true);
     });
 
-    it("lock other gears unlocks previous locked", async () => {
-      await cm.setLocks([secondGearId], 0, {
+    it("lock other gears unlocks previous locked except still locked", async () => {
+      await cm.setLocks(0, user1gear1, 0, 0, {
         from: user1,
       });
 
-      const gear1 = await gears.gears(firstGearId);
-      const gear2 = await gears.gears(thirdGearId);
+      const gearLocks = await cm.gearLocks(user1);
+      console.log({ gearLocks });
+
+      const gear1 = await gears.gears(user1gear1);
+      const gear2 = await gears.gears(user1gear3);
       const transport = await gears.gears(user1transportId);
 
       // console.log({ gear1, gear2, transport });
 
-      expect(gear1.locked).to.be.equal(false);
+      expect(gear1.locked).to.be.equal(true);
       expect(gear2.locked).to.be.equal(false);
       expect(transport.locked).to.be.equal(false);
+    });
+
+    it("unlocks all", async () => {
+      await cm.setLocks(user1transportId, user1gear1, user1gear2, user1gear3, {
+        from: user1,
+      });
+
+      const gearLocksBefore = await cm.gearLocks(user1);
+      const unlocksBefore = parseInt(gearLocksBefore.locks);
+      console.log({ unlocksBefore });
+
+      await cm.setLocks(0, 0, 0, 0, {
+        from: user1,
+      });
+
+      const gearLocks = await cm.gearLocks(user1);
+      console.log({ gearLocks });
+
+      expect(gearLocks.transportId).to.be.bignumber.equal(new BN(0));
+      expect(gearLocks.gear1Id).to.be.bignumber.equal(new BN(0));
+      expect(gearLocks.gear2Id).to.be.bignumber.equal(new BN(0));
+      expect(gearLocks.gear3Id).to.be.bignumber.equal(new BN(0));
+
+      const unlocksAfter = parseInt(gearLocks.locks);
+      console.log({ unlocksAfter });
+
+      expect(unlocksAfter - unlocksBefore).to.be.equal(1);
+    });
+
+    it("collection.getLockedGears", async () => {
+      await cm.setLocks(user1transportId, user1gear1, user1gear2, user1gear3, {
+        from: user1,
+      });
+
+      const result = await cm.getLockedGears(user1);
+      console.log(result);
+      console.log({ locksCount: parseInt(result.locksCount) });
+
+      expect(result[0][0]).to.bignumber.be.equal(new BN(user1transportId));
+      expect(result[0][1]).to.bignumber.be.equal(new BN(user1gear1));
+      expect(result[0][2]).to.bignumber.be.equal(new BN(user1gear2));
+      expect(result[0][3]).to.bignumber.be.equal(new BN(user1gear3));
+
+      expect(result.locksCount).to.bignumber.be.equal(new BN(5));
     });
   });
 });

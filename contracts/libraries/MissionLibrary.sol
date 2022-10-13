@@ -6,8 +6,8 @@ import '../interfaces/IEnums.sol';
 library MissionLibrary {
   function stringToUint(string memory s) private pure returns (uint256) {
     bytes memory b = bytes(s);
-    uint result = 0;
-    for (uint i = 0; i < b.length; i++) {
+    uint256 result = 0;
+    for (uint256 i = 0; i < b.length; i++) {
       if (uint8(b[i]) >= 48 && uint8(b[i]) <= 57) {
         result = result * 10 + (uint8(b[i]) - 48);
       }
@@ -77,19 +77,34 @@ library MissionLibrary {
     address signerAddress
   ) external pure {
     address realAddress = _getSignerAddress(message, v, r, s);
-    require (realAddress == signerAddress, 'Signature is not from server');
+    require(realAddress == signerAddress, 'Signature is not from server');
   }
 
-  function _substring(string memory str, uint startIndex, uint endIndex) private pure returns (uint256 ) {
+  function _substring(
+    string memory str,
+    uint256 startIndex,
+    uint256 endIndex
+  ) private pure returns (uint256) {
     bytes memory strBytes = bytes(str);
-    bytes memory result = new bytes(endIndex-startIndex);
-    for(uint i = startIndex; i < endIndex; i++) {
+    bytes memory result = new bytes(endIndex - startIndex);
+    for (uint256 i = startIndex; i < endIndex; i++) {
       result[i - startIndex] = strBytes[i];
     }
     return stringToUint(string(result));
   }
 
-  function getAssetsFromFinishMissionMessage(string calldata message) external pure returns (uint256, uint256, uint256, uint256, uint256, uint256) {
+  function getAssetsFromFinishMissionMessage(string calldata message)
+    external
+    pure
+    returns (
+      uint256,
+      uint256,
+      uint256,
+      uint256,
+      uint256,
+      uint256
+    )
+  {
     // 0..<32 - random
     // 32..<37 - avatar id
     // 37..<42 - land id
@@ -108,15 +123,22 @@ library MissionLibrary {
     uint256 _landReward = _substring(message, 61, 65);
     require(_avatar == _avatar2, 'check failed');
 
-    require(_avatar > 0, "AvatarId is not valid");
-    require(_land > 0 && _land <= 21000, "LandId is not valid");
-    require(_xp >= 230 && _xp < 19971800, "XP increment is not valid");
-    require((_lootbox >= 0 && _lootbox <= 3) || (_lootbox >= 23 && _lootbox <= 25), "Lootbox code is not valid");
+    require(_avatar > 0, 'AvatarId is not valid');
+    require(_land > 0 && _land <= 21000, 'LandId is not valid');
+    require(_xp >= 230 && _xp < 19971800, 'XP increment is not valid');
+    require(
+      (_lootbox >= 0 && _lootbox <= 3) || (_lootbox >= 23 && _lootbox <= 25),
+      'Lootbox code is not valid'
+    );
 
     return (_avatar, _land, _xp, _lootbox, _avatarReward, _landReward);
   }
 
-  function getLootboxRarity(uint256 _lootbox) external pure returns (IEnums.Rarity rarity) {
+  function getLootboxRarity(uint256 _lootbox)
+    external
+    pure
+    returns (IEnums.Rarity rarity)
+  {
     if (_lootbox == 1 || _lootbox == 23) return IEnums.Rarity.COMMON;
     if (_lootbox == 2 || _lootbox == 24) return IEnums.Rarity.RARE;
     if (_lootbox == 3 || _lootbox == 25) return IEnums.Rarity.LEGENDARY;
