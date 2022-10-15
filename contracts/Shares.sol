@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity =0.8.13;
+pragma solidity >=0.8.0 <0.9.0;
 
 import './Constants.sol';
 import './interfaces/IShares.sol';
@@ -11,7 +11,10 @@ abstract contract Shares is IShares, Constants {
 
   IDependencies public d; // dependencies
 
-  uint256[18] private ______gap;
+  uint256[17] private ______gap;
+
+  uint256 reserved0_0;
+
   struct LandInfo {
     uint256 share;
     uint256 rewardDebt;
@@ -36,7 +39,6 @@ abstract contract Shares is IShares, Constants {
     uint256 clnyReward = (block.timestamp - lastRewardTime) * clnyPerSecond;
     accColonyPerShare = accColonyPerShare + (clnyReward * 1e12) / totalShare;
     lastRewardTime = block.timestamp;
-    d.clny().mint(address(this), clnyReward, REASON_SHARES_PREPARE_CLNY);
   }
 
   function setInitialShare(uint256 tokenId) internal {
@@ -45,7 +47,8 @@ abstract contract Shares is IShares, Constants {
     totalShare = totalShare + 1;
   }
 
-  function addToShare(uint256 tokenId, uint256 _share) internal {
+  function addToShare(uint256 tokenId, uint256 _share, bool active) internal {
+    active; // TODO use it
     LandInfo storage land = landInfo[tokenId];
     uint256 _accColonyPerShare = accColonyPerShare;
     if (block.timestamp > lastRewardTime && totalShare != 0) {
@@ -60,20 +63,5 @@ abstract contract Shares is IShares, Constants {
     if (land.share > maxLandShares) {
       maxLandShares = land.share;
     }
-  }
-
-  function claimClnyWithoutPoolUpdate(uint256 tokenId, ICLNY clny) internal returns (uint256 pending) {
-    LandInfo storage land = landInfo[tokenId];
-    pending = (land.share * accColonyPerShare) / 1e12 - land.rewardDebt;
-    land.rewardDebt = (land.share * accColonyPerShare) / 1e12;
-
-    uint256 clnyBal = clny.balanceOf(address(this));
-    bool result = false;
-    if (pending > clnyBal) {
-      result = clny.transfer(msg.sender, clnyBal);
-    } else {
-      result = clny.transfer(msg.sender, pending);
-    }
-    require(result, 'transfer failed');
   }
 }

@@ -117,7 +117,22 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     locked = false;
   }
 
-  function setClnyPerSecond(uint256 newSpeed) external onlyOwner {
+  function burnPreparedTokens() external {
+    uint256 amount = d.clny().balanceOf(address(this));
+    d.clny().burn(address(this), amount, REASON_CORRECTIONAL_BURN);
+  }
+
+  function redefineLandShares(uint256 landId) external {
+    uint256 shares = 1; // base from land
+    if (tokenData[landId].baseStation == 1) shares = shares + 1;
+    if (tokenData[landId] > 0) shares = shares + tokenData[landId];
+    if (tokenData[landId] == 3) shares = shares + 1;
+    LandInfo storage land = landInfo[tokenId];
+    uint256 earned = (land.share * accColonyPerShare) / 1e12 - land.rewardDebt; // earned with old scheme
+    land.share = shares;
+  }
+
+  function setClnyPerSecond(uintAZ256 newSpeed) external onlyOwner {
     updatePool();
     clnyPerSecond = newSpeed;
   }
@@ -442,7 +457,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
    */
   function buildBaseStation(uint256 tokenId) public onlyTokenOwner(tokenId) whenNotPaused {
     require(tokenData[tokenId].baseStation == 0, 'There is already a base station');
-    addToShare(tokenId, 1);
+    addToShare(tokenId, 1, true);
     tokenData[tokenId].baseStation = 1;
     _deduct(BASE_STATION, REASON_UPGRADE);
     emit BuildBaseStation(tokenId, msg.sender);
@@ -495,7 +510,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   function buildTransport(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
     require(level <= 3, 'wrong level');
     require(tokenData[tokenId].transport == level - 1, 'Can buy only next level');
-    addToShare(tokenId, level == 3 ? 2 : 1); // level 3 gives +2 shares
+    addToShare(tokenId, level == 3 ? 2 : 1, false); // level 3 gives +2 shares
     tokenData[tokenId].transport = level;
     _deduct(level, REASON_UPGRADE);
     emit BuildTransport(tokenId, msg.sender, level);
@@ -548,7 +563,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   function buildRobotAssembly(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
     require(level <= 3, 'wrong level');
     require(tokenData[tokenId].robotAssembly == level - 1, 'Can buy only next level');
-    addToShare(tokenId, level == 3 ? 2 : 1); // level 3 gives +2 shares
+    addToShare(tokenId, level == 3 ? 2 : 1, true); // level 3 gives +2 shares
     tokenData[tokenId].robotAssembly = level;
     _deduct(level, REASON_UPGRADE);
     emit BuildRobotAssembly(tokenId, msg.sender, level);
@@ -601,7 +616,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   function buildPowerProduction(uint256 tokenId, uint8 level) public onlyTokenOwner(tokenId) whenNotPaused {
     require(level <= 3, 'wrong level');
     require(tokenData[tokenId].powerProduction == level - 1, 'Can buy only next level');
-    addToShare(tokenId, level == 3 ? 2 : 1); // level 3 gives +2 shares
+    addToShare(tokenId, level == 3 ? 2 : 1, false); // level 3 gives +2 shares
     tokenData[tokenId].powerProduction = level;
     _deduct(level, REASON_UPGRADE);
     emit BuildPowerProduction(tokenId, msg.sender, level);
@@ -688,9 +703,13 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     uint256 toUser = 0;
     for (uint256 i = 0; i < tokenIds.length; i++) {
       require(msg.sender == IOwnable(address(mc)).ownerOf(tokenIds[i]));
-      toUser = toUser + claimClnyWithoutPoolUpdate(tokenIds[i], clny);
+      LandInfo storage land = landInfo[tokenIds[i]];
+      uint256 pending = (land.share * accColonyPerShare) / 1e12 - land.rewardDebt;
+      land.rewardDebt = (land.share * accColonyPerShare) / 1e12;
+      toUser = toUser + pending;
     }
 
+    clny.mint(msg.sender, toUser, REASON_EARNING);
     clny.mint(treasury, (toUser * 31) / 49, REASON_TREASURY);
     clny.mint(liquidity, (toUser * 20) / 49, REASON_LP_POOL);
   }

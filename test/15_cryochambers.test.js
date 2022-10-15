@@ -64,9 +64,9 @@ contract("CryochamberManager", (accounts) => {
 
     const clnyBalanceAfter = await clny.balanceOf(user1);
     const cryoChamberPrice = await cryo.cryochamberPrice();
-
-    expect(clnyBalanceBefore - clnyBalanceAfter - cryoChamberPrice).to.be.equal(
-      0
+    
+    expect(Math.abs(clnyBalanceBefore - clnyBalanceAfter - cryoChamberPrice)).to.be.lessThan(
+      100000 // possible delta
     );
   });
 
