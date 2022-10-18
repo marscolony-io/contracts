@@ -32,7 +32,7 @@ abstract contract Constants {
   uint256 constant ULTRASONIC_TRANSMITTER = 9;
   uint256 constant INFRARED_TRANSMITTER = 10;
   uint256 constant VIBRATION_TRANSMITTER = 11;
-  uint256 constant THE_NEBUCHADNEZZAR = 12; 
+  uint256 constant THE_NEBUCHADNEZZAR = 12;
   uint256 constant THE_WRAITH = 13;
 
   uint256 constant CATEGORY_ENGINE = 0;
@@ -46,14 +46,11 @@ abstract contract Constants {
   uint256 constant LEGENDARY_GEAR_DURABILITY = 200;
   uint256 constant TRANSPORT_GEAR_DURABILITY = 350;
 
-  uint256 constant COMMON_OPENING_PRICE_USD = 200; // cents 
+  uint256 constant COMMON_OPENING_PRICE_USD = 200; // cents
   uint256 constant RARE_OPENING_PRICE_USD = 400;
   uint256 constant LEGENDARY_OPENING_PRICE_USD = 800;
 
   // wallets
   address constant ARTIST1_ROYALTY_WALLET = 0x352c478CD91BA54615Cc1eDFbA4A3E7EC9f60EE1;
   address constant ARTIST2_ROYALTY_WALLET = 0x6cDa418Ea9a6be44531a567f778D340615017D00;
-
-
-
 }

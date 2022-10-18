@@ -2,35 +2,44 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import "@openzeppelin/contracts/utils/Strings.sol";
-import './interfaces/ILootboxes.sol';
+import '@openzeppelin/contracts/utils/Strings.sol';
+import './interfaces/IDependencies.sol';
 import './interfaces/IEnums.sol';
 
-
-contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
+contract Lootboxes is ERC721Enumerable, ILootboxes {
   using Strings for uint256;
 
   string private nftBaseURI;
-  address public gameManager;
-  mapping (uint256 => IEnums.Rarity) public rarities;
-  mapping (address => uint256) private lastTokenMinted;
+  IDependencies public d;
+
+  mapping(uint256 => IEnums.Rarity) public rarities;
+  mapping(address => uint256) private lastTokenMinted;
   bool lock;
 
   uint256 private nextIdToMint = 1;
 
-  modifier onlyGameManager {
-    require(msg.sender == gameManager, 'only game manager');
+  modifier onlyOwner() {
+    require(msg.sender == d.owner(), 'Only owner');
     _;
   }
 
-  constructor (string memory _nftBaseURI) ERC721('Utility crates', 'UCR') {
+  modifier onlyGameManager() {
+    require(msg.sender == address(d.gameManager()), 'Only game manager');
+    _;
+  }
+
+  constructor(string memory _nftBaseURI, IDependencies _d) ERC721('Utility crates', 'UCR') {
+    d = _d;
     nftBaseURI = _nftBaseURI;
   }
 
-  function setGameManager(address _gameManager) external onlyOwner {
-    gameManager = _gameManager;
+  function setDependencies(IDependencies addr) external onlyOwner {
+    d = addr;
+  }
+
+  function owner() public view returns (address) {
+    return d.owner();
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -42,22 +51,23 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
   }
 
   function getRarityUriPath(IEnums.Rarity _rarity) private pure returns (string memory) {
-    if (_rarity == IEnums.Rarity.COMMON) return "/0/";
-    if (_rarity == IEnums.Rarity.RARE) return "/1/";
-    if (_rarity == IEnums.Rarity.LEGENDARY) return "/2/";
-    revert("Invalid rarity");
+    if (_rarity == IEnums.Rarity.COMMON) return '/0/';
+    if (_rarity == IEnums.Rarity.RARE) return '/1/';
+    if (_rarity == IEnums.Rarity.LEGENDARY) return '/2/';
+    revert('Invalid rarity');
   }
 
   function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-    require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+    require(_exists(tokenId), 'ERC721Metadata: URI query for nonexistent token');
 
     string memory baseURI = _baseURI();
     IEnums.Rarity rarity = rarities[tokenId];
-    return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString(), getRarityUriPath(rarity))) : "";
+    return
+      bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString(), getRarityUriPath(rarity))) : '';
   }
 
   function lastOwnedTokenURI() public view returns (string memory) {
-    require (lastTokenMinted[msg.sender] != 0, "User hasn't minted any token");
+    require(lastTokenMinted[msg.sender] != 0, "User hasn't minted any token");
     return tokenURI(lastTokenMinted[msg.sender]);
   }
 
@@ -76,7 +86,7 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
     rarities[tokenId] = IEnums.Rarity.COMMON;
   }
 
-  function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns(uint256[] memory, uint256[] memory) {
+  function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns (uint256[] memory, uint256[] memory) {
     uint256 tokenCount = balanceOf(msg.sender);
     if (tokenCount <= _from || _from > _to || tokenCount == 0) {
       return (new uint256[](0), new uint256[](0));
@@ -91,7 +101,11 @@ contract Lootboxes is ERC721Enumerable, ILootboxes, Ownable {
     return (result, resultRarities);
   }
 
-  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
+  function withdrawToken(
+    address _tokenContract,
+    address _whereTo,
+    uint256 _amount
+  ) external onlyOwner {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
   }

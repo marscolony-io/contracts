@@ -4,6 +4,7 @@ const { time, ether } = require('openzeppelin-test-helpers');
 const MC = artifacts.require('MC');
 const CLNY = artifacts.require('CLNY');
 const GameManagerShares = artifacts.require('GameManagerShares');
+const Dependencies = artifacts.require('Dependencies');
 
 contract('Shares economy', (accounts) => {
   const [owner, user1, user2, , , , treasury, liquidity] = accounts;
@@ -11,13 +12,14 @@ contract('Shares economy', (accounts) => {
   let mc;
   let clny;
   let gm;
+  let d;
 
   before(async () => {
     clny = await CLNY.deployed();
     mc = await MC.deployed();
     gm = await GameManagerShares.deployed();
-    await mc.setGameManager(GameManagerShares.address);
-    await clny.setGameManager(GameManagerShares.address);
+    d = await Dependencies.deployed();
+    await d.setGameManager(GameManagerShares.address);
     await gm.setPrice(web3.utils.toWei('0.1'), { from: owner });
     await gm.setClnyPerSecond(ether('6000').div(new web3.utils.BN(60 * 60 * 24)));
     await gm.claim([99], { value: await gm.getFee(1), from: user1 });

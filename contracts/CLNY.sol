@@ -5,27 +5,49 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import './GameConnection.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import './interfaces/IDependencies.sol';
 
+contract CLNY is ERC20, Pausable {
+  IDependencies public d;
 
-contract CLNY is ERC20, GameConnection, Pausable {
-  constructor (string memory tokenName) ERC20('ColonyToken', tokenName) {
-    GameConnection.__GameConnection_init(msg.sender);
+  constructor(string memory tokenName, IDependencies _d) ERC20('ColonyToken', tokenName) {
+    d = _d;
   }
 
-  mapping (uint256 => uint256) public burnedStats;
-  mapping (uint256 => uint256) public mintedStats;
+  modifier onlyOwner() {
+    require(msg.sender == d.owner(), 'Only owner');
+    _;
+  }
 
-  function burn(address _address, uint256 _amount, uint256 reason) external onlyGameManager whenNotPaused {
+  modifier onlyGameManager() {
+    require(msg.sender == address(d.gameManager()), 'Only game manager');
+    _;
+  }
+
+  function setDependencies(IDependencies addr) external onlyOwner {
+    d = addr;
+  }
+
+  mapping(uint256 => uint256) public burnedStats;
+  mapping(uint256 => uint256) public mintedStats;
+
+  function burn(
+    address _address,
+    uint256 _amount,
+    uint256 reason
+  ) external onlyGameManager whenNotPaused {
     _burn(_address, _amount);
     burnedStats[reason] += _amount;
   }
 
-  function mint(address _address, uint256 _amount, uint256 reason) external onlyGameManager whenNotPaused {
+  function mint(
+    address _address,
+    uint256 _amount,
+    uint256 reason
+  ) external onlyGameManager whenNotPaused {
     _mint(_address, _amount);
     mintedStats[reason] += _amount;
   }
@@ -38,7 +60,11 @@ contract CLNY is ERC20, GameConnection, Pausable {
     _unpause();
   }
 
-  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyDAO {
+  function withdrawToken(
+    address _tokenContract,
+    address _whereTo,
+    uint256 _amount
+  ) external onlyOwner {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
   }

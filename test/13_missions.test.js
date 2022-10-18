@@ -8,9 +8,10 @@ const CollectionManager = artifacts.require("CollectionManager");
 const NFT = artifacts.require("MartianColonists");
 const MSN = artifacts.require("MissionManager");
 const MC = artifacts.require("MC");
+const Dependencies = artifacts.require("Dependencies");
 
 contract("MissionsManager", (accounts) => {
-  const [DAO, user1, user2, user3] = accounts;
+  const [owner, user1, user2, user3] = accounts;
 
   let gm;
   let clny;
@@ -18,6 +19,7 @@ contract("MissionsManager", (accounts) => {
   let nft;
   let msn;
   let mc;
+  let d;
 
   before(async () => {
     gm = await GameManagerFixed.deployed();
@@ -26,8 +28,9 @@ contract("MissionsManager", (accounts) => {
     nft = await NFT.deployed();
     msn = await MSN.deployed();
     mc = await MC.deployed();
+    d = await Dependencies.deployed();
     await collection.setMaxTokenId(5);
-    await gm.setPrice(web3.utils.toWei("0.1"), { from: DAO });
+    await gm.setPrice(web3.utils.toWei("0.1"), { from: owner });
     await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
     await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });
     await gm.claim([300], { value: web3.utils.toWei("0.1"), from: user3 });
@@ -127,7 +130,7 @@ contract("MissionsManager", (accounts) => {
     });
 
     it("Set message sender to backend sender", async () => {
-      await gm.setBackendSigner(signer.address);
+      await d.setBackendSigner(signer.address);
     });
 
     it("Fails if avatarId is not doubled", async () => {
@@ -254,7 +257,7 @@ contract("MissionsManager", (accounts) => {
       );
 
       await gm.finishMission(message, signature.v, signature.r, signature.s, {
-        from: DAO,
+        from: owner,
       });
 
       const addedXp = await collection.getXP([4]);

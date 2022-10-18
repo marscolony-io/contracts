@@ -78,13 +78,6 @@ contract('Claiming', (accounts) => {
     });
   });
 
-  it('[You can\'t claim 0 tokens] Claim several: []', async () => {
-    const tx = gm.claim([], {
-      from: user1,
-    });
-    await truffleAssert.reverts(tx, 'You can\'t claim 0 tokens');
-  });
-
   it('[Wrong claiming fee] Claim', async () => {
     const tx = gm.claim([222], {
       from: owner,

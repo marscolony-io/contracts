@@ -3,33 +3,46 @@
  */
 
 // SPDX-License-Identifier: MIT
-pragma solidity =0.8.13;
+pragma solidity >=0.8.0 <0.9.0;
+
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
-import './interfaces/ISalesManager.sol';
-import "./legacy/impl/RoyaltiesV2Impl.sol";
-import "./legacy/LibPart.sol";
-import "./legacy/LibRoyaltiesV2.sol";
+import './legacy/impl/RoyaltiesV2Impl.sol';
+import './legacy/LibPart.sol';
+import './legacy/LibRoyaltiesV2.sol';
+import './interfaces/IMC.sol';
+import './interfaces/IDependencies.sol';
 
-
-contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2Impl {
+contract MC is IMC, ERC721Enumerable, Pausable, ReentrancyGuard, RoyaltiesV2Impl {
   string private nftBaseURI;
-  ISalesManager public salesManager;
-  address public GameManager;
+  IDependencies public d;
   bool migrationOpen = true;
 
   bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a; // royalties
 
-  constructor (string memory _nftBaseURI) ERC721('MarsColony', 'MC') {
+  constructor(string memory _nftBaseURI, IDependencies _d) ERC721('MarsColony', 'MC') {
+    d = _d;
     nftBaseURI = _nftBaseURI;
   }
 
-  modifier onlyGameManager {
-    require(msg.sender == GameManager, 'Only GameManager');
+  modifier onlyOwner() {
+    require(msg.sender == d.owner(), 'Only owner');
     _;
+  }
+
+  modifier onlyGameManager() {
+    require(msg.sender == address(d.gameManager()), 'Only game manager');
+    _;
+  }
+
+  function owner() public view returns (address) {
+    return d.owner();
+  }
+
+  function setDependencies(IDependencies addr) external onlyOwner {
+    d = addr;
   }
 
   function setRoyalties(address payable _royaltiesRecipientAddress, uint96 _percentageBasisPoints) public onlyOwner {
@@ -39,7 +52,11 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2
     _saveRoyalties(_royalties);
   }
 
-  function royaltyInfo(uint256 _tokenId, uint256 _salePrice) external view returns (address receiver, uint256 royaltyAmount) {
+  function royaltyInfo(uint256 _tokenId, uint256 _salePrice)
+    external
+    view
+    returns (address receiver, uint256 royaltyAmount)
+  {
     _tokenId;
     LibPart.Part[] memory _royalties = royalty;
     if (_royalties.length > 0) {
@@ -71,7 +88,11 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2
   }
 
   // is used manually to migrate tokens to a new contract, then closes onse 'close=true' is send
-  function migrationMint(address[] calldata receivers, uint256[] calldata tokenIds, bool close) external onlyOwner {
+  function migrationMint(
+    address[] calldata receivers,
+    uint256[] calldata tokenIds,
+    bool close
+  ) external onlyOwner {
     require(migrationOpen, 'Migration finished');
     require(receivers.length == tokenIds.length, 'Invalid array sizes');
 
@@ -94,22 +115,19 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2
     _unpause();
   }
 
-  function setGameManager(address _GameManager) external onlyOwner {
-    GameManager = _GameManager;
-  }
-
-  function setSalesManager(ISalesManager _address) external onlyOwner {
-    salesManager = _address;
-  }
-
-  function _afterTokenTransfer(address from, address to, uint256 tokenId) internal virtual override {
+  function _afterTokenTransfer(
+    address from,
+    address to,
+    uint256 tokenId
+  ) internal virtual override {
+    ISalesManager salesManager = d.salesManager();
     super._afterTokenTransfer(from, to, tokenId);
     if (address(salesManager) != address(0)) {
       salesManager.mcTransferHook(from, to, tokenId);
     }
   }
 
-  function allMyTokens() external view returns(uint256[] memory) {
+  function allMyTokens() external view returns (uint256[] memory) {
     uint256 tokenCount = balanceOf(msg.sender);
     if (tokenCount == 0) {
       return new uint256[](0);
@@ -122,7 +140,7 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2
     }
   }
 
-  function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns(uint256[] memory) {
+  function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns (uint256[] memory) {
     uint256 tokenCount = balanceOf(msg.sender);
     if (tokenCount <= _from || _from > _to || tokenCount == 0) {
       return new uint256[](0);
@@ -135,7 +153,7 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2
     return result;
   }
 
-  function allTokensPaginate(uint256 _from, uint256 _to) external view returns(uint256[] memory) {
+  function allTokensPaginate(uint256 _from, uint256 _to) external view returns (uint256[] memory) {
     uint256 tokenCount = ERC721Enumerable.totalSupply();
     if (tokenCount <= _from || _from > _to || tokenCount == 0) {
       return new uint256[](0);
@@ -149,12 +167,20 @@ contract MC is ERC721Enumerable, Pausable, ReentrancyGuard, Ownable, RoyaltiesV2
   }
 
   /** for the in-game marketplace */
-  function trade(address _from, address _to, uint256 _tokenId) external whenNotPaused nonReentrant {
-    require (msg.sender == address(salesManager), 'only SalesManager');
+  function trade(
+    address _from,
+    address _to,
+    uint256 _tokenId
+  ) external whenNotPaused nonReentrant {
+    require(msg.sender == address(d.salesManager()), 'only SalesManager');
     _safeTransfer(_from, _to, _tokenId, '');
   }
 
-  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner nonReentrant {
+  function withdrawToken(
+    address _tokenContract,
+    address _whereTo,
+    uint256 _amount
+  ) external onlyOwner nonReentrant {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
   }

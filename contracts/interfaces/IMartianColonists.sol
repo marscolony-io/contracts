@@ -5,8 +5,12 @@ import '@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol';
 
 interface IMartianColonists is IERC721Enumerable {
   function setCollectionManager(address _collectionManager) external;
+
   function setBaseURI(string memory newURI) external;
+
   function mint(address receiver) external;
+
   function setName(uint256 tokenId, string memory _name) external;
+
   function names(uint256) external view returns (string memory);
 }
