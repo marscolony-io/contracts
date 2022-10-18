@@ -1,16 +1,17 @@
-const { assert, expect } = require("chai");
-const truffleAssert = require("truffle-assertions");
-const { time, BN, expectRevert } = require("openzeppelin-test-helpers");
+const { assert, expect } = require('chai');
+const truffleAssert = require('truffle-assertions');
+const { time, BN, expectRevert } = require('openzeppelin-test-helpers');
 
-const GameManagerFixed = artifacts.require("GameManagerFixed");
-const CLNY = artifacts.require("CLNY");
-const CollectionManager = artifacts.require("CollectionManager");
-const NFT = artifacts.require("MartianColonists");
-const MSN = artifacts.require("MissionManager");
-const MC = artifacts.require("MC");
-const Dependencies = artifacts.require("Dependencies");
+const GameManagerFixed = artifacts.require('GameManagerFixed');
+const CLNY = artifacts.require('CLNY');
+const CollectionManager = artifacts.require('CollectionManager');
+const NFT = artifacts.require('MartianColonists');
+const MSN = artifacts.require('MissionManager');
+const MC = artifacts.require('MC');
+const Dependencies = artifacts.require('Dependencies');
+const MISSION_LIBRARY = artifacts.require('MissionLibrary');
 
-contract("MissionsManager", (accounts) => {
+contract('MissionsManager', accounts => {
   const [owner, user1, user2, user3] = accounts;
 
   let gm;
@@ -20,6 +21,7 @@ contract("MissionsManager", (accounts) => {
   let msn;
   let mc;
   let d;
+  let mission_library;
 
   before(async () => {
     gm = await GameManagerFixed.deployed();
@@ -29,11 +31,12 @@ contract("MissionsManager", (accounts) => {
     msn = await MSN.deployed();
     mc = await MC.deployed();
     d = await Dependencies.deployed();
+    mission_library = await MISSION_LIBRARY.deployed();
     await collection.setMaxTokenId(5);
-    await gm.setPrice(web3.utils.toWei("0.1"), { from: owner });
-    await gm.claim([100], { value: web3.utils.toWei("0.1"), from: user1 });
-    await gm.claim([200], { value: web3.utils.toWei("0.1"), from: user2 });
-    await gm.claim([300], { value: web3.utils.toWei("0.1"), from: user3 });
+    await gm.setPrice(web3.utils.toWei('0.1'), { from: owner });
+    await gm.claim([100], { value: web3.utils.toWei('0.1'), from: user1 });
+    await gm.claim([200], { value: web3.utils.toWei('0.1'), from: user2 });
+    await gm.claim([300], { value: web3.utils.toWei('0.1'), from: user3 });
     await time.increase(60 * 60 * 24 * 365.25 * 1000); // wait 10 years
     await gm.claimEarned([100], { from: user1 }); // claim 3652.5 clny
     await gm.claimEarned([300], { from: user3 });
@@ -43,14 +46,14 @@ contract("MissionsManager", (accounts) => {
     await gm.mintAvatar({ from: user3 }); // avatar 4 to check rewards
   });
 
-  describe("getLandsData()", function() {
-    it("Returns empty array if no lands have been sent in function params", async () => {
+  describe('getLandsData()', function() {
+    it('Returns empty array if no lands have been sent in function params', async () => {
       const missions = await msn.getLandsData([]);
       assert.isTrue(Array.isArray(missions));
       assert.equal(missions.length, 0);
     });
 
-    it("Returns lands by lands ids", async () => {
+    it('Returns lands by lands ids', async () => {
       const lands = await mc.allTokensPaginate(0, 1);
       const availableLands = await msn.getLandsData(lands);
       expect(availableLands).to.have.lengthOf(2);
@@ -58,7 +61,7 @@ contract("MissionsManager", (accounts) => {
       // expect(availableLands[1].availableMissionCount === "1");
     });
 
-    it("Returns lands with correct private flags", async () => {
+    it('Returns lands with correct private flags', async () => {
       await msn.setAccountPrivacy(true, { from: user1 });
       const lands = await mc.allTokensPaginate(0, 1);
       const availableLands = await msn.getLandsData(lands);
@@ -66,161 +69,106 @@ contract("MissionsManager", (accounts) => {
       expect(availableLands[1].isPrivate).to.be.false;
     });
 
-    it("Returns land with limit 0 and default revshare", async () => {
+    it('Returns land with limit 0 and default revshare', async () => {
       const lands = await mc.allTokensPaginate(0, 1);
       const availableLands = await msn.getLandsData(lands);
-      expect(availableLands[0].availableMissionCount).to.be.equal("0");
-      expect(availableLands[0].revshare).to.be.equal("20");
+      expect(availableLands[0].availableMissionCount).to.be.equal('0');
+      expect(availableLands[0].revshare).to.be.equal('20');
     });
 
-    it("Returns land with limit 1 for base station", async () => {
+    it('Returns land with limit 1 for base station', async () => {
       const lands = await mc.allTokensPaginate(0, 1);
       await gm.buildBaseStation(100, { from: user1 });
       const availableLands = await msn.getLandsData(lands);
-      expect(availableLands[0].availableMissionCount).to.be.equal("1");
+      expect(availableLands[0].availableMissionCount).to.be.equal('1');
     });
 
-    it("Returns land with limit 2 for Power Plant 1 level", async () => {
+    it('Returns land with limit 2 for Power Plant 1 level', async () => {
       const lands = await mc.allTokensPaginate(0, 1);
       await gm.buildPowerProduction(100, 1, { from: user1 });
 
       const availableLands = await msn.getLandsData(lands);
-      expect(availableLands[0].availableMissionCount).to.be.equal("2");
+      expect(availableLands[0].availableMissionCount).to.be.equal('2');
     });
 
-    it("Returns land with limit 3 for Power Plant 2 level", async () => {
+    it('Returns land with limit 3 for Power Plant 2 level', async () => {
       const lands = await mc.allTokensPaginate(0, 1);
       await gm.buildPowerProduction(100, 2, { from: user1 });
 
       const availableLands = await msn.getLandsData(lands);
-      expect(availableLands[0].availableMissionCount).to.be.equal("3");
+      expect(availableLands[0].availableMissionCount).to.be.equal('3');
     });
 
-    it("Returns land with limit 4 for Power Plant 2 level", async () => {
+    it('Returns land with limit 4 for Power Plant 2 level', async () => {
       const lands = await mc.allTokensPaginate(0, 1);
       await gm.buildPowerProduction(100, 3, { from: user1 });
 
       const availableLands = await msn.getLandsData(lands);
-      expect(availableLands[0].availableMissionCount).to.be.equal("4");
+      expect(availableLands[0].availableMissionCount).to.be.equal('4');
     });
   });
 
-  describe("GM.finishMission()", function() {
+  describe('GM.finishMission()', function() {
     const signer = {
-      privateKey:
-        "4028ea385a848c51ff76c0d968305e273d415335ccd06854630a8465b67a9eef",
-      address: "0x5a636D26070A8a132E4731743CA12964CBB1950b",
+      privateKey: '4028ea385a848c51ff76c0d968305e273d415335ccd06854630a8465b67a9eef',
+      address: '0x5a636D26070A8a132E4731743CA12964CBB1950b',
     };
 
-    it("Reverts if signature is not from server", async () => {
-      const message =
-        "1111111111111111000012100015555555111111111111111111111111";
-      const signature = await web3.eth.accounts.sign(
-        message,
-        signer.privateKey
-      );
+    it('Reverts if signature is not from server', async () => {
+      const message = '1111111111111111000012100015555555111111111111111111111111';
+      const signature = await web3.eth.accounts.sign(message, signer.privateKey);
 
-      const tx = gm.finishMission(
-        message,
-        signature.v,
-        signature.r,
-        signature.s
-      );
-      await truffleAssert.reverts(tx, "Signature is not from server");
+      const tx = gm.finishMission(message, signature.v, signature.r, signature.s);
+      await truffleAssert.reverts(tx, 'Signature is not from server');
     });
 
-    it("Set message sender to backend sender", async () => {
+    it('Set message sender to backend sender', async () => {
       await d.setBackendSigner(signer.address);
     });
 
-    it("Fails if avatarId is not doubled", async () => {
-      const message =
-        "1111111111111111111111111111111100001000022100015555555111111111111111111111111";
-      const signature = await web3.eth.accounts.sign(
-        message,
-        signer.privateKey
-      );
+    it('Fails if avatarId is not doubled', async () => {
+      const message = '1111111111111111111111111111111100001000022100015555555111111111111111111111111';
+      const signature = await web3.eth.accounts.sign(message, signer.privateKey);
 
-      const tx = gm.finishMission(
-        message,
-        signature.v,
-        signature.r,
-        signature.s
-      );
+      const tx = gm.finishMission(message, signature.v, signature.r, signature.s);
 
-      await truffleAssert.reverts(tx, "check failed");
+      await truffleAssert.reverts(tx, 'check failed');
     });
 
-    it("Fails if avatarId is not valid", async () => {
-      const message =
-        "1111111111111111111111111111111100000000002100015555555111111111111111111111111";
-      const signature = await web3.eth.accounts.sign(
-        message,
-        signer.privateKey
-      );
+    it('Fails if avatarId is not valid', async () => {
+      const message = '1111111111111111111111111111111100000000002100015555555111111111111111111111111';
+      const signature = await web3.eth.accounts.sign(message, signer.privateKey);
 
-      const tx = gm.finishMission(
-        message,
-        signature.v,
-        signature.r,
-        signature.s
-      );
+      const tx = gm.finishMission(message, signature.v, signature.r, signature.s);
 
-      await truffleAssert.reverts(tx, "AvatarId is not valid");
+      await truffleAssert.reverts(tx, 'AvatarId is not valid');
     });
 
-    it("Fails if landId is not valid", async () => {
-      const message =
-        "1111111111111111111111111111111100001000012100115555555111111111111111111111111";
-      const signature = await web3.eth.accounts.sign(
-        message,
-        signer.privateKey
-      );
+    it('Fails if landId is not valid', async () => {
+      const message = '1111111111111111111111111111111100001000012100115555555111111111111111111111111';
+      const signature = await web3.eth.accounts.sign(message, signer.privateKey);
 
-      const tx = gm.finishMission(
-        message,
-        signature.v,
-        signature.r,
-        signature.s
-      );
+      const tx = gm.finishMission(message, signature.v, signature.r, signature.s);
 
-      await truffleAssert.reverts(tx, "LandId is not valid");
+      await truffleAssert.reverts(tx, 'LandId is not valid');
     });
 
-    it("Fails if XP increment is not valid", async () => {
-      const message =
-        "1111111111111111111111111111111100001000012100055555555111111111111111111111111";
-      const signature = await web3.eth.accounts.sign(
-        message,
-        signer.privateKey
-      );
+    it('Fails if XP increment is not valid', async () => {
+      const message = '1111111111111111111111111111111100001000012100055555555111111111111111111111111';
+      const signature = await web3.eth.accounts.sign(message, signer.privateKey);
 
-      const tx = gm.finishMission(
-        message,
-        signature.v,
-        signature.r,
-        signature.s
-      );
+      const tx = gm.finishMission(message, signature.v, signature.r, signature.s);
 
-      await truffleAssert.reverts(tx, "XP increment is not valid");
+      await truffleAssert.reverts(tx, 'XP increment is not valid');
     });
 
-    it("Fails if Lootbox code is not valid", async () => {
-      const message =
-        "1111111111111111111111111111111100001000012100015555555111111111111111111111111";
-      const signature = await web3.eth.accounts.sign(
-        message,
-        signer.privateKey
-      );
+    it('Fails if Lootbox code is not valid', async () => {
+      const message = '1111111111111111111111111111111100001000012100015555555111111111111111111111111';
+      const signature = await web3.eth.accounts.sign(message, signer.privateKey);
 
-      const tx = gm.finishMission(
-        message,
-        signature.v,
-        signature.r,
-        signature.s
-      );
+      const tx = gm.finishMission(message, signature.v, signature.r, signature.s);
 
-      await truffleAssert.reverts(tx, "Lootbox code is not valid");
+      await truffleAssert.reverts(tx, 'Lootbox code is not valid');
     });
 
     const avatarId = 4;
@@ -228,7 +176,7 @@ contract("MissionsManager", (accounts) => {
     const avatarReward = 80;
     const landReward = 20;
 
-    it("Xp added, CLNY rewards added for avatar and to land", async () => {
+    it('Xp added, CLNY rewards added for avatar and to land', async () => {
       const initialXp = await collection.getXP([1]);
 
       const avatarOwner = await nft.ownerOf(avatarId);
@@ -242,19 +190,12 @@ contract("MissionsManager", (accounts) => {
 
       const message = `11111111111111111111111111111111${avatarId
         .toString()
-        .padStart(5, "0")
-        .repeat(2)}${landId
+        .padStart(5, '0')
+        .repeat(2)}${landId.toString().padStart(5, '0')}1000000000${avatarReward
         .toString()
-        .padStart(5, "0")}1000000000${avatarReward
-        .toString()
-        .padStart(4, "0")}${landReward
-        .toString()
-        .padStart(4, "0")}11111111111111`;
+        .padStart(4, '0')}${landReward.toString().padStart(4, '0')}11111111111111`;
 
-      const signature = await web3.eth.accounts.sign(
-        message,
-        signer.privateKey
-      );
+      const signature = await web3.eth.accounts.sign(message, signer.privateKey);
 
       await gm.finishMission(message, signature.v, signature.r, signature.s, {
         from: owner,
@@ -268,39 +209,28 @@ contract("MissionsManager", (accounts) => {
 
       const finalLandOwnerClnyBalance = await clny.balanceOf(landOwner);
 
-      const avatarOwnerBalanceDiff = finalAvatarOwnerClnyBalance.sub(
-        initialAvatarOwnerClnyBalance
-      );
+      const avatarOwnerBalanceDiff = finalAvatarOwnerClnyBalance.sub(initialAvatarOwnerClnyBalance);
 
-      const landOwnerBalanceDiff = finalLandOwnerClnyBalance.sub(
-        initialLandOwnerClnyBalance
-      );
+      const landOwnerBalanceDiff = finalLandOwnerClnyBalance.sub(initialLandOwnerClnyBalance);
 
-      expect(parseInt(avatarOwnerBalanceDiff)).to.be.equal(
-        (avatarReward * 10 ** 18) / 100
-      );
+      expect(parseInt(avatarOwnerBalanceDiff)).to.be.equal((avatarReward * 10 ** 18) / 100);
       expect(parseInt(landOwnerBalanceDiff)).to.be.equal(0);
 
       const landEarningAfter = await gm.landMissionEarnings(landId);
 
       const landEarningDiff = landEarningAfter.sub(landEarningBefore);
 
-      expect(parseInt(landEarningDiff)).to.be.equal(
-        (landReward * 10 ** 18) / 100
-      );
+      expect(parseInt(landEarningDiff)).to.be.equal((landReward * 10 ** 18) / 100);
     });
 
-    it("getEarned not changed after fixEarnings", async () => {
+    it('getEarned not changed after fixEarnings', async () => {
       const earnedBefore = await gm.getEarned(landId);
       await gm.fixEarnings([landId]);
       const earnedAfter = await gm.getEarned(landId);
-      expect(earnedAfter / 1_000_000).to.be.approximately(
-        earnedBefore / 1_000_000,
-        50_000_000
-      );
+      expect(earnedAfter / 1_000_000).to.be.approximately(earnedBefore / 1_000_000, 50_000_000);
     });
 
-    it("set landMissionEarnings to zero after claim", async () => {
+    it('set landMissionEarnings to zero after claim', async () => {
       const landOwner = await mc.ownerOf(landId);
       await gm.claimEarned([landId], { from: landOwner });
 
@@ -309,59 +239,35 @@ contract("MissionsManager", (accounts) => {
       expect(parseInt(landMissionEarnings)).to.be.equal(0);
     });
 
-    it("signature has been used", async () => {
+    it('signature has been used', async () => {
       const message = `11111111111111111111111111111111${avatarId
         .toString()
-        .padStart(5, "0")
-        .repeat(2)}${landId
+        .padStart(5, '0')
+        .repeat(2)}${landId.toString().padStart(5, '0')}1000000000${avatarReward
         .toString()
-        .padStart(5, "0")}1000000000${avatarReward
-        .toString()
-        .padStart(4, "0")}${landReward
-        .toString()
-        .padStart(4, "0")}11111111111111`;
+        .padStart(4, '0')}${landReward.toString().padStart(4, '0')}11111111111111`;
 
-      const signature = await web3.eth.accounts.sign(
-        message,
-        signer.privateKey
-      );
+      const signature = await web3.eth.accounts.sign(message, signer.privateKey);
 
-      const tx = gm.finishMission(
-        message,
-        signature.v,
-        signature.r,
-        signature.s
-      );
+      const tx = gm.finishMission(message, signature.v, signature.r, signature.s);
 
-      await truffleAssert.reverts(tx, "signature has been used");
+      await truffleAssert.reverts(tx, 'signature has been used');
     });
 
-    it("MissionReward event emitted", async () => {
+    it('MissionReward event emitted', async () => {
       const message = `11111111111111111111111111111111${avatarId
         .toString()
-        .padStart(5, "0")
-        .repeat(2)}${landId
+        .padStart(5, '0')
+        .repeat(2)}${landId.toString().padStart(5, '0')}1000000502${avatarReward
         .toString()
-        .padStart(5, "0")}1000000502${avatarReward
-        .toString()
-        .padStart(4, "0")}${landReward
-        .toString()
-        .padStart(4, "0")}11111111111111`;
-      const signature = await web3.eth.accounts.sign(
-        message,
-        signer.privateKey
-      );
+        .padStart(4, '0')}${landReward.toString().padStart(4, '0')}11111111111111`;
+      const signature = await web3.eth.accounts.sign(message, signer.privateKey);
 
-      const tx = await gm.finishMission(
-        message,
-        signature.v,
-        signature.r,
-        signature.s
-      );
+      const tx = await gm.finishMission(message, signature.v, signature.r, signature.s);
 
       const mcTx = await truffleAssert.createTransactionResult(gm, tx.tx);
 
-      truffleAssert.eventEmitted(mcTx, "MissionReward", (ev) => {
+      truffleAssert.eventEmitted(mcTx, 'MissionReward', ev => {
         return (
           parseInt(ev.landId) === landId &&
           parseInt(ev.avatarId) === avatarId &&
@@ -370,7 +276,7 @@ contract("MissionsManager", (accounts) => {
         );
       });
 
-      truffleAssert.eventEmitted(mcTx, "MissionReward", (ev) => {
+      truffleAssert.eventEmitted(mcTx, 'MissionReward', ev => {
         return (
           parseInt(ev.landId) === landId &&
           parseInt(ev.avatarId) === avatarId &&
@@ -379,7 +285,7 @@ contract("MissionsManager", (accounts) => {
         );
       });
 
-      truffleAssert.eventEmitted(mcTx, "MissionReward", (ev) => {
+      truffleAssert.eventEmitted(mcTx, 'MissionReward', ev => {
         return (
           parseInt(ev.landId) === landId &&
           parseInt(ev.avatarId) === avatarId &&
@@ -388,7 +294,7 @@ contract("MissionsManager", (accounts) => {
         );
       });
 
-      truffleAssert.eventEmitted(mcTx, "MissionReward", (ev) => {
+      truffleAssert.eventEmitted(mcTx, 'MissionReward', ev => {
         return (
           parseInt(ev.landId) === landId &&
           parseInt(ev.avatarId) === avatarId &&
@@ -396,6 +302,53 @@ contract("MissionsManager", (accounts) => {
           parseInt(ev.rewardAmount) === (landReward * 10 ** 18) / 100
         );
       });
+    });
+
+    it('Transport condition decreased for mission 2', async () => {
+      const transport = await nft.ownerOf(avatarId);
+
+      const conditionBefore = await collection.getTransportCondition(transport);
+      // console.log('condition before', parseInt(conditionBefore));
+
+      const message = `11111111111111111111111111111111${avatarId
+        .toString()
+        .padStart(5, '0')
+        .repeat(2)}${landId.toString().padStart(5, '0')}1000000502${avatarReward
+        .toString()
+        .padStart(4, '0')}${landReward.toString().padStart(4, '0')}02111111111112`;
+      const signature = await web3.eth.accounts.sign(message, signer.privateKey);
+
+      await gm.finishMission(message, signature.v, signature.r, signature.s, { from: transport });
+
+      const conditionAfter = await collection.getTransportCondition(transport);
+      // console.log('condition after', parseInt(conditionAfter));
+
+      expect(conditionBefore.sub(conditionAfter)).to.bignumber.be.equal(new BN('25'));
+
+      // const res = await mission_library.getAssetsFromFinishMissionMessage(message);
+      // console.log('res', res);
+    });
+
+    it('Transport condition not decreased for mission 1', async () => {
+      const transport = await nft.ownerOf(avatarId);
+
+      const conditionBefore = await collection.getTransportCondition(transport);
+      // console.log('condition before', parseInt(conditionBefore));
+
+      const message = `11111111111111111111111111111111${avatarId
+        .toString()
+        .padStart(5, '0')
+        .repeat(2)}${landId.toString().padStart(5, '0')}1000000502${avatarReward
+        .toString()
+        .padStart(4, '0')}${landReward.toString().padStart(4, '0')}01111111111112`;
+      const signature = await web3.eth.accounts.sign(message, signer.privateKey);
+
+      await gm.finishMission(message, signature.v, signature.r, signature.s, { from: transport });
+
+      const conditionAfter = await collection.getTransportCondition(transport);
+      // console.log('condition after', parseInt(conditionAfter));
+
+      expect(conditionBefore).to.bignumber.be.equal(conditionAfter);
     });
   });
 });
