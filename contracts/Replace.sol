@@ -4,7 +4,6 @@ pragma solidity >=0.8.0 <0.9.0;
 import './interfaces/IDependencies.sol';
 
 contract Replace {
-
   struct Coordinates {
     IGameManager.PlaceOnLand base;
     IGameManager.PlaceOnLand transport;
@@ -13,12 +12,12 @@ contract Replace {
   }
 
   IDependencies public d;
-  
-  constructor (IDependencies _d) {
-    d=_d;
+
+  constructor(IDependencies _d) {
+    d = _d;
   }
 
-  function getCoord(uint256 tokenId) view external returns (Coordinates memory) {
+  function getCoord(uint256 tokenId) external view returns (Coordinates memory) {
     IGameManager gameManager = d.gameManager();
     IGameManager.PlaceOnLand[15] memory rightPlaces = [
       IGameManager.PlaceOnLand(6, 5, 0),
@@ -37,8 +36,8 @@ contract Replace {
       IGameManager.PlaceOnLand(8, 2, 0),
       IGameManager.PlaceOnLand(7, 2, 0)
     ];
-    bool [9][9] memory rightPlacesMatrix;
-    for (uint256 i = 0; i<rightPlaces.length; i++) {
+    bool[9][9] memory rightPlacesMatrix;
+    for (uint256 i = 0; i < rightPlaces.length; i++) {
       rightPlacesMatrix[rightPlaces[i].x][rightPlaces[i].y] = true;
     }
     (uint32 baseX, uint32 baseY, ) = gameManager.baseStationsPlacement(tokenId);
