@@ -120,11 +120,11 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
         clnyPerSecond = newSpeed;
     }
 
-    // function saleData() external view returns (bool allowed, uint256 minted, uint256 limit) {
-    //   allowed = !allowlistOnly || allowlist[msg.sender];
-    //   minted = IERC721Enumerable(address(d.mc())).totalSupply();
-    //   limit = allowlistLimit;
-    // }
+    function saleData() external view returns (bool allowed, uint256 minted, uint256 limit) {
+        allowed = !allowlistOnly || allowlist[msg.sender];
+        minted = IERC721Enumerable(address(d.mc())).totalSupply();
+        limit = allowlistLimit;
+    }
 
     function setDependencies(IDependencies addr) external {
         require(address(d) == address(0) || d.owner() == msg.sender);
