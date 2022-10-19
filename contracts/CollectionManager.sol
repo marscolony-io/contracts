@@ -30,6 +30,12 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     bool set;
     uint16 locks;
   }
+  
+  struct AvatarData {
+    string name;
+    uint256 xp;
+    address owner;
+  }
 
   mapping(address => GearLocks) public gearLocks;
 
@@ -46,12 +52,6 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   mapping(address => uint8) public transportDamage;
 
   uint256[39] private ______mc_gap;
-
-  struct AvatarData {
-    string name;
-    uint256 xp;
-    address owner;
-  }
 
   modifier onlyCryochamberManager() {
     require(msg.sender == address(d.cryochamber()), 'Only CryochamberManager');
@@ -188,22 +188,6 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     for (uint256 i = 0; i < tokenCount; i++) {
       result[i] = martianColonists.tokenOfOwnerByIndex(msg.sender, i);
     }
-    return result;
-  }
-
-  function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns (uint256[] memory) {
-    IMartianColonists martianColonists = d.martianColonists();
-    uint256 tokenCount = martianColonists.balanceOf(msg.sender);
-    if (tokenCount <= _from || _from > _to || tokenCount == 0) {
-      return (new uint256[](0));
-    }
-
-    uint256 to = (tokenCount - 1 > _to) ? _to : tokenCount - 1;
-    uint256[] memory result = new uint256[](to - _from + 1);
-    for (uint256 i = _from; i <= to; i++) {
-      result[i - _from] = martianColonists.tokenOfOwnerByIndex(msg.sender, i);
-    }
-
     return result;
   }
 
@@ -478,8 +462,22 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     if (gear3Id != 0 && isUnique(gear3Id, prevLockedGears.gear1Id, prevLockedGears.gear2Id, prevLockedGears.gear3Id)) {
       d.gears().lockGear(gear3Id);
     }
-
     gearLocks[msg.sender] = GearLocks(transportId, gear1Id, gear2Id, gear3Id, true, locks);
+  }
+
+  function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns (uint256[] memory) {
+    uint256 tokenCount = d.martianColonists().balanceOf(msg.sender);
+    if (tokenCount <= _from || _from > _to || tokenCount == 0) {
+      return (new uint256[](0));
+    }
+
+    uint256 to = (tokenCount - 1 > _to) ? _to : tokenCount - 1;
+    uint256[] memory result = new uint256[](to - _from + 1);
+    for (uint256 i = _from; i <= to; i++) {
+      result[i - _from] = d.martianColonists().tokenOfOwnerByIndex(msg.sender, i);
+    }
+
+    return result;
   }
 
   function mintGear(address owner, IEnums.Rarity _lootBoxrarity) external onlyGameManager {

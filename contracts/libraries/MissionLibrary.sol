@@ -126,12 +126,17 @@ library MissionLibrary {
     require(_avatar > 0, 'AvatarId is not valid');
     require(_land > 0 && _land <= 21000, 'LandId is not valid');
     require(_xp >= 230 && _xp < 19971800, 'XP increment is not valid');
+
     require((_lootbox >= 0 && _lootbox <= 3) || (_lootbox >= 23 && _lootbox <= 25), 'Lootbox code is not valid');
 
     return (_avatar, _land, _xp, _lootbox, _avatarReward, _landReward);
   }
 
-  function getLootboxRarity(uint256 _lootbox) external pure returns (IEnums.Rarity rarity) {
+  function getLootboxRarity(uint256 _lootbox)
+    external
+    pure
+    returns (IEnums.Rarity rarity)
+  {
     if (_lootbox == 1 || _lootbox == 23) return IEnums.Rarity.COMMON;
     if (_lootbox == 2 || _lootbox == 24) return IEnums.Rarity.RARE;
     if (_lootbox == 3 || _lootbox == 25) return IEnums.Rarity.LEGENDARY;

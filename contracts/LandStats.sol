@@ -67,7 +67,7 @@ contract LandStats {
     return data;
   }
 
-  function gelClnyStat() external view returns (ClnyStat memory result) {
+  function getClnyStat() external view returns (ClnyStat memory result) {
     bool sharesEconomy = d.sharesEconomy();
     if (sharesEconomy) {
       IShares gm = IShares(address(d.gameManager()));
