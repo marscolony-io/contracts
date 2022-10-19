@@ -22,10 +22,41 @@ interface IGameManager {
   // function maxLandShares() external view returns (uint256);
   // function totalShare() external view returns (uint256);
   // function clnyPerSecond() external view returns (uint256);
-  function baseStationsPlacement(uint256 tokenId) external view returns (uint32, uint32, uint32);
-  function transportPlacement(uint256 tokenId) external view returns (uint32, uint32, uint32);
-  function robotAssemblyPlacement(uint256 tokenId) external view returns (uint32, uint32, uint32);
-  function powerProductionPlacement(uint256 tokenId) external view returns (uint32, uint32, uint32);
+  function baseStationsPlacement(uint256 tokenId)
+    external
+    view
+    returns (
+      uint32,
+      uint32,
+      uint32
+    );
+
+  function transportPlacement(uint256 tokenId)
+    external
+    view
+    returns (
+      uint32,
+      uint32,
+      uint32
+    );
+
+  function robotAssemblyPlacement(uint256 tokenId)
+    external
+    view
+    returns (
+      uint32,
+      uint32,
+      uint32
+    );
+
+  function powerProductionPlacement(uint256 tokenId)
+    external
+    view
+    returns (
+      uint32,
+      uint32,
+      uint32
+    );
 
   function getAttributesMany(uint256[] calldata tokenIds) external view returns (AttributeData[] memory);
 }

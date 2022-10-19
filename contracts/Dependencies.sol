@@ -45,7 +45,7 @@ contract Dependencies is IDependencies, OwnableUpgradeable {
   function setClny(ICLNY addr) external onlyOwner {
     clny = addr;
   }
-  
+
   function setCollectionManager(ICollectionManager addr) external onlyOwner {
     collectionManager = addr;
   }
@@ -115,7 +115,16 @@ contract Dependencies is IDependencies, OwnableUpgradeable {
     return deps;
   }
 
-  function getTreasuryLiquidityClnyMc() external view returns (address, address, ICLNY, IMC) {
+  function getTreasuryLiquidityClnyMc()
+    external
+    view
+    returns (
+      address,
+      address,
+      ICLNY,
+      IMC
+    )
+  {
     return (treasury, liquidity, clny, mc);
   }
 
@@ -127,15 +136,40 @@ contract Dependencies is IDependencies, OwnableUpgradeable {
     return (collectionManager, clny);
   }
 
-  function getCollectionManagerClnyMc() external view returns (ICollectionManager, ICLNY, IMC) {
+  function getCollectionManagerClnyMc()
+    external
+    view
+    returns (
+      ICollectionManager,
+      ICLNY,
+      IMC
+    )
+  {
     return (collectionManager, clny, mc);
   }
 
-  function getCmMclLbClny() external view returns (ICollectionManager, IMartianColonists, ILootboxes, ICLNY) {
+  function getCmMclLbClny()
+    external
+    view
+    returns (
+      ICollectionManager,
+      IMartianColonists,
+      ILootboxes,
+      ICLNY
+    )
+  {
     return (collectionManager, martianColonists, lootboxes, clny);
   }
 
-  function getCmMclClny() external view returns (ICollectionManager, IMartianColonists, ICLNY) {
+  function getCmMclClny()
+    external
+    view
+    returns (
+      ICollectionManager,
+      IMartianColonists,
+      ICLNY
+    )
+  {
     return (collectionManager, martianColonists, clny);
   }
 }

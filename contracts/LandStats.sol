@@ -33,7 +33,7 @@ contract LandStats {
 
   IDependencies public d;
 
-  constructor (IDependencies _d) {
+  constructor(IDependencies _d) {
     d = _d;
   }
 
@@ -80,9 +80,9 @@ contract LandStats {
         result.burned += d.clny().burnedStats(reason);
         result.minted += d.clny().mintedStats(reason);
       }
-      
+
       result.avg = colonyDaySupply / landsClaimed;
-      result.max = ( colonyDaySupply / totalShare ) * maxLandShares;
+      result.max = (colonyDaySupply / totalShare) * maxLandShares;
     }
     // else - empty result yet
   }

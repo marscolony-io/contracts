@@ -5,24 +5,23 @@ import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import './interfaces/IDependencies.sol';
 
-
 contract MartianColonists is ERC721Enumerable {
   string private nftBaseURI;
   IDependencies public d;
-  mapping (uint256 => string) public names;
+  mapping(uint256 => string) public names;
   bool lock;
 
-  modifier onlyOwner {
+  modifier onlyOwner() {
     require(msg.sender == d.owner(), 'Only owner');
     _;
   }
 
-  modifier onlyCollectionManager {
+  modifier onlyCollectionManager() {
     require(msg.sender == address(d.collectionManager()), 'only collection manager');
     _;
   }
 
-  constructor (string memory _nftBaseURI, IDependencies _d) ERC721('Martian Colonists', 'MCL') {
+  constructor(string memory _nftBaseURI, IDependencies _d) ERC721('Martian Colonists', 'MCL') {
     d = _d;
     nftBaseURI = _nftBaseURI;
   }
@@ -54,7 +53,11 @@ contract MartianColonists is ERC721Enumerable {
     names[tokenId] = _name;
   }
 
-  function withdrawToken(address _tokenContract, address _whereTo, uint256 _amount) external onlyOwner {
+  function withdrawToken(
+    address _tokenContract,
+    address _whereTo,
+    uint256 _amount
+  ) external onlyOwner {
     IERC20 tokenContract = IERC20(_tokenContract);
     tokenContract.transfer(_whereTo, _amount);
   }
