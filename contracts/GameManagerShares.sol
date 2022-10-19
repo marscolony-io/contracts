@@ -8,6 +8,7 @@ import './Shares.sol';
 import './interfaces/IGameManager.sol';
 import './interfaces/IOwnable.sol';
 import './interfaces/IEnums.sol';
+import './interfaces/TokenInterface.sol';
 import './libraries/MissionLibrary.sol';
 
 /**
@@ -117,22 +118,16 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     locked = false;
   }
 
-  function burnPreparedTokens() external {
-    uint256 amount = d.clny().balanceOf(address(this));
-    d.clny().burn(address(this), amount, REASON_CORRECTIONAL_BURN);
+  function redefineLandShares(uint256 landIndexFrom, uint256 landIndexTo) external {
+    for (uint256 landIndex = landIndexFrom; landIndex <= landIndexTo; landIndex++) {
+      uint256 landId = TokenInterface(address(d.mc())).tokenByIndex(landIndex);
+      uint256 shares = 1 + tokenData[landId].baseStation + tokenData[landId].robotAssembly;
+      if (tokenData[landId].robotAssembly == 3) shares = shares + 1;
+      setShare(landId, shares);
+    }
   }
 
-  function redefineLandShares(uint256 landId) external {
-    uint256 shares = 1; // base from land
-    if (tokenData[landId].baseStation == 1) shares = shares + 1;
-    if (tokenData[landId] > 0) shares = shares + tokenData[landId];
-    if (tokenData[landId] == 3) shares = shares + 1;
-    LandInfo storage land = landInfo[tokenId];
-    uint256 earned = (land.share * accColonyPerShare) / 1e12 - land.rewardDebt; // earned with old scheme
-    land.share = shares;
-  }
-
-  function setClnyPerSecond(uintAZ256 newSpeed) external onlyOwner {
+  function setClnyPerSecond(uint256 newSpeed) external onlyOwner {
     updatePool();
     clnyPerSecond = newSpeed;
   }
@@ -226,12 +221,12 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     usedSignatures[signatureHashed] = true;
   }
 
-  function initialize(IDependencies _d) public initializer {
-    d = _d;
-    __Pausable_init();
-    maxTokenId = 21000;
-    price = 250 ether;
-  }
+  // function initialize(IDependencies _d) public initializer {
+  //   d = _d;
+  //   __Pausable_init();
+  //   maxTokenId = 21000;
+  //   price = 250 ether;
+  // }
 
   /**
    * Cost of minting for `tokenCount` tokens
@@ -270,11 +265,11 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   /**
    * Sets the cost of minting for 1 token
    */
-  function setPrice(uint256 _price) external onlyOwner {
-    require(_price >= 0.01 ether && _price <= 10000 ether, 'New price is out of bounds');
-    price = _price;
-    emit SetPrice(_price);
-  }
+  // function setPrice(uint256 _price) external onlyOwner {
+  //   require(_price >= 0.01 ether && _price <= 10000 ether, 'New price is out of bounds');
+  //   price = _price;
+  //   emit SetPrice(_price);
+  // }
 
   function mintAvatar() external nonReentrant {
     (ICollectionManager collectionManager, ICLNY clny) = d.getCollectionManagerClny();
@@ -289,10 +284,6 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   function mintLand(address _address, uint256 tokenId) private {
     IMC mc = d.mc();
     require(tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
-    // if (allowlistOnly) {
-    //   require(allowlist[msg.sender], 'you are not in allowlist');
-    //   require(IERC721Enumerable(address(mc)).totalSupply() < allowlistLimit, 'Presale limit has ended');
-    // }
     setInitialShare(tokenId);
     mc.mint(_address, tokenId);
   }
@@ -383,7 +374,6 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     emit Airdrop(receiver, tokenId);
   }
 
-  uint8 constant BASE_STATION = 0;
   /** these constants (for sure just `_deduct` function) can be changed while upgrading */
   uint256 constant BASE_STATION_COST = 30 * 10**18;
   uint256 constant AVATAR_MINT_COST = 90 * 10**18;
@@ -399,9 +389,6 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
    */
   function _deduct(uint8 level, uint256 reason) private {
     uint256 amount = 0;
-    if (level == BASE_STATION) {
-      amount = BASE_STATION_COST;
-    }
     if (level == 1) {
       amount = LEVEL_1_COST;
     }
@@ -411,18 +398,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     if (level == 3) {
       amount = LEVEL_3_COST;
     }
-    require(amount > 0, 'Wrong level');
     d.clny().burn(msg.sender, amount, reason);
-  }
-
-  function getPassiveEarningSpeed(uint256 tokenId) public view returns (uint256 shareCount) {
-    return landInfo[tokenId].share;
-    // shares from powerproduction are excluded from passive speed
-    // shareCount = landInfo[tokenId].share;
-    // shareCount = shareCount - tokenData[tokenId].powerProduction;
-    // if (tokenData[tokenId].powerProduction == 3) {
-    //   shareCount = shareCount - 1; // one more share for pp lvl3
-    // }
   }
 
   // View function to see pending ColonyToken on frontend
@@ -434,7 +410,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     if (lastRewardTime == 0) {
       return 0;
     }
-    uint256 activeShares = getPassiveEarningSpeed(landId);
+    uint256 activeShares = landInfo[landId].share;
     uint256 _accColonyPerShare = accColonyPerShare;
     if (block.timestamp > lastRewardTime && totalShare != 0) {
       uint256 clnyReward = (block.timestamp - lastRewardTime) * clnyPerSecond;
@@ -446,7 +422,6 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
 
   /* 0xfd5da729 */
   function getEarningSpeed(uint256 tokenId) public view returns (uint256) {
-    // for polygon it is for shares
     return landInfo[tokenId].share;
   }
 
@@ -459,7 +434,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     require(tokenData[tokenId].baseStation == 0, 'There is already a base station');
     addToShare(tokenId, 1, true);
     tokenData[tokenId].baseStation = 1;
-    _deduct(BASE_STATION, REASON_UPGRADE);
+    d.clny().burn(msg.sender, BASE_STATION_COST, REASON_UPGRADE);
     emit BuildBaseStation(tokenId, msg.sender);
   }
 
