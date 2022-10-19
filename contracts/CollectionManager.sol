@@ -466,7 +466,8 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   }
 
   function allMyTokensPaginate(uint256 _from, uint256 _to) external view returns (uint256[] memory) {
-    uint256 tokenCount = d.martianColonists().balanceOf(msg.sender);
+    IMartianColonists martianColonists = d.martianColonists();
+    uint256 tokenCount = martianColonists.balanceOf(msg.sender);
     if (tokenCount <= _from || _from > _to || tokenCount == 0) {
       return (new uint256[](0));
     }
@@ -474,7 +475,7 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     uint256 to = (tokenCount - 1 > _to) ? _to : tokenCount - 1;
     uint256[] memory result = new uint256[](to - _from + 1);
     for (uint256 i = _from; i <= to; i++) {
-      result[i - _from] = d.martianColonists().tokenOfOwnerByIndex(msg.sender, i);
+      result[i - _from] = martianColonists.tokenOfOwnerByIndex(msg.sender, i);
     }
 
     return result;
