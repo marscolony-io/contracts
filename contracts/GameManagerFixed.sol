@@ -640,18 +640,18 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
    * 0x42aa65f4
    */
   function claimEarned(uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
-    ICLNY clny = d.clny();
+    (address treasury, address liquidity, ICLNY clny, IMC mc) = d.getTreasuryLiquidityClnyMc();
     uint256 earned = 0;
     for (uint256 i = 0; i < tokenIds.length; i++) {
-      require(msg.sender == IOwnable(address(d.mc())).ownerOf(tokenIds[i]));
+      require(msg.sender == IOwnable(address(mc)).ownerOf(tokenIds[i]));
       earned = earned + getEarned(tokenIds[i]);
       tokenData[tokenIds[i]].fixedEarnings = 0;
       landMissionEarnings[tokenIds[i]] = 0;
       tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
     }
     clny.mint(msg.sender, earned, REASON_EARNING);
-    clny.mint(d.treasury(), (earned * 31) / 49, REASON_TREASURY);
-    clny.mint(d.liquidity(), (earned * 20) / 49, REASON_LP_POOL);
+    clny.mint(treasury, (earned * 31) / 49, REASON_TREASURY);
+    clny.mint(liquidity, (earned * 20) / 49, REASON_LP_POOL);
   }
 
   function fixEarnings(uint256[] calldata tokenIds) external onlyOwner {
