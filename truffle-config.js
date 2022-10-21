@@ -54,8 +54,8 @@ module.exports = {
         });
       },
       network_id: 137,
-      gasPrice: 50 * 1e9,
-      maxGasFees: 50 * 1e9,
+      gasPrice: 200 * 1e9,
+      maxGasFees: 200 * 1e9,
       maxPriorityFees: 60 * 1e9,
       // gas: 5000000
     },
