@@ -347,64 +347,45 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     uint64 gear2Id,
     uint64 gear3Id
   ) external {
+    IGears gears = d.gears();
+    uint256 category;
     uint256 specialTransportType;
     // if user doesn't lock special transport, he can lock up to 2 gears. otherwise up to 3
     if (transportId != 0) {
-      require(msg.sender == IOwnable(address(d.gears())).ownerOf(transportId), 'you are not transport owner');
+      require(msg.sender == IOwnable(address(gears)).ownerOf(transportId), 'you are not transport owner');
 
-      (, uint256 gearType, uint256 category, , , ) = d.gears().gears(transportId);
+      uint256 gearType;
+      (, gearType, category, , , ) = gears.gears(transportId);
       require(category == CATEGORY_TRANSPORT, 'transportId is not transport');
 
       specialTransportType = gearType;
     }
 
     // can not lock gears of the same categories
-
-    uint256 gear1Category;
-    uint256 gear2Category;
-    uint256 gear3Category;
-
-    uint256 gearsCount;
+    uint256 categoryAccumulator = 0;
 
     if (gear1Id != 0) {
-      require(msg.sender == IOwnable(address(d.gears())).ownerOf(gear1Id), 'you are not gear owner');
-      (, , uint256 category, , , ) = d.gears().gears(gear1Id);
+      require(msg.sender == IOwnable(address(gears)).ownerOf(gear1Id), 'you are not gear owner');
+      (, , category, , , ) = gears.gears(gear1Id);
       require(category != CATEGORY_TRANSPORT, 'can not lock transport as gear');
-      gear1Category = category;
-      gearsCount += 1;
+      categoryAccumulator = 1 << category;
     }
 
     if (gear2Id != 0) {
-      require(msg.sender == IOwnable(address(d.gears())).ownerOf(gear2Id), 'you are not gear owner');
-      (, , uint256 category, , , ) = d.gears().gears(gear2Id);
+      require(msg.sender == IOwnable(address(gears)).ownerOf(gear2Id), 'you are not gear owner');
+      (, , category, , , ) = gears.gears(gear2Id);
       require(category != CATEGORY_TRANSPORT, 'can not lock transport as gear');
-      gear2Category = category;
-      gearsCount += 1;
+      require(categoryAccumulator & (1 << category) == 0, "you can't lock gears of the same category");
+      categoryAccumulator = categoryAccumulator | (1 << category);
     }
 
     if (gear3Id != 0) {
-      require(msg.sender == IOwnable(address(d.gears())).ownerOf(gear3Id), 'you are not gear owner');
-      (, , uint256 category, , , ) = d.gears().gears(gear3Id);
+      require(msg.sender == IOwnable(address(gears)).ownerOf(gear3Id), 'you are not gear owner');
+      (, , category, , , ) = gears.gears(gear3Id);
       require(category != CATEGORY_TRANSPORT, 'can not lock transport as gear');
-      gear3Category = category;
-      gearsCount += 1;
-    }
-
-    // if user doesn't lock special transport, he can lock up to 2 gears. otherwise up to 3
-    if (specialTransportType != THE_NEBUCHADNEZZAR) {
-      require(gearsCount < 3, 'can not lock 3 gears without special transport');
-    }
-
-    if (gear1Id != 0 && gear2Id != 0) {
-      require(gear1Category != gear2Category, "you can't lock gears of the same category");
-    }
-
-    if (gear1Id != 0 && gear3Id != 0) {
-      require(gear1Category != gear3Category, "you can't lock gears of the same category");
-    }
-
-    if (gear2Id != 0 && gear3Id != 0) {
-      require(gear2Category != gear3Category, "you can't lock gears of the same category");
+      require(categoryAccumulator & (1 << category) == 0, "you can't lock gears of the same category");
+      // if user doesn't lock special transport, he can lock up to 2 gears. otherwise up to 3
+      require(specialTransportType == THE_NEBUCHADNEZZAR, 'can not lock 3 gears without special transport');
     }
 
     // unlock prev locked transport and gear
@@ -412,19 +393,19 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
 
     if (prevLockedGears.set) {
       if (prevLockedGears.transportId != 0 && prevLockedGears.transportId != transportId) {
-        d.gears().unlockGear(prevLockedGears.transportId);
+        gears.unlockGear(prevLockedGears.transportId);
       }
 
       if (isUnique(prevLockedGears.gear1Id, gear1Id, gear2Id, gear3Id)) {
-        d.gears().unlockGear(prevLockedGears.gear1Id);
+        gears.unlockGear(prevLockedGears.gear1Id);
       }
 
       if (isUnique(prevLockedGears.gear2Id, gear1Id, gear2Id, gear3Id)) {
-        d.gears().unlockGear(prevLockedGears.gear2Id);
+        gears.unlockGear(prevLockedGears.gear2Id);
       }
 
       if (isUnique(prevLockedGears.gear3Id, gear1Id, gear2Id, gear3Id)) {
-        d.gears().unlockGear(prevLockedGears.gear3Id);
+        gears.unlockGear(prevLockedGears.gear3Id);
       }
     }
 
@@ -439,15 +420,15 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     // lock current gears
 
     if (transportId != 0 && transportId != prevLockedGears.transportId) {
-      d.gears().lockGear(transportId);
+      gears.lockGear(transportId);
     }
 
     if (gear1Id != 0 && isUnique(gear1Id, prevLockedGears.gear1Id, prevLockedGears.gear2Id, prevLockedGears.gear3Id)) {
-      d.gears().lockGear(gear1Id);
+      gears.lockGear(gear1Id);
     }
 
     if (gear2Id != 0 && isUnique(gear2Id, prevLockedGears.gear1Id, prevLockedGears.gear2Id, prevLockedGears.gear3Id)) {
-      d.gears().lockGear(gear2Id);
+      gears.lockGear(gear2Id);
     }
 
     if (gear3Id != 0 && isUnique(gear3Id, prevLockedGears.gear1Id, prevLockedGears.gear2Id, prevLockedGears.gear3Id)) {
