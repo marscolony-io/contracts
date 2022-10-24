@@ -18,25 +18,25 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   // 25 256bit slots in Shares.sol
   uint256[25] private ______gm_gap_0;
 
-  address reserved0; // owner
+  uint256 reserved0; // owner
 
-  address reserved1;
-  address reserved2;
+  uint256 reserved1;
+  uint256 reserved2;
   uint256 public price;
-  address reserved3;
+  uint256 reserved3;
   uint256 public maxTokenId;
-  address reserved5;
-  address reserved6;
+  uint256 reserved5;
+  uint256 reserved6;
   uint256 reserved7;
 
-  address reserved8;
-  address reserved9;
-  address public backendSigner;
+  uint256 reserved8;
+  uint256 reserved9;
+  uint256 reserved10;
   mapping(bytes32 => bool) private usedSignatures;
 
-  bool public allowlistOnly;
-  mapping(address => bool) private allowlist;
-  uint256 public allowlistLimit;
+  uint256 reserved10a;
+  uint256 reserved10b;
+  uint256 reserved10c;
 
   struct ReferrerSettings {
     uint64 discount;
@@ -49,7 +49,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   mapping(address => ReferrerSettings) public referrerSettings;
   mapping(address => address) public referrers;
 
-  address reserved11;
+  uint256 reserved11;
 
   struct AvailableRarities {
     uint64 common;
@@ -59,7 +59,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
 
   mapping(address => AvailableRarities) public lootBoxesToMint;
 
-  address reserved12;
+  uint256 reserved12;
 
   uint256[34] private ______gm_gap_1;
 
@@ -79,7 +79,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   mapping(uint256 => PlaceOnLand) public robotAssemblyPlacement;
   mapping(uint256 => PlaceOnLand) public powerProductionPlacement;
 
-  bool internal locked;
+  uint256 internal locked;
 
   mapping(uint256 => uint256) public landMissionEarnings;
 
@@ -113,25 +113,25 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   }
 
   modifier nonReentrant() {
-    require(!locked, 'reentrancy guard');
-    locked = true;
+    require(locked == 0, 'reentrancy guard');
+    locked = 1;
     _;
-    locked = false;
+    locked = 0;
   }
 
-  function redefineLandShares(uint256 landIndexFrom, uint256 landIndexTo) external {
-    for (uint256 landIndex = landIndexFrom; landIndex <= landIndexTo; landIndex++) {
-      uint256 landId = TokenInterface(address(d.mc())).tokenByIndex(landIndex);
-      uint256 shares = 1 + tokenData[landId].baseStation + tokenData[landId].robotAssembly;
-      if (tokenData[landId].robotAssembly == 3) shares = shares + 1;
-      setShare(landId, shares);
-    }
-  }
+  // function redefineLandShares(uint256 landIndexFrom, uint256 landIndexTo) external {
+  //   for (uint256 landIndex = landIndexFrom; landIndex <= landIndexTo; landIndex++) {
+  //     uint256 landId = TokenInterface(address(d.mc())).tokenByIndex(landIndex);
+  //     uint256 shares = 1 + tokenData[landId].baseStation + tokenData[landId].robotAssembly;
+  //     if (tokenData[landId].robotAssembly == 3) shares = shares + 1;
+  //     setShare(landId, shares);
+  //   }
+  // }
 
-  function setClnyPerSecond(uint256 newSpeed) external onlyOwner {
-    updatePool();
-    clnyPerSecond = newSpeed;
-  }
+  // function setClnyPerSecond(uint256 newSpeed) external onlyOwner {
+  //   updatePool();
+  //   clnyPerSecond = newSpeed;
+  // }
 
   function saleData()
     external
@@ -142,15 +142,15 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
       uint256 limit
     )
   {
-    allowed = !allowlistOnly || allowlist[msg.sender];
+    allowed = true;
     minted = IERC721Enumerable(address(d.mc())).totalSupply();
-    limit = allowlistLimit;
+    limit = maxTokenId;
   }
 
-  function setDependencies(IDependencies addr) external {
-    require(address(d) == address(0) || d.owner() == msg.sender);
-    d = addr;
-  }
+  // function setDependencies(IDependencies addr) external {
+  //   require(address(d) == address(0) || d.owner() == msg.sender);
+  //   d = addr;
+  // }
 
   function proceedFinishMissionMessage(string calldata message) private {
     (ICollectionManager collectionManager, IMartianColonists martianColonists, ILootboxes lootboxes, ICLNY clny) = d
@@ -236,18 +236,21 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     usedSignatures[signatureHashed] = true;
   }
 
-  // function initialize(IDependencies _d) public initializer {
-  //   d = _d;
-  //   __Pausable_init();
-  //   maxTokenId = 21000;
-  //   price = 250 ether;
-  // }
+  function initialize(IDependencies _d) public initializer {
+    // d = _d;
+    // __Pausable_init();
+    // maxTokenId = 21000;
+    // price = 250 ether;
+  }
 
   /**
    * Cost of minting for `tokenCount` tokens
    * 0xfcee45f4
    */
-  function _getFee(uint256 tokenCount, address referrer) private view returns (uint256) {
+  function getFee(uint256 tokenCount, address referrer) public view returns (uint256) {
+    if (referrer == msg.sender) {
+      referrer = address(0);
+    }
     uint256 fee = price * tokenCount;
 
     if (referrer == address(0)) {
@@ -264,17 +267,6 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
 
     uint256 feeWithDiscount = fee - (fee * discount) / 100;
     return feeWithDiscount;
-  }
-
-  function getFee(uint256 tokenCount) external view returns (uint256) {
-    return _getFee(tokenCount, address(0));
-  }
-
-  function getFee(uint256 tokenCount, address referrer) public view returns (uint256) {
-    if (referrer == msg.sender) {
-      return _getFee(tokenCount, address(0));
-    }
-    return _getFee(tokenCount, referrer);
   }
 
   /**
@@ -299,7 +291,9 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   function mintLand(address _address, uint256 tokenId) private {
     IMC mc = d.mc();
     require(tokenId > 0 && tokenId <= maxTokenId, 'Token id out of bounds');
-    setInitialShare(tokenId);
+    landInfo[tokenId].share = 1;
+    landInfo[tokenId].rewardDebt = accColonyPerShare / 1e12;
+    totalShare = totalShare + 1;
     mc.mint(_address, tokenId);
   }
 
@@ -308,7 +302,9 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
    */
   function _claim(uint256[] calldata tokenIds, address referrer) internal whenNotPaused {
     if (referrer != address(0)) {
-      setReferrer(referrer);
+      referrers[msg.sender] = referrer;
+      referrals[referrer][msg.sender] = true;
+      referralsCount[referrer]++;
     } else if (referrers[msg.sender] != address(0)) {
       referrer = referrers[msg.sender];
     }
@@ -714,13 +710,6 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     referrerSettings[referrer] = ReferrerSettings({discount: discount, reward: reward});
   }
 
-  function setReferrer(address referrer) private {
-    require(referrer != address(0), 'referrer can not be 0');
-    referrers[msg.sender] = referrer;
-    referrals[referrer][msg.sender] = true;
-    referralsCount[referrer]++;
-  }
-
   function purchaseCryochamber() external {
     (ICryochamber cryochamber, ICLNY clny) = d.getCryochamberClny();
     cryochamber.purchaseCryochamber(msg.sender);
@@ -745,12 +734,52 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     clny.burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
   }
 
-  function withdrawToken(
-    address _tokenContract,
-    address _whereTo,
-    uint256 _amount
-  ) external onlyOwner {
-    IERC20 tokenContract = IERC20(_tokenContract);
-    tokenContract.transfer(_whereTo, _amount);
+  function repairTransport(uint16 amount) external {
+    (ICollectionManager collectionManager, , ICLNY clny) = d.getCmMclClny();
+    uint256 repairPrice;
+    if (amount == 25) repairPrice = 15e17; // 1.5 clny for 25% repair
+    if (amount == 50) repairPrice = 2e18; // 2 clny for 50% repair
+    if (amount == 100) repairPrice = 4e18; // 4 clny for 100% repair
+    require(repairPrice > 0, 'wrong repair amount');
+
+    clny.burn(msg.sender, repairPrice, REASON_TRANSPORT_REPAIR);
+    collectionManager.repairTransport(msg.sender, amount * 10);
   }
+
+  function openLootbox(uint256 tokenId, uint256 maxPrice) external whenNotPaused {
+    (ICollectionManager collectionManager, , ILootboxes lootboxes, ICLNY clny) = d.getCmMclLbClny();
+
+    require(lootboxes.ownerOf(tokenId) == msg.sender, "You aren't this lootbox owner");
+
+    IEnums.Rarity rarity = lootboxes.rarities(tokenId);
+
+    (uint256 commonPrice, uint256 rarePrice, uint256 legendaryPrice) = collectionManager.getLootboxOpeningPrice();
+    uint256 openPrice = commonPrice;
+
+    if (rarity == IEnums.Rarity.RARE) {
+      openPrice = rarePrice;
+    }
+
+    if (rarity == IEnums.Rarity.LEGENDARY) {
+      openPrice = legendaryPrice;
+    }
+
+    require(openPrice < maxPrice, 'open price too high');
+
+    clny.burn(msg.sender, openPrice, REASON_OPEN_LOOTBOX);
+    clny.mint(ARTIST1_ROYALTY_WALLET, (openPrice * 3_000) / 100_000, REASON_ARTIST_ROYALTY); // 3% to the artist
+    clny.mint(ARTIST2_ROYALTY_WALLET, (openPrice * 3_000) / 100_000, REASON_ARTIST_ROYALTY); // 3% to the artist
+    lootboxes.burn(tokenId);
+
+    collectionManager.mintGear(msg.sender, rarity);
+  }
+
+  // function withdrawToken(
+  //   address _tokenContract,
+  //   address _whereTo,
+  //   uint256 _amount
+  // ) external onlyOwner {
+  //   IERC20 tokenContract = IERC20(_tokenContract);
+  //   tokenContract.transfer(_whereTo, _amount);
+  // }
 }
