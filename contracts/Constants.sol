@@ -16,6 +16,7 @@ abstract contract Constants {
   uint256 constant REASON_PURCHASE_CRYOCHAMBER_ENERGY = 11;
   uint256 constant REASON_OPEN_LOOTBOX = 12;
   uint256 constant REASON_ARTIST_ROYALTY = 13;
+  uint256 constant REASON_TRANSPORT_REPAIR = 14;
 
   uint256 constant REASON_CORRECTIONAL_BURN = 99;
   uint256 constant REASON_SHARES_PREPARE_CLNY = 100;

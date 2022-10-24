@@ -49,7 +49,12 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
   IDependencies public d;
 
   // from 0 to 100
-  mapping(address => uint8) public transportDamage;
+  struct TransportCondition {
+    uint16 condition;
+    bool set;
+  }
+
+  mapping(address => TransportCondition) private transportCondition;
 
   uint256[39] private ______mc_gap;
 
@@ -534,14 +539,44 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     return (ids, gearsResult, locks.locks);
   }
 
-  function increaseTransortDamage(address transport, uint8 _damage) external onlyGameManager {
-    uint8 damage = transportDamage[transport];
+  function decrementCondition(uint16 condition, uint16 percents) internal pure returns (uint16) {
+    return condition >= percents ? condition - percents : 0;
+  }
 
-    if (damage + _damage > 100) {
-      transportDamage[transport] = 100;
+  function increaseTransportDamage(address transport, uint16 percents) external onlyGameManager {
+    TransportCondition storage conditionStruct = transportCondition[transport];
+
+    if (!conditionStruct.set) {
+      // 500 is initial 50% condition
+      transportCondition[transport] = TransportCondition(decrementCondition(500, percents), true);
       return;
     }
 
-    transportDamage[transport] = damage + _damage;
+    conditionStruct.condition = decrementCondition(conditionStruct.condition, percents);
+  }
+
+  function incrementCondition(uint16 condition, uint16 percents) internal pure returns (uint16) {
+    uint16 updatedCondition = condition + percents;
+    return (updatedCondition >= 1000) ? 1000 : updatedCondition;
+  }
+
+  function repairTransport(address transport, uint16 percents) external onlyGameManager {
+    TransportCondition storage conditionStruct = transportCondition[transport];
+
+    if (!conditionStruct.set) {
+      transportCondition[transport] = TransportCondition(incrementCondition(500, percents), true);
+      return;
+    }
+
+    conditionStruct.condition = incrementCondition(conditionStruct.condition, percents);
+  }
+
+  /**
+   * Transport condition getter
+   * Returns condition * 10
+   */
+  function getTransportCondition(address transport) external view returns (uint16) {
+    TransportCondition memory t = transportCondition[transport];
+    return t.set ? t.condition : 500;
   }
 }

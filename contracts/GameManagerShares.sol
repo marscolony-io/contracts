@@ -56,6 +56,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     uint64 rare;
     uint64 legendary;
   }
+
   mapping(address => AvailableRarities) public lootBoxesToMint;
 
   address reserved12;
@@ -132,7 +133,15 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     clnyPerSecond = newSpeed;
   }
 
-  function saleData() external view returns (bool allowed, uint256 minted, uint256 limit) {
+  function saleData()
+    external
+    view
+    returns (
+      bool allowed,
+      uint256 minted,
+      uint256 limit
+    )
+  {
     allowed = !allowlistOnly || allowlist[msg.sender];
     minted = IERC721Enumerable(address(d.mc())).totalSupply();
     limit = allowlistLimit;
@@ -153,7 +162,8 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
       uint256 _xp,
       uint256 _lootbox,
       uint256 _avatarReward,
-      uint256 _landReward
+      uint256 _landReward,
+      uint256 _missionId
     ) = MissionLibrary.getAssetsFromFinishMissionMessage(message);
 
     collectionManager.addXP(_avatar, _xp);
@@ -181,6 +191,11 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
 
     uint256 avatarClnyReward = (_avatarReward * 10**18) / 100;
     clny.mint(martianColonists.ownerOf(_avatar), avatarClnyReward, REASON_MISSION_REWARD);
+
+    if (_missionId == 2) {
+      // here 25 is 2.5% added to the current damage
+      collectionManager.increaseTransportDamage(msg.sender, 25);
+    }
 
     // one event for every reward type
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp

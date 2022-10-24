@@ -37,6 +37,7 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     uint64 rare;
     uint64 legendary;
   }
+
   mapping(address => AvailableRarities) public lootBoxesToMint;
 
   address reserved12;
@@ -110,7 +111,8 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   }
 
   function proceedFinishMissionMessage(string calldata message) private {
-    IMartianColonists martianColonists = d.martianColonists();
+    (ICollectionManager collectionManager, IMartianColonists martianColonists, ILootboxes lootboxes, ICLNY clny) = d
+      .getCmMclLbClny();
 
     (
       uint256 _avatar,
@@ -118,15 +120,16 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
       uint256 _xp,
       uint256 _lootbox,
       uint256 _avatarReward,
-      uint256 _landReward
+      uint256 _landReward,
+      uint256 _missionId
     ) = MissionLibrary.getAssetsFromFinishMissionMessage(message);
 
-    d.collectionManager().addXP(_avatar, _xp);
+    collectionManager.addXP(_avatar, _xp);
 
     if (_lootbox >= 1 && _lootbox <= 3) {
       address avatarOwner = martianColonists.ownerOf(_avatar);
 
-      d.lootboxes().mint(avatarOwner, MissionLibrary.getLootboxRarity(_lootbox));
+      lootboxes.mint(avatarOwner, MissionLibrary.getLootboxRarity(_lootbox));
     }
 
     if (_lootbox == 23) {
@@ -145,7 +148,12 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     landMissionEarnings[_land] += landOwnerClnyReward;
 
     uint256 avatarClnyReward = (_avatarReward * 10**18) / 100;
-    d.clny().mint(martianColonists.ownerOf(_avatar), avatarClnyReward, REASON_MISSION_REWARD);
+    clny.mint(martianColonists.ownerOf(_avatar), avatarClnyReward, REASON_MISSION_REWARD);
+
+    if (_missionId == 2) {
+      // here 25 is 2.5% added to the current damage
+      collectionManager.increaseTransportDamage(msg.sender, 25);
+    }
 
     // one event for every reward type
     emit MissionReward(_land, _avatar, 0, _xp); // 0 - xp
@@ -320,12 +328,14 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   }
 
   function airdrop(address receiver, uint256 tokenId) external whenNotPaused onlyOwner {
-    mintLand(receiver, tokenId);
-    emit Airdrop(receiver, tokenId);
+      mintLand(receiver, tokenId);
+      emit Airdrop(receiver, tokenId);
   }
 
   uint8 constant BASE_STATION = 0;
-  /** these constants (for sure just `_deduct` function) can be changed while upgrading */
+  /**
+   * these constants (for sure just `_deduct` function) can be changed while upgrading
+   */
   uint256 constant BASE_STATION_COST = 30;
   uint256 constant AVATAR_MINT_COST = 30;
   uint256 constant LEVEL_1_COST = 120;
@@ -437,24 +447,23 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
    * deprecated: new base stations should be placed with buildAndPlaceBaseStation
    * 0x5f549163
    */
-  function placeBaseStation(
-    uint256 tokenId,
-    uint32 x,
-    uint32 y,
-    bool free
-  ) external onlyTokenOwner(tokenId) whenNotPaused {
-    require(tokenData[tokenId].baseStation != 0, 'There should be a base station');
-    if (baseStationsPlacement[tokenId].x != 0 || baseStationsPlacement[tokenId].y != 0) {
-      require(!free, 'You can place only for CLNY now');
-      baseStationsPlacement[tokenId].x = x;
-      baseStationsPlacement[tokenId].y = y;
-      // already placed -> new placement is for 5 clny
-      // if users places back to 0, 0 it's ok not to deduct him/her 5 clny
-      d.clny().burn(msg.sender, PLACEMENT_COST, REASON_PLACE);
-    } else {
-      baseStationsPlacement[tokenId].x = x;
-      baseStationsPlacement[tokenId].y = y;
-    }
+  function placeBaseStation(uint256 tokenId, uint32 x, uint32 y, bool free)
+      external
+      onlyTokenOwner(tokenId)
+      whenNotPaused
+  {
+      require(tokenData[tokenId].baseStation != 0, "There should be a base station");
+      if (baseStationsPlacement[tokenId].x != 0 || baseStationsPlacement[tokenId].y != 0) {
+          require(!free, "You can place only for CLNY now");
+          baseStationsPlacement[tokenId].x = x;
+          baseStationsPlacement[tokenId].y = y;
+          // already placed -> new placement is for 5 clny
+          // if users places back to 0, 0 it's ok not to deduct him/her 5 clny
+          d.clny().burn(msg.sender, PLACEMENT_COST, REASON_PLACE);
+      } else {
+          baseStationsPlacement[tokenId].x = x;
+          baseStationsPlacement[tokenId].y = y;
+      }
   }
 
   /**
@@ -489,24 +498,23 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
    * deprecated: for migration only
    * 0x9b416e1c
    */
-  function placeTransport(
-    uint256 tokenId,
-    uint32 x,
-    uint32 y,
-    bool free
-  ) external onlyTokenOwner(tokenId) whenNotPaused {
-    require(tokenData[tokenId].transport != 0, 'There should be a transport');
-    if (transportPlacement[tokenId].x != 0 || transportPlacement[tokenId].y != 0) {
-      require(!free, 'You can place only for CLNY now');
-      transportPlacement[tokenId].x = x;
-      transportPlacement[tokenId].y = y;
-      // already placed -> new placement is for 5 clny
-      // if users places back to 0, 0 it's ok not to deduct him/her 5 clny
-      d.clny().burn(msg.sender, PLACEMENT_COST, REASON_PLACE);
-    } else {
-      transportPlacement[tokenId].x = x;
-      transportPlacement[tokenId].y = y;
-    }
+  function placeTransport(uint256 tokenId, uint32 x, uint32 y, bool free)
+      external
+      onlyTokenOwner(tokenId)
+      whenNotPaused
+  {
+      require(tokenData[tokenId].transport != 0, "There should be a transport");
+      if (transportPlacement[tokenId].x != 0 || transportPlacement[tokenId].y != 0) {
+          require(!free, "You can place only for CLNY now");
+          transportPlacement[tokenId].x = x;
+          transportPlacement[tokenId].y = y;
+          // already placed -> new placement is for 5 clny
+          // if users places back to 0, 0 it's ok not to deduct him/her 5 clny
+          d.clny().burn(msg.sender, PLACEMENT_COST, REASON_PLACE);
+      } else {
+          transportPlacement[tokenId].x = x;
+          transportPlacement[tokenId].y = y;
+      }
   }
 
   /**
@@ -541,24 +549,23 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
    * deprecated: for migration only
    * 0x15263117
    */
-  function placeRobotAssembly(
-    uint256 tokenId,
-    uint32 x,
-    uint32 y,
-    bool free
-  ) external onlyTokenOwner(tokenId) whenNotPaused {
-    require(tokenData[tokenId].robotAssembly != 0, 'There should be a robot assembly');
-    if (robotAssemblyPlacement[tokenId].x != 0 || robotAssemblyPlacement[tokenId].y != 0) {
-      require(!free, 'You can place only for CLNY now');
-      robotAssemblyPlacement[tokenId].x = x;
-      robotAssemblyPlacement[tokenId].y = y;
-      // already placed -> new placement is for 5 clny
-      // if users places back to 0, 0 it's ok not to deduct him/her 5 clny
-      d.clny().burn(msg.sender, PLACEMENT_COST, REASON_PLACE);
-    } else {
-      robotAssemblyPlacement[tokenId].x = x;
-      robotAssemblyPlacement[tokenId].y = y;
-    }
+  function placeRobotAssembly(uint256 tokenId, uint32 x, uint32 y, bool free)
+      external
+      onlyTokenOwner(tokenId)
+      whenNotPaused
+  {
+      require(tokenData[tokenId].robotAssembly != 0, "There should be a robot assembly");
+      if (robotAssemblyPlacement[tokenId].x != 0 || robotAssemblyPlacement[tokenId].y != 0) {
+          require(!free, "You can place only for CLNY now");
+          robotAssemblyPlacement[tokenId].x = x;
+          robotAssemblyPlacement[tokenId].y = y;
+          // already placed -> new placement is for 5 clny
+          // if users places back to 0, 0 it's ok not to deduct him/her 5 clny
+          d.clny().burn(msg.sender, PLACEMENT_COST, REASON_PLACE);
+      } else {
+          robotAssemblyPlacement[tokenId].x = x;
+          robotAssemblyPlacement[tokenId].y = y;
+      }
   }
 
   /**
@@ -593,37 +600,24 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
    * deprecated: for migration only
    * 0x9452cff2
    */
-  function placePowerProduction(
-    uint256 tokenId,
-    uint32 x,
-    uint32 y,
-    bool free
-  ) external onlyTokenOwner(tokenId) whenNotPaused {
-    require(tokenData[tokenId].powerProduction != 0, 'There should be a power production');
-    if (powerProductionPlacement[tokenId].x != 0 || powerProductionPlacement[tokenId].y != 0) {
-      require(!free, 'You can place only for CLNY now');
-      powerProductionPlacement[tokenId].x = x;
-      powerProductionPlacement[tokenId].y = y;
-      // already placed -> new placement is for 5 clny
-      // if users places back to 0, 0 it's ok not to deduct him/her 5 clny
-      d.clny().burn(msg.sender, PLACEMENT_COST, REASON_PLACE);
-    } else {
-      powerProductionPlacement[tokenId].x = x;
-      powerProductionPlacement[tokenId].y = y;
-    }
+  function placePowerProduction(uint256 tokenId, uint32 x, uint32 y, bool free)
+      external
+      onlyTokenOwner(tokenId)
+      whenNotPaused
+  {
+      require(tokenData[tokenId].powerProduction != 0, "There should be a power production");
+      if (powerProductionPlacement[tokenId].x != 0 || powerProductionPlacement[tokenId].y != 0) {
+          require(!free, "You can place only for CLNY now");
+          powerProductionPlacement[tokenId].x = x;
+          powerProductionPlacement[tokenId].y = y;
+          // already placed -> new placement is for 5 clny
+          // if users places back to 0, 0 it's ok not to deduct him/her 5 clny
+          d.clny().burn(msg.sender, PLACEMENT_COST, REASON_PLACE);
+      } else {
+          powerProductionPlacement[tokenId].x = x;
+          powerProductionPlacement[tokenId].y = y;
+      }
   }
-
-  /**
-   * deprecated, use getAttributesMany
-   */
-  // function getEnhancements(uint256 tokenId) external view returns (uint8, uint8, uint8, uint8) {
-  //   return (
-  //     tokenData[tokenId].baseStation,
-  //     tokenData[tokenId].transport,
-  //     tokenData[tokenId].robotAssembly,
-  //     tokenData[tokenId].powerProduction
-  //   );
-  // }
 
   function getAttributesMany(uint256[] calldata tokenIds) external view returns (AttributeData[] memory) {
     AttributeData[] memory result = new AttributeData[](tokenIds.length);
@@ -646,18 +640,18 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
    * 0x42aa65f4
    */
   function claimEarned(uint256[] calldata tokenIds) external whenNotPaused nonReentrant {
-    ICLNY clny = d.clny();
+    (address treasury, address liquidity, ICLNY clny, IMC mc) = d.getTreasuryLiquidityClnyMc();
     uint256 earned = 0;
     for (uint256 i = 0; i < tokenIds.length; i++) {
-      require(msg.sender == IOwnable(address(d.mc())).ownerOf(tokenIds[i]));
+      require(msg.sender == IOwnable(address(mc)).ownerOf(tokenIds[i]));
       earned = earned + getEarned(tokenIds[i]);
       tokenData[tokenIds[i]].fixedEarnings = 0;
       landMissionEarnings[tokenIds[i]] = 0;
       tokenData[tokenIds[i]].lastCLNYCheckout = uint64(block.timestamp);
     }
     clny.mint(msg.sender, earned, REASON_EARNING);
-    clny.mint(d.treasury(), (earned * 31) / 49, REASON_TREASURY);
-    clny.mint(d.liquidity(), (earned * 20) / 49, REASON_LP_POOL);
+    clny.mint(treasury, (earned * 31) / 49, REASON_TREASURY);
+    clny.mint(liquidity, (earned * 20) / 49, REASON_LP_POOL);
   }
 
   function fixEarnings(uint256[] calldata tokenIds) external onlyOwner {
@@ -667,35 +661,34 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
   }
 
   function purchaseCryochamber() external {
-    ICryochamber cryochamber = d.cryochamber();
+    (ICryochamber cryochamber, ICLNY clny) = d.getCryochamberClny();
 
     cryochamber.purchaseCryochamber(msg.sender);
 
     uint256 cryochamberPrice = cryochamber.cryochamberPrice();
-    d.clny().burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
+    clny.burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
   }
 
   function purchaseCryochamberEnergy(uint256 amount) external {
-    ICryochamber cryochamber = d.cryochamber();
+    (ICryochamber cryochamber, ICLNY clny) = d.getCryochamberClny();
 
     cryochamber.purchaseCryochamberEnergy(msg.sender, amount);
 
     uint256 energyPrice = cryochamber.energyPrice();
-    d.clny().burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
+    clny.burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
   }
 
   function renameAvatar(uint256 avatarId, string calldata _name) external {
-    require(d.martianColonists().ownerOf(avatarId) == msg.sender, 'You are not the owner');
-    d.collectionManager().setNameByGameManager(avatarId, _name);
-    d.clny().burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
+    (ICollectionManager collectionManager, IMartianColonists martianColonists, ICLNY clny) = d.getCmMclClny();
+    require(martianColonists.ownerOf(avatarId) == msg.sender, 'You are not the owner');
+    collectionManager.setNameByGameManager(avatarId, _name);
+    clny.burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
   }
 
   // gears
 
   function openLootbox(uint256 tokenId, uint256 maxPrice) external whenNotPaused {
-    ICLNY clny = d.clny();
-    ILootboxes lootboxes = d.lootboxes();
-    ICollectionManager collectionManager = d.collectionManager();
+    (ICollectionManager collectionManager, , ILootboxes lootboxes, ICLNY clny) = d.getCmMclLbClny();
 
     require(lootboxes.ownerOf(tokenId) == msg.sender, "You aren't this lootbox owner");
 
@@ -720,6 +713,18 @@ contract GameManagerFixed is IGameManager, PausableUpgradeable, Constants {
     lootboxes.burn(tokenId);
 
     collectionManager.mintGear(msg.sender, rarity);
+  }
+
+  function repairTransport(uint16 amount) external {
+    (ICollectionManager collectionManager, , ICLNY clny) = d.getCmMclClny();
+    uint256 repairPrice;
+    if (amount == 25) repairPrice = 15e17; // 1.5 clny for 25% repair
+    if (amount == 50) repairPrice = 2e18; // 2 clny for 50% repair
+    if (amount == 100) repairPrice = 4e18; // 4 clny for 100% repair
+    require(repairPrice > 0, 'wrong repair amount');
+
+    clny.burn(msg.sender, repairPrice, REASON_TRANSPORT_REPAIR);
+    collectionManager.repairTransport(msg.sender, amount * 10);
   }
 
   // for compatibility with Polygon

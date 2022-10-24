@@ -35,4 +35,8 @@ interface ICollectionManager {
   function unpause() external;
 
   function mint(address receiver) external;
+
+  function increaseTransportDamage(address transport, uint16 percents) external;
+
+  function repairTransport(address transport, uint16 percents) external;
 }

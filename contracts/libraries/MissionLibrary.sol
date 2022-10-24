@@ -97,12 +97,13 @@ library MissionLibrary {
     external
     pure
     returns (
-      uint256,
-      uint256,
-      uint256,
-      uint256,
-      uint256,
-      uint256
+      uint256 _avatar,
+      uint256 _land,
+      uint256 _xp,
+      uint256 _lootbox,
+      uint256 _avatarReward,
+      uint256 _landReward,
+      uint256 _missionId
     )
   {
     // 0..<32 - random
@@ -113,30 +114,30 @@ library MissionLibrary {
     // 55..<57 - lootbox
     // 57..<61 - avatar mission rewards in CLNY * 100 / decimals (e.g. 100 = 1 CLNY)
     // 61..<65 - avatar mission rewards in CLNY * 100 / decimals (e.g. 100 = 1 CLNY)
-    // 65... and several 8-byte blocks - reserved
-    uint256 _avatar = _substring(message, 32, 37);
-    uint256 _avatar2 = _substring(message, 37, 42);
-    uint256 _land = _substring(message, 42, 47);
-    uint256 _xp = _substring(message, 47, 55);
-    uint256 _lootbox = _substring(message, 55, 57);
-    uint256 _avatarReward = _substring(message, 57, 61);
-    uint256 _landReward = _substring(message, 61, 65);
-    require(_avatar == _avatar2, 'check failed');
+    // 65..<66 - mission id
+    // 66... and several 8-byte blocks - reserved
+    _avatar = _substring(message, 32, 37);
+    require(_avatar == _substring(message, 37, 42), 'check failed');
 
     require(_avatar > 0, 'AvatarId is not valid');
+
+    _land = _substring(message, 42, 47);
     require(_land > 0 && _land <= 21000, 'LandId is not valid');
+
+    _xp = _substring(message, 47, 55);
     require(_xp >= 230 && _xp < 19971800, 'XP increment is not valid');
 
+    _lootbox = _substring(message, 55, 57);
     require((_lootbox >= 0 && _lootbox <= 3) || (_lootbox >= 23 && _lootbox <= 25), 'Lootbox code is not valid');
 
-    return (_avatar, _land, _xp, _lootbox, _avatarReward, _landReward);
+    _avatarReward = _substring(message, 57, 61);
+    _landReward = _substring(message, 61, 65);
+    _missionId = _substring(message, 65, 67);
+
+    return (_avatar, _land, _xp, _lootbox, _avatarReward, _landReward, _missionId);
   }
 
-  function getLootboxRarity(uint256 _lootbox)
-    external
-    pure
-    returns (IEnums.Rarity rarity)
-  {
+  function getLootboxRarity(uint256 _lootbox) external pure returns (IEnums.Rarity rarity) {
     if (_lootbox == 1 || _lootbox == 23) return IEnums.Rarity.COMMON;
     if (_lootbox == 2 || _lootbox == 24) return IEnums.Rarity.RARE;
     if (_lootbox == 3 || _lootbox == 25) return IEnums.Rarity.LEGENDARY;
