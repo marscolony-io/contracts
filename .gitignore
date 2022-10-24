@@ -20,3 +20,14 @@ landlords-testnet.txt
 contracts-addresses.txt
 
 .DS_Store
+
+# Foundry Compiler files
+forge-cache/
+out/
+
+
+# Ignores development broadcast logs
+!/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/
+
