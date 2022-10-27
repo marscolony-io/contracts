@@ -9,7 +9,7 @@ contract MartianColonists is ERC721Enumerable {
   string private nftBaseURI;
   IDependencies public d;
   mapping(uint256 => string) public names;
-  bool lock;
+  uint256 lock = 0;
 
   modifier onlyOwner() {
     require(msg.sender == d.owner(), 'Only owner');
@@ -43,10 +43,10 @@ contract MartianColonists is ERC721Enumerable {
   }
 
   function mint(address receiver) external onlyCollectionManager {
-    require(!lock, 'locked');
-    lock = true;
+    require(lock == 0, 'locked');
+    lock = 1;
     _safeMint(receiver, ERC721Enumerable.totalSupply() + 1); // +1 because we emit 0 and start with 1
-    lock = false;
+    lock = 0;
   }
 
   function setName(uint256 tokenId, string memory _name) external onlyCollectionManager {
