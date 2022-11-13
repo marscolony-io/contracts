@@ -36,6 +36,7 @@ abstract contract Constants {
   uint256 constant VIBRATION_TRANSMITTER = 11;
   uint256 constant THE_NEBUCHADNEZZAR = 12;
   uint256 constant THE_WRAITH = 13;
+  uint256 constant THE_POLYMINER = 14;
 
   uint256 constant CATEGORY_ENGINE = 0;
   uint256 constant CATEGORY_DRILL = 1;

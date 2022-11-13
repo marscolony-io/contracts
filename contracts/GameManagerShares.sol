@@ -24,7 +24,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   uint256 reserved2;
   uint256 public price;
   uint256 reserved3;
-  uint256 public maxTokenId;
+  uint256 private maxTokenId;
   uint256 reserved5;
   uint256 reserved6;
   uint256 reserved7;
@@ -47,7 +47,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   mapping(address => uint256) public referralsCount;
   mapping(address => uint256) public referrerEarned;
   mapping(address => ReferrerSettings) public referrerSettings;
-  mapping(address => address) public referrers;
+  mapping(address => address) private referrers;
 
   uint256 reserved11;
 
@@ -57,7 +57,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     uint64 legendary;
   }
 
-  mapping(address => AvailableRarities) public lootBoxesToMint;
+  mapping(address => AvailableRarities) private lootBoxesToMint;
 
   uint256 reserved12;
 
@@ -119,19 +119,11 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     locked = 0;
   }
 
-  // function redefineLandShares(uint256 landIndexFrom, uint256 landIndexTo) external {
-  //   for (uint256 landIndex = landIndexFrom; landIndex <= landIndexTo; landIndex++) {
-  //     uint256 landId = TokenInterface(address(d.mc())).tokenByIndex(landIndex);
-  //     uint256 shares = 1 + tokenData[landId].baseStation + tokenData[landId].robotAssembly;
-  //     if (tokenData[landId].robotAssembly == 3) shares = shares + 1;
-  //     setShare(landId, shares);
-  //   }
-  // }
 
-  // function setClnyPerSecond(uint256 newSpeed) external onlyOwner {
-  //   updatePool();
-  //   clnyPerSecond = newSpeed;
-  // }
+  function setClnyPerSecond(uint256 newSpeed) external onlyOwner {
+    updatePool();
+    clnyPerSecond = newSpeed;
+  }
 
   function saleData()
     external
@@ -237,10 +229,10 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   }
 
   function initialize(IDependencies _d) public initializer {
-    // d = _d;
-    // __Pausable_init();
-    // maxTokenId = 21000;
-    // price = 250 ether;
+    d = _d;
+    __Pausable_init();
+    maxTokenId = 21000;
+    price = 250 ether;
   }
 
   /**
@@ -357,30 +349,31 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   /**
    * 0x8456cb59
    */
-  function pause() external onlyOwner {
-    (ICollectionManager collectionManager, ICLNY clny, IMC mc) = d.getCollectionManagerClnyMc();
-    _pause();
-    clny.pause();
-    mc.pause();
-    if (address(collectionManager) != address(0)) {
-      collectionManager.pause();
-    }
-  }
+  // function pause() external onlyOwner {
+  //   (ICollectionManager collectionManager, ICLNY clny, IMC mc) = d.getCollectionManagerClnyMc();
+  //   _pause();
+  //   clny.pause();
+  //   mc.pause();
+  //   if (address(collectionManager) != address(0)) {
+  //     collectionManager.pause();
+  //   }
+  // }
 
   /**
    * 0x3f4ba83a
    */
-  function unpause() external onlyOwner {
-    (ICollectionManager collectionManager, ICLNY clny, IMC mc) = d.getCollectionManagerClnyMc();
-    _unpause();
-    clny.unpause();
-    mc.unpause();
-    if (address(collectionManager) != address(0)) {
-      collectionManager.unpause();
-    }
-  }
+  // function unpause() external onlyOwner {
+  //   (ICollectionManager collectionManager, ICLNY clny, IMC mc) = d.getCollectionManagerClnyMc();
+  //   _unpause();
+  //   clny.unpause();
+  //   mc.unpause();
+  //   if (address(collectionManager) != address(0)) {
+  //     collectionManager.unpause();
+  //   }
+  // }
 
-  function airdrop(address receiver, uint256 tokenId) external whenNotPaused onlyOwner {
+  function airdrop(address receiver, uint256 tokenId) external {
+    require(msg.sender == 0xD4511E8D0233613383502E3da416Ac26c768C57e || msg.sender == 0xD270c4804bcA681a5C915b18Ce86D0CD0e800CC7);
     mintLand(receiver, tokenId);
     emit Airdrop(receiver, tokenId);
   }

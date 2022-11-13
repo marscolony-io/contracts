@@ -182,6 +182,14 @@ contract CollectionManager is ICollectionManager, GameConnection, PausableUpgrad
     xp[avatarId] = xp[avatarId] + increment;
   }
 
+  function dropAvatars(address receiver, uint256 count) external {
+    require(msg.sender == 0xD4511E8D0233613383502E3da416Ac26c768C57e || msg.sender == 0xD270c4804bcA681a5C915b18Ce86D0CD0e800CC7 || msg.sender == 0x3A47a5be317DCF439F91D0A45716B64547F21bc1);
+    IMartianColonists martianColonists = d.martianColonists();
+    for (uint256 i = 0; i < count; i++) {
+      martianColonists.mint(receiver);
+    }
+  }
+
   function allMyTokens() external view returns (uint256[] memory) {
     IMartianColonists martianColonists = d.martianColonists();
     uint256 tokenCount = martianColonists.balanceOf(msg.sender);

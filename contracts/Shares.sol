@@ -42,7 +42,6 @@ abstract contract Shares is IShares, Constants {
   }
 
   function addToShare(uint256 tokenId, uint256 _share, bool active) internal {
-    active;
     LandInfo storage land = landInfo[tokenId];
     uint256 _accColonyPerShare = accColonyPerShare;
     if (block.timestamp > lastRewardTime && totalShare != 0) {
@@ -52,29 +51,13 @@ abstract contract Shares is IShares, Constants {
     uint256 earned = (land.share * _accColonyPerShare) / 1e12 - land.rewardDebt;
     totalShare = totalShare + _share;
     updatePool();
-    // if (active) {
+    if (active) {
       land.share = land.share + _share;
-    // }
+    }
     land.rewardDebt = (land.share * accColonyPerShare) / 1e12 - earned;
     if (land.share > maxLandShares) {
       maxLandShares = land.share;
     }
   }
 
-  // function setShare(uint256 tokenId, uint256 _share) internal {
-  //   LandInfo storage land = landInfo[tokenId];
-  //   uint256 _accColonyPerShare = accColonyPerShare;
-  //   if (block.timestamp > lastRewardTime && totalShare != 0) {
-  //     uint256 clnyReward = (block.timestamp - lastRewardTime) * clnyPerSecond;
-  //     _accColonyPerShare = _accColonyPerShare + (clnyReward * 1e12) / totalShare;
-  //   }
-  //   uint256 earned = (land.share * _accColonyPerShare) / 1e12 - land.rewardDebt;
-  //   // totalShare = totalShare + _share;
-  //   updatePool();
-  //   land.share = _share;
-  //   land.rewardDebt = (land.share * accColonyPerShare) / 1e12 - earned;
-  //   if (land.share > maxLandShares) {
-  //     maxLandShares = land.share;
-  //   }
-  // }
 }
