@@ -19,8 +19,8 @@ abstract contract Shares is IShares, Constants {
     uint256 share;
     uint256 rewardDebt;
   }
-  uint256 public lastRewardTime;
-  uint256 public accColonyPerShare;
+  uint256 internal lastRewardTime;
+  uint256 internal accColonyPerShare;
   uint256 public clnyPerSecond;
   uint256 public totalShare;
   mapping(uint256 => LandInfo) public landInfo;
@@ -39,12 +39,6 @@ abstract contract Shares is IShares, Constants {
     uint256 clnyReward = (block.timestamp - lastRewardTime) * clnyPerSecond;
     accColonyPerShare = accColonyPerShare + (clnyReward * 1e12) / totalShare;
     lastRewardTime = block.timestamp;
-  }
-
-  function setInitialShare(uint256 tokenId) internal {
-    landInfo[tokenId].share = 1;
-    landInfo[tokenId].rewardDebt = accColonyPerShare / 1e12;
-    totalShare = totalShare + 1;
   }
 
   function addToShare(uint256 tokenId, uint256 _share, bool active) internal {
@@ -66,20 +60,4 @@ abstract contract Shares is IShares, Constants {
     }
   }
 
-  function setShare(uint256 tokenId, uint256 _share) internal {
-    LandInfo storage land = landInfo[tokenId];
-    uint256 _accColonyPerShare = accColonyPerShare;
-    if (block.timestamp > lastRewardTime && totalShare != 0) {
-      uint256 clnyReward = (block.timestamp - lastRewardTime) * clnyPerSecond;
-      _accColonyPerShare = _accColonyPerShare + (clnyReward * 1e12) / totalShare;
-    }
-    uint256 earned = (land.share * _accColonyPerShare) / 1e12 - land.rewardDebt;
-    // totalShare = totalShare + _share;
-    updatePool();
-    land.share = _share;
-    land.rewardDebt = (land.share * accColonyPerShare) / 1e12 - earned;
-    if (land.share > maxLandShares) {
-      maxLandShares = land.share;
-    }
-  }
 }
