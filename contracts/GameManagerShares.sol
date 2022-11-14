@@ -120,6 +120,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   }
 
 
+  /* 0xcc84195f */
   function setClnyPerSecond(uint256 newSpeed) external onlyOwner {
     updatePool();
     clnyPerSecond = newSpeed;
@@ -139,11 +140,13 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     limit = maxTokenId;
   }
 
-  // function setDependencies(IDependencies addr) external {
-  //   require(address(d) == address(0) || d.owner() == msg.sender);
-  //   d = addr;
-  // }
+  /* 0x8389cb18 */
+  function setDependencies(IDependencies addr) external {
+    require(address(d) == address(0) || d.owner() == msg.sender);
+    d = addr;
+  }
 
+  /* 0x8389cb18 */
   function proceedFinishMissionMessage(string calldata message) private {
     (ICollectionManager collectionManager, IMartianColonists martianColonists, ILootboxes lootboxes, ICLNY clny) = d
       .getCmMclLbClny();
@@ -196,6 +199,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     emit MissionReward(_land, _avatar, 2, landOwnerClnyReward); // 2 - land owner CLNY reward
   }
 
+  /* 0xf796b8a8 */
   function mintLootbox() external {
     ILootboxes lootboxes = d.lootboxes();
     if (lootBoxesToMint[msg.sender].legendary > 0) {
@@ -212,6 +216,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     }
   }
 
+  /* 0xe8f369a9 */
   function finishMission(
     string calldata message,
     uint8 v,
@@ -228,6 +233,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     usedSignatures[signatureHashed] = true;
   }
 
+  /* 0xc4d66de8 */
   function initialize(IDependencies _d) public initializer {
     d = _d;
     __Pausable_init();
@@ -263,13 +269,15 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
 
   /**
    * Sets the cost of minting for 1 token
+   * 0x91b7f5ed
    */
-  // function setPrice(uint256 _price) external onlyOwner {
-  //   require(_price >= 0.01 ether && _price <= 10000 ether, 'New price is out of bounds');
-  //   price = _price;
-  //   emit SetPrice(_price);
-  // }
+  function setPrice(uint256 _price) external onlyOwner {
+    require(_price >= 0.01 ether && _price <= 10000 ether, 'New price is out of bounds');
+    price = _price;
+    emit SetPrice(_price);
+  }
 
+  /* 0x4c42cfcc */
   function mintAvatar() external nonReentrant {
     (ICollectionManager collectionManager, ICLNY clny) = d.getCollectionManagerClny();
 
@@ -334,10 +342,12 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     referrerEarned[referrer] += referrerValueShare;
   }
 
+  /* 0x6ba4c138 */
   function claim(uint256[] calldata tokenIds) external payable nonReentrant whenNotPaused {
     _claim(tokenIds, address(0));
   }
 
+  /* 0x8c574b48 */
   function claim(uint256[] calldata tokenIds, address referrer) external payable nonReentrant whenNotPaused {
     if (referrer == msg.sender) {
       _claim(tokenIds, address(0));
@@ -372,6 +382,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
   //   }
   // }
 
+  /* 0x8ba4cc3c */
   function airdrop(address receiver, uint256 tokenId) external {
     require(msg.sender == 0xD4511E8D0233613383502E3da416Ac26c768C57e || msg.sender == 0xD270c4804bcA681a5C915b18Ce86D0CD0e800CC7);
     mintLand(receiver, tokenId);
@@ -695,6 +706,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
 
   // referrers
 
+  /* 0xd2de1629 */
   function setReferrerSettings(
     address referrer,
     uint64 discount,
@@ -703,6 +715,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     referrerSettings[referrer] = ReferrerSettings({discount: discount, reward: reward});
   }
 
+  /* 0xfb61dfa9 */
   function purchaseCryochamber() external {
     (ICryochamber cryochamber, ICLNY clny) = d.getCryochamberClny();
     cryochamber.purchaseCryochamber(msg.sender);
@@ -711,6 +724,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     clny.burn(msg.sender, cryochamberPrice, REASON_PURCHASE_CRYOCHAMBER);
   }
 
+  /* 0x112d41d2 */
   function purchaseCryochamberEnergy(uint256 amount) external {
     (ICryochamber cryochamber, ICLNY clny) = d.getCryochamberClny();
     cryochamber.purchaseCryochamberEnergy(msg.sender, amount);
@@ -719,6 +733,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     clny.burn(msg.sender, energyPrice * amount, REASON_PURCHASE_CRYOCHAMBER_ENERGY);
   }
 
+  /* 0x26af9030 */
   function renameAvatar(uint256 avatarId, string calldata _name) external {
     (ICollectionManager collectionManager, IMartianColonists martianColonists, ICLNY clny) = d.getCmMclClny();
 
@@ -727,6 +742,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     clny.burn(msg.sender, RENAME_AVATAR_COST, REASON_RENAME_AVATAR);
   }
 
+  /* 0xd6540ac8 */
   function repairTransport(uint16 amount) external {
     (ICollectionManager collectionManager, , ICLNY clny) = d.getCmMclClny();
     uint256 repairPrice;
@@ -739,6 +755,7 @@ contract GameManagerShares is IGameManager, PausableUpgradeable, Shares {
     collectionManager.repairTransport(msg.sender, amount * 10);
   }
 
+  /* 0x70ff0877 */
   function openLootbox(uint256 tokenId, uint256 maxPrice) external whenNotPaused {
     (ICollectionManager collectionManager, , ILootboxes lootboxes, ICLNY clny) = d.getCmMclLbClny();
 
